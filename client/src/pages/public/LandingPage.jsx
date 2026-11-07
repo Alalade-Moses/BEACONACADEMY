@@ -22,7 +22,8 @@ import {
   MessageSquare,
   FileText,
   Mail,
-  Send
+  Send,
+  Film
 } from 'lucide-react';
 
 export const LandingPage = () => {
@@ -86,7 +87,7 @@ export const LandingPage = () => {
             {/* Left Copy */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold">
-                <Sparkles className="w-4 h-4 text-brand-600 animate-spin-slow" />
+                <Sparkles className="w-4 h-4 text-brand-600 animate-spin" />
                 <span>Next-Gen Web-Based LMS & Virtual Classroom</span>
               </div>
 

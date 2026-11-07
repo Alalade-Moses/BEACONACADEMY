@@ -9,16 +9,20 @@ export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Connect to server (using relative path so Vite proxy handles port forwarding)
-    const newSocket = io(window.location.origin, {
+    // In local dev, connect directly to port 5000; in production use configured URL or same origin
+    const socketUrl = import.meta.env.VITE_SOCKET_URL && import.meta.env.VITE_SOCKET_URL !== '/'
+      ? import.meta.env.VITE_SOCKET_URL
+      : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin);
+
+    const newSocket = io(socketUrl, {
       autoConnect: true,
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       reconnectionAttempts: 5,
       reconnectionDelay: 1000
     });
 
     newSocket.on('connect', () => {
-      console.log('⚡ Socket connected successfully:', newSocket.id);
+      console.log('⚡ Socket connected to server:', newSocket.id);
     });
 
     newSocket.on('connect_error', (err) => {
