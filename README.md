@@ -1,32 +1,40 @@
-# EduLearn Global — Enterprise Learning Management System (LMS) with Live Virtual Classroom
+# Beacon Bridge Academics — UK & International Virtual Classroom & LMS Platform
 
-EduLearn is a production-grade, multi-role web-based Learning Management System designed for educational institutions, training providers, tutors, students, and parents. It features an integrated real-time Live Virtual Classroom supporting WebRTC audio/video, PowerPoint & PDF slide decks, real-time synchronized whiteboard & slide annotations, screen sharing, in-class chat, hand raising, automated attendance tracking, and session recording.
+[![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-emerald.svg)](#)
+[![Domain](https://img.shields.io/badge/Domain-beaconbridgeacademics.co.uk-blue.svg)](https://beaconbridgeacademics.co.uk)
+[![License](https://img.shields.io/badge/License-Proprietary-slate.svg)](#)
+
+Beacon Bridge Academics is an enterprise-grade, multi-role web-based Learning Management System and Live Virtual Classroom built for UK and International curricula (GCSE, UK A-Levels, North American AP, Canada Senior Secondary Grade 11/12, and Key Stage 3 Foundations).
+
+It features real-time interactive virtual classrooms with WebRTC audio/video conferencing, whiteboard & slide annotations with normalized UV coordinate math, PowerPoint & PDF presentation sharing, student attendance tracking, dual-account joint registration (Student + Parent), manual UK bank tuition verification (GBP £), and role-governed portals.
 
 ---
 
-## 🌟 Key Capabilities
+## 🌟 Key Platform Capabilities
 
-### 1. Live Virtual Classroom
-- **Low-Latency Communication**: Real-time WebRTC audio and video conferencing with mic/camera toggle and participant spotlight.
-- **Slide Presentation Deck**: Multi-slide presentation engine rendered directly in canvas. Slide navigation synchronized across all participants.
-- **Real-Time Vector Whiteboard & Annotations**:
+### 1. Interactive Live Virtual Classroom
+- **Real-Time Video/Audio**: Low-latency WebRTC communications with participant spotlight, grid views, and tutor mute controls.
+- **Slide Presentation Engine**: Slide navigation synchronized across all participants in real time.
+- **Normalized Vector Whiteboard & Annotations**:
   - Pen, Highlighter, Eraser, Line, Arrow, Rectangle, Circle, and Color Palettes.
-  - **Normalized UV Coordinate Engine (0.0 to 1.0)**: Annotations are broadcast as fractions of stage dimensions, guaranteeing identical alignment regardless of client screen size or resolution.
-  - Mid-session join synchronization delivering complete stroke histories to late arrivals.
-- **Screen Sharing**: High-resolution application and display sharing with audio track support.
-- **Interactive Student Engagement**: Real-time chat stream with timestamps, student hand-raising queue, and tutor remote mute controls.
-- **Session Recording**: Integrated MediaRecorder engine capturing presentation canvas and mixed audio into video archives for student re-watching.
+  - **Normalized UV Coordinate Engine (0.0 to 1.0)**: Broadcasts stroke coordinates as resolution-independent fractions, guaranteeing identical pixel-perfect alignment across mobile, tablet, and 4K displays.
+  - Mid-session join replay delivering complete vector histories to late arrivals.
+- **Screen Sharing**: High-resolution display and application sharing with audio pass-through.
+- **Interactive Student Engagement**: Real-time chat, hand-raising queue with educator notifications, and session timers.
 - **Automated Attendance Logging**: Captures entry time, duration, and participation status.
 
-### 2. Four Dedicated Portals
-- **Super Administrator Portal**: Platform metrics (students, tutors, parents, revenue), user management (CRUD, suspend, activate), course catalog management, live class monitoring, broadcast announcements, security audit logs, and system settings.
-- **Tutor Portal**: Assigned course manager, live class scheduler, learning materials uploader (PPTX, PDF, worksheets), student attendance sheets, and session recording archives.
-- **Student Portal**: Course progress tracking, timetable of upcoming live classes with 1-click join, course materials library, on-demand video playback player, and attendance history.
-- **Parent Portal**: Link child accounts by email, monitor enrolled courses and academic progress, review live attendance logs, and access tutor contact details.
+### 2. Four Dedicated Role Portals
+- **Super Administrator Portal**: Platform metrics (students, tutors, parents, verified tuition), user management (create, suspend, activate), course catalog management, live class monitoring, broadcast announcements, security audit logs, platform settings, and manual UK bank payment verification with proof slip inspection.
+- **Tutor / Educator Portal**: Assigned course manager, live class scheduler, learning materials uploader (PDF, revision packs, slides), student attendance sheets, coursework grading, and session recording archives.
+- **Student Learning Portal**: Course progress tracking, timetable of upcoming live classes with 1-click room entry, lecture materials library, assignments & coursework submission, and attendance history.
+- **Parent & Guardian Portal**: Dual-linked child account oversight, live class schedule visibility, attendance logs, coursework progress tracking, and tutor communication.
 
-### 3. Public Marketing Website
-- High-converting hero section with interactive virtual classroom preview.
-- About section, Course catalog viewer, How It Works (4-step workflow), Features & Benefits, Faculty spotlight, Testimonials, FAQ accordion, and Contact form.
+### 3. Public Website & Institutional Enrollment
+- Modern UK academic design with Deep Royal Navy (`#050167`), Electric Neo-Mint (`#40ffa7`), and Ice Tint (`#f0faff`).
+- Responsive Navigation with sticky offset jumping to `#about`, `#courses`, `#how-it-works`, `#faculty`, and `#faq`.
+- Institutional Contact details: `info@beaconbridgeacademics.co.uk` and London UK postal coordinates.
+- **Joint Registration Flow**: Creates both Student and Parent accounts simultaneously, issuing a unique UK bank payment reference (`BARC-WIRE-...`).
+- Accounts remain securely locked with status `pending_verification` until the Super Administrator reviews and confirms the bank transfer slip.
 
 ---
 
@@ -38,7 +46,7 @@ EduLearn is a production-grade, multi-role web-based Learning Management System 
 | **Backend** | Node.js (v22), Express.js, Socket.IO, JWT, BCrypt, Morgan, Multer |
 | **Database & Storage** | Supabase (PostgreSQL 15+), Supabase Storage / High-Performance Dual-Mode Store |
 | **Real-Time Gateway** | WebRTC signaling, WebSocket event streaming (Rooms, Chat, Whiteboard) |
-| **Deployment Targets**| Frontend: **Vercel** &bull; Backend: **Railway / Render** &bull; Database: **Supabase** &bull; Domain: **Hostinger** |
+| **Production Targets**| Frontend: **Vercel** &bull; Backend: **Railway / Render** &bull; Database: **Supabase** &bull; Domain & Email: **Hostinger** |
 
 ---
 
@@ -49,7 +57,6 @@ EduLearn is a production-grade, multi-role web-based Learning Management System 
 - npm v9+
 
 ### 2. Installation
-From the project root:
 ```bash
 # Install root dependencies
 npm install
@@ -63,70 +70,72 @@ cd ../client
 npm install
 ```
 
-### 3. Configuration
-- Server: Inspect `server/.env` (pre-configured with local defaults).
-- Client: Inspect `client/.env` (pre-configured with Vite proxy).
-
-### 4. Running the Platform
+### 3. Running the Platform
 Start both server and client concurrently from the project root:
 ```bash
 npm run dev:server    # Starts backend API & Socket.IO on http://localhost:5000
 npm run dev:client    # Starts Vite React frontend on http://localhost:5173
 ```
-Visit **`http://localhost:5173`** in your browser.
+Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## 🔑 Demo Accounts & Test Credentials
+## 🔑 Initial Production Administration Account
 
-The system comes pre-seeded with realistic educational data and pre-hashed passwords. On the Login page (`/login`), you can use the **1-Click Persona Buttons** or enter credentials manually:
+The database initializes with the Super Administrator credential:
 
-| Role | Email | Password | Persona Details |
+| Role | Email | Initial Password | Notes |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@edulearn.com` | `Password123!` | Marcus Sterling (Full system authority) |
-| **Tutor** | `dr.sarah@edulearn.com` | `Password123!` | Dr. Sarah Jenkins (Computer Science & AI) |
-| **Student** | `alex.morgan@edulearn.com` | `Password123!` | Alex Morgan (Enrolled in CS & Algorithms) |
-| **Parent** | `david.morgan@edulearn.com` | `Password123!` | David Morgan (Father of Alex Morgan) |
+| **Super Admin** | `admin@beaconbridgeacademics.co.uk` | `Password123!` | Change upon first client login via Settings |
+| **Faculty Tutor** | `dr.sarah@beaconbridgeacademics.co.uk` | `Password123!` | Head of Mathematics & Physics |
+| **Faculty Tutor** | `prof.chen@beaconbridgeacademics.co.uk` | `Password123!` | Head of Science & STEM |
+
+*Note: All student, parent, enrollment, and payment tables are clean and ready for real customer registrations.*
 
 ---
 
 ## ☁️ Production Deployment Guide
 
-### A. Database Deployment (Supabase)
-1. Log in to [Supabase](https://supabase.com) and create a new project.
-2. Open the **SQL Editor** in your Supabase dashboard.
-3. Paste the contents of `server/database/schema.sql` and click **Run**.
-4. Paste the contents of `server/database/seed.sql` and click **Run**.
-5. Copy your **Project URL** and **Service Role API Key** from **Project Settings > API**.
-6. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in your production backend environment variables.
+### A. Push Codebase to GitHub
+Run from Git Bash in the project root:
+```bash
+git add .
+git commit -m "Production release: Beacon Bridge Academics LMS"
+git branch -M main
+git remote add origin https://github.com/YOUR_ORGANIZATION/beacon-bridge-academics.git
+git push -u origin main
+```
 
-### B. Backend Deployment (Railway or Render)
-1. Push this repository to GitHub.
-2. In Railway or Render, create a **New Web Service** pointing to the `server/` root directory.
-3. Set the build and start commands:
-   - Build Command: `npm install`
-   - Start Command: `node index.js`
-4. Configure Environment Variables:
-   - `PORT`: `5000`
-   - `NODE_ENV`: `production`
-   - `JWT_SECRET`: `<your-random-32-character-secret>`
-   - `CLIENT_URL`: `https://your-custom-domain.com`
-   - `SUPABASE_URL`: `https://your-project.supabase.co`
-   - `SUPABASE_SERVICE_ROLE_KEY`: `<your-service-role-key>`
+### B. Deploy Frontend to Vercel
+1. In [Vercel](https://vercel.com), click **Add New > Project** and import the GitHub repository.
+2. Configure project settings:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `client`
+   - **Build Command**: `vite build`
+   - **Output Directory**: `dist`
+3. Add Environment Variables:
+   - `VITE_API_URL`: `https://api.beaconbridgeacademics.co.uk/api` (or your Render/Railway backend URL)
+   - `VITE_SOCKET_URL`: `https://api.beaconbridgeacademics.co.uk` (or your Render/Railway backend URL)
+4. Click **Deploy**.
 
-### C. Frontend Deployment (Vercel)
-1. In [Vercel](https://vercel.com), import the Git repository.
-2. Set the **Root Directory** to `client`.
-3. Framework Preset: **Vite**.
-4. Set Environment Variables:
-   - `VITE_API_URL`: `https://your-backend-service.up.railway.app/api`
-   - `VITE_SOCKET_URL`: `https://your-backend-service.up.railway.app`
-5. Click **Deploy**.
+### C. Connect Hostinger Domain (`beaconbridgeacademics.co.uk`)
+1. In Vercel, navigate to **Project Settings > Domains** and add:
+   - `beaconbridgeacademics.co.uk`
+   - `www.beaconbridgeacademics.co.uk`
+2. Open your **Hostinger hPanel** > **DNS Zone**:
+   - `A` Record: Name `@` &rarr; Points to `76.76.21.21`
+   - `CNAME` Record: Name `www` &rarr; Points to `cname.vercel-dns.com`
+3. SSL certificates will automatically provision via Vercel within minutes.
 
-### D. Custom Domain Setup (Hostinger)
-1. In your Hostinger DNS Zone Editor:
-   - Add a `CNAME` record for `@` or `www` pointing to `cname.vercel-dns.com`.
-   - Add a `CNAME` or `A` record for `api.yourdomain.com` pointing to your Railway/Render backend domain.
-2. In Vercel, navigate to **Project Settings > Domains** and add your custom domain.
-3. In Railway/Render, add your custom domain under **Networking**.
-4. SSL/TLS certificates will automatically provision via Let's Encrypt.
+### D. Hostinger Institutional Email (`info@beaconbridgeacademics.co.uk`)
+1. In Hostinger hPanel &rarr; **Emails** &rarr; `beaconbridgeacademics.co.uk`.
+2. Create `info@beaconbridgeacademics.co.uk` and `admin@beaconbridgeacademics.co.uk`.
+3. Set up **Email Forwarding** to the client's preferred Gmail account.
+4. In Gmail &rarr; **Settings > Accounts and Import > Send mail as**:
+   - Add `info@beaconbridgeacademics.co.uk`
+   - SMTP Server: `smtp.hostinger.com` | Port: `465` (SSL)
+   - Enter your Hostinger email password to send institutional emails directly from Gmail.
+
+---
+
+&copy; 2026 Beacon Bridge Academics Ltd. All rights reserved. Registered in England & Wales.

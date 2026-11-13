@@ -155,7 +155,7 @@ export const AdminCourses = () => {
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/95 text-slate-800 shadow-sm">
-                    ${course.price}
+                    £{course.price} GBP
                   </span>
                   <span className="absolute bottom-3 left-3 px-2 py-0.5 rounded bg-slate-900/80 text-[11px] font-semibold text-white capitalize">
                     {course.level}
@@ -299,7 +299,7 @@ export const AdminCourses = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Price ($ USD)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Price (£ GBP)</label>
                   <input
                     type="number"
                     value={formData.price}

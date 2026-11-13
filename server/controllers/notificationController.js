@@ -37,3 +37,21 @@ export const markAllAsRead = async (req, res, next) => {
     next(err);
   }
 };
+
+export const deleteNotification = async (req, res, next) => {
+  try {
+    await store.deleteNotification(req.params.id, req.user.id);
+    res.status(200).json({ success: true, message: 'Notification deleted successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const clearAllNotifications = async (req, res, next) => {
+  try {
+    await store.clearAllNotifications(req.user.id);
+    res.status(200).json({ success: true, message: 'All notifications cleared.' });
+  } catch (err) {
+    next(err);
+  }
+};

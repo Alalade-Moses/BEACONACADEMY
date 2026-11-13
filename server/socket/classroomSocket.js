@@ -22,10 +22,15 @@ export const initClassroomSocket = (io) => {
           participants: new Map(),
           currentSlide: 1,
           totalSlides: 6,
+          presentationUrl: null,
+          presentationSlides: [],
           slideStrokes: {}, // keyed by slideIndex
           handRaises: new Set(),
           isRecording: false,
-          screenSharerId: null
+          screenSharerId: null,
+          status: 'scheduled',
+          startedAt: null,
+          durationMinutes: 60
         });
       }
 
@@ -41,6 +46,13 @@ export const initClassroomSocket = (io) => {
 
       // Auto-log attendance in database
       const classRecord = await store.getClassById(roomId);
+      if (classRecord) {
+        if (classRecord.status) room.status = classRecord.status;
+        if (classRecord.duration_minutes) room.durationMinutes = classRecord.duration_minutes;
+        if (classRecord.status === 'live' && !room.startedAt) {
+          room.startedAt = Date.now();
+        }
+      }
       if (classRecord && user && user.id) {
         await store.logAttendance({
           class_id: classRecord.id,
@@ -61,9 +73,14 @@ export const initClassroomSocket = (io) => {
         participants: Array.from(room.participants.values()),
         currentSlide: room.currentSlide,
         totalSlides: room.totalSlides,
+        presentationUrl: room.presentationUrl,
+        presentationSlides: room.presentationSlides || [],
         strokes: room.slideStrokes[room.currentSlide] || [],
         isRecording: room.isRecording,
-        screenSharerId: room.screenSharerId
+        screenSharerId: room.screenSharerId,
+        status: room.status,
+        startedAt: room.startedAt,
+        durationMinutes: room.durationMinutes
       });
 
       // Broadcast updated roster to entire room
@@ -83,6 +100,25 @@ export const initClassroomSocket = (io) => {
           slideIndex,
           totalSlides: room.totalSlides,
           strokes: room.slideStrokes[slideIndex] || []
+        });
+      }
+    });
+
+    // Custom Presentation / Slide Deck Upload & Change
+    socket.on('update_presentation', ({ roomId, presentationUrl, slides, totalSlides }) => {
+      const room = rooms.get(roomId);
+      if (room) {
+        room.presentationUrl = presentationUrl || null;
+        room.presentationSlides = slides || [];
+        room.currentSlide = 1;
+        room.totalSlides = totalSlides || (slides && slides.length > 0 ? slides.length : 6);
+        room.slideStrokes = {}; // Clear previous strokes on new presentation
+
+        io.to(roomId).emit('presentation_updated', {
+          presentationUrl: room.presentationUrl,
+          slides: room.presentationSlides,
+          currentSlide: 1,
+          totalSlides: room.totalSlides
         });
       }
     });
@@ -158,7 +194,34 @@ export const initClassroomSocket = (io) => {
       });
     });
 
-    // Screen Sharing Signal
+    // Live Class Session Launch
+    socket.on('launch_class', ({ roomId, durationMinutes }) => {
+      const room = rooms.get(roomId);
+      const now = Date.now();
+      if (room) {
+        room.status = 'live';
+        if (!room.startedAt) room.startedAt = now;
+        if (durationMinutes) room.durationMinutes = durationMinutes;
+      }
+      io.to(roomId).emit('class_status_changed', { 
+        status: 'live',
+        startedAt: room?.startedAt || now,
+        durationMinutes: room?.durationMinutes || durationMinutes || 60
+      });
+    });
+
+    // Conclude / End Class Session
+    socket.on('end_class', ({ roomId }) => {
+      const room = rooms.get(roomId);
+      if (room) {
+        room.status = 'completed';
+      }
+      io.to(roomId).emit('class_status_changed', { status: 'completed' });
+      io.to(roomId).emit('class_ended', {
+        message: 'This live class session has been concluded by the instructor.'
+      });
+    });
+
     socket.on('screen_share_status', ({ roomId, isSharing }) => {
       const room = rooms.get(roomId);
       if (room) {
@@ -201,6 +264,21 @@ export const initClassroomSocket = (io) => {
           socketId: socket.id,
           user: currentUser,
           isHandRaised: participant.isHandRaised
+        });
+        io.to(roomId).emit('roster_update', Array.from(room.participants.values()));
+      }
+    });
+
+    // Lower Hand (by Tutor or Participant)
+    socket.on('lower_hand', ({ roomId, targetSocketId }) => {
+      const room = rooms.get(roomId);
+      if (room && room.participants.has(targetSocketId)) {
+        const participant = room.participants.get(targetSocketId);
+        participant.isHandRaised = false;
+        io.to(roomId).emit('hand_raise_status', {
+          socketId: targetSocketId,
+          user: participant.user,
+          isHandRaised: false
         });
         io.to(roomId).emit('roster_update', Array.from(room.participants.values()));
       }

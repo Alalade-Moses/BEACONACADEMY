@@ -3,39 +3,89 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
   body {
-    @apply font-sans bg-slate-50 text-slate-900;
+    background-color: #f0faff;
+    color: #001f3f;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Universal Anchor Actions: Hover, Active, Visited, Focus-Visible */
+  a {
+    color: inherit;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: #050167;
+  }
+
+  a:active {
+    color: #001f3f;
+    transform: scale(0.985);
+  }
+
+  a:visited {
+    /* Respectful, elegant visited state without clash */
+    color: inherit;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid #40ffa7;
+    outline-offset: 2px;
+    border-radius: 0.5rem;
   }
 }
 
-/* Custom modern scrollbars */
+/* Custom modern scrollbars with brand mint & navy */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f0faff;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.5);
+  background: rgba(5, 1, 103, 0.25);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.8);
+  background: #050167;
 }
 
-/* Glassmorphism helpers */
+/* Zero-scrollbar utility for clean, professional sidebars & carousels */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Glassmorphism helpers tuned for the new 4-color system */
 .glass {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(5, 1, 103, 0.08);
 }
 
 .glass-dark {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(0, 31, 63, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(64, 255, 167, 0.15);
 }

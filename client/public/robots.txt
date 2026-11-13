@@ -1,0 +1,18 @@
+# robots.txt for Beacon Bridge Academics (https://beaconbridgeacademics.co.uk)
+User-agent: *
+Allow: /
+Allow: /register
+Allow: /login
+Allow: /payment-proof
+
+# Protect internal portals and classroom sessions
+Disallow: /admin/
+Disallow: /superadmin/
+Disallow: /tutor/
+Disallow: /student/
+Disallow: /parent/
+Disallow: /classroom/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://beaconbridgeacademics.co.uk/sitemap.xml

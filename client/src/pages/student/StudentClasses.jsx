@@ -81,17 +81,26 @@ export const StudentClasses = () => {
               </div>
 
               <div className="self-end sm:self-center">
-                <Link
-                  to={`/classroom/${c.meeting_room_id}`}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 shadow-md transition-all ${
-                    c.status === 'live'
-                      ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/25 scale-105'
-                      : 'bg-brand-600 hover:bg-brand-700 text-white shadow-brand-500/25'
-                  }`}
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>{c.status === 'live' ? 'Join Live Now' : 'Enter Classroom Room'}</span>
-                </Link>
+                {c.status === 'live' ? (
+                  <Link
+                    to={`/classroom/${c.meeting_room_id}?as=student`}
+                    state={{ from: 'student' }}
+                    className="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-2 shadow-lg bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/30 scale-105 transition-all"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Join Live Class Now</span>
+                  </Link>
+                ) : (
+                  <div className="flex flex-col items-end">
+                    <span className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-semibold text-xs border border-slate-200 flex items-center gap-1.5 cursor-not-allowed select-none">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Scheduled — Waiting for Tutor to Launch</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-1">
+                      Unlocks as soon as your tutor starts the session
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           ))

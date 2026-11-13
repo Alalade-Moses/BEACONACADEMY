@@ -12,7 +12,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('EduLearn Application Error Boundary Caught:', error, errorInfo);
+    console.error('Beacon Bridge Academics Error Boundary Caught:', error, errorInfo);
   }
 
   render() {

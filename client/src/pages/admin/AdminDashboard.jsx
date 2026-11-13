@@ -6,7 +6,7 @@ import {
   GraduationCap,
   BookOpen,
   Video,
-  DollarSign,
+  CreditCard,
   TrendingUp,
   Activity,
   Calendar,
@@ -21,20 +21,26 @@ export const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [classes, setClasses] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [pendingAppsCount, setPendingAppsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsRes, classesRes, logsRes] = await Promise.all([
+        const [statsRes, classesRes, logsRes, appsRes] = await Promise.all([
           api.get('/users/stats'),
           api.get('/classes'),
-          api.get('/audit-logs')
+          api.get('/audit-logs'),
+          api.get('/tutor-applications').catch(() => ({ data: { applications: [] } }))
         ]);
 
         if (statsRes.data.success) setStats(statsRes.data.stats);
         if (classesRes.data.success) setClasses(classesRes.data.classes || []);
         if (logsRes.data.success) setLogs(logsRes.data.logs.slice(0, 5));
+        if (appsRes.data?.success) {
+          const pending = (appsRes.data.applications || []).filter(a => a.status === 'pending' || a.status === 'under_review').length;
+          setPendingAppsCount(pending);
+        }
       } catch (err) {
         console.error('Failed to load admin stats', err);
       } finally {
@@ -59,7 +65,7 @@ export const AdminDashboard = () => {
     { title: 'Parent Accounts', value: stats?.totalParents || 0, icon: ShieldCheck, color: 'text-amber-600 bg-amber-50 border-amber-200' },
     { title: 'Total Courses', value: stats?.totalCourses || 0, icon: BookOpen, color: 'text-purple-600 bg-purple-50 border-purple-200' },
     { title: 'Live / Scheduled Classes', value: `${stats?.activeClasses || 0} / ${stats?.scheduledClasses || 0}`, icon: Video, color: 'text-rose-600 bg-rose-50 border-rose-200' },
-    { title: 'Gross Platform Revenue', value: `$${(stats?.revenue || 0).toLocaleString()}`, icon: DollarSign, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
+    { title: 'Gross Platform Revenue', value: `£${(stats?.revenue || 0).toLocaleString()} GBP`, icon: CreditCard, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
   ];
 
   return (
@@ -78,6 +84,31 @@ export const AdminDashboard = () => {
           </p>
         </div>
       </div>
+
+      {/* Pending Teacher Applications Notice */}
+      {pendingAppsCount > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 border border-purple-200">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">
+                {pendingAppsCount} Teacher Application{pendingAppsCount > 1 ? 's' : ''} Awaiting Superadmin Video Evaluation
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5">
+                New educators have submitted 3-minute video introductions and signed UK safeguarding agreements.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/admin/tutor-applications"
+            className="px-4 py-2 bg-[#001f3f] hover:bg-[#050167] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 text-center shrink-0"
+          >
+            Review & Evaluate Applications &rarr;
+          </Link>
+        </div>
+      )}
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

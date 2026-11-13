@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -9,7 +9,9 @@ import {
   ExternalLink,
   Layers,
   X,
-  FileCheck
+  FileCheck,
+  CheckCircle2,
+  FileUp
 } from 'lucide-react';
 
 export const TutorMaterials = () => {
@@ -19,13 +21,16 @@ export const TutorMaterials = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal
+  // Modal & File Upload State
   const [modalOpen, setModalOpen] = useState(false);
+  const fileInputRef = useRef(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState('');
   const [formData, setFormData] = useState({
     course_id: '',
     class_id: '',
     title: '',
-    file_url: '/slides/sample-presentation.pdf',
+    file_url: '',
     file_type: 'pdf',
     is_presentation: true
   });
@@ -59,23 +64,58 @@ export const TutorMaterials = () => {
     if (user?.id) fetchData();
   }, [user?.id]);
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFileName(file.name);
+    try {
+      setUploadingFile(true);
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post('/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (res.data.success) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        setFormData(prev => ({
+          ...prev,
+          file_url: res.data.url,
+          title: prev.title || file.name.replace(/\.[^/.]+$/, ""),
+          file_type: ext === 'pdf' ? 'pdf' : (['ppt', 'pptx'].includes(ext) ? 'pptx' : ext),
+          is_presentation: ['pdf', 'ppt', 'pptx'].includes(ext)
+        }));
+      }
+    } catch (err) {
+      alert('Failed to upload file from your computer: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.file_url) {
+      alert('Please select a file to upload from your computer.');
+      return;
+    }
     setSaving(true);
     try {
       await api.post('/materials', formData);
       setModalOpen(false);
+      setSelectedFileName('');
       setFormData({
         course_id: courses[0]?.id || '',
         class_id: '',
         title: '',
-        file_url: '/slides/sample-presentation.pdf',
+        file_url: '',
         file_type: 'pdf',
         is_presentation: true
       });
       fetchData();
     } catch (err) {
-      alert('Failed to upload material');
+      alert('Failed to save learning material: ' + (err.response?.data?.message || err.message));
     } finally {
       setSaving(false);
     }
@@ -179,26 +219,56 @@ export const TutorMaterials = () => {
                 </select>
               </div>
 
+              {/* File Dropzone & Native Picker */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Material / Presentation Title</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Select File from Your Computer / System *
+                </label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+                  className="hidden"
+                />
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-2 ${
+                    formData.file_url 
+                      ? 'border-emerald-500 bg-emerald-50/70' 
+                      : 'border-slate-300 hover:border-emerald-500 bg-slate-50 hover:bg-emerald-50/40'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    {uploadingFile ? (
+                      <Upload className="w-5 h-5 animate-spin" />
+                    ) : formData.file_url ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <FileUp className="w-5 h-5 text-emerald-600" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">
+                      {uploadingFile 
+                        ? 'Uploading file to server...' 
+                        : (selectedFileName ? `Selected: ${selectedFileName}` : 'Click to select file from your system')}
+                    </span>
+                    <span className="text-[11px] text-slate-400 mt-0.5 block">
+                      PDF, PowerPoint (.ppt, .pptx), Word (.docx), or Images up to 30MB
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Material / Presentation Title *</label>
                 <input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g. Week 4: Neural Networks Slide Deck.pdf"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">File URL / Cloud Storage Path</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.file_url}
-                  onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
-                  placeholder="/slides/sample-presentation.pdf"
+                  placeholder="e.g. Week 4: GCSE Mathematics Exam Questions.pdf"
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>

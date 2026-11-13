@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 import {
   Users,
   Search,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export const AdminUsers = () => {
+  const { user: currentUser, updateUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -74,7 +76,7 @@ export const AdminUsers = () => {
     setFormData({
       full_name: '',
       email: '',
-      password: 'Password123!',
+      password: '',
       role: 'student',
       phone: '',
       bio: '',
@@ -106,13 +108,16 @@ export const AdminUsers = () => {
 
     try {
       if (editingUser) {
-        await api.put(`/users/${editingUser.id}`, {
+        const res = await api.put(`/users/${editingUser.id}`, {
           full_name: formData.full_name,
           role: formData.role,
           phone: formData.phone,
           bio: formData.bio,
           status: formData.status
         });
+        if (currentUser?.id === editingUser.id && res.data.user && updateUser) {
+          updateUser(res.data.user);
+        }
       } else {
         await api.post('/users', formData);
       }
@@ -343,7 +348,7 @@ export const AdminUsers = () => {
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="elena@edulearn.com"
+                      placeholder="elena@beaconbridgeacademics.co.uk"
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                   </div>

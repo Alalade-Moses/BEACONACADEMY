@@ -1,5 +1,29 @@
+# Dependencies
 node_modules/
+*/node_modules/
+
+# Production builds
 dist/
+build/
+*/dist/
+
+# Environment files
 .env
+.env.local
+.env.*.local
+client/.env
+server/.env
+
+# Uploads and media
+uploads/
+server/uploads/
+*.mp4
+*.webm
+
+# Logs & temp
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 .DS_Store
+Thumbs.db

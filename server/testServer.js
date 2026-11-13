@@ -1,5 +1,4 @@
 import http from 'http';
-import { app, server } from './index.js';
 
 async function runTests() {
   console.log('\n--- STARTING AUTOMATED END-TO-END VERIFICATION SUITE ---\n');
@@ -45,7 +44,7 @@ async function runTests() {
     // 2. Admin Login
     const adminLogin = await makeRequest('/api/auth/login', {
       method: 'POST',
-      body: { email: 'admin@edulearn.com', password: 'Password123!' }
+      body: { email: 'admin@beaconbridgeacademics.co.uk', password: 'Password123!' }
     });
     console.log(`[PASS] Admin Authentication: status=${adminLogin.status}, user="${adminLogin.data.user.full_name}", role="${adminLogin.data.user.role}"`);
     const adminToken = adminLogin.data.token;
@@ -53,26 +52,26 @@ async function runTests() {
     // 3. Tutor Login
     const tutorLogin = await makeRequest('/api/auth/login', {
       method: 'POST',
-      body: { email: 'dr.sarah@edulearn.com', password: 'Password123!' }
+      body: { email: 'dr.sarah@beaconbridgeacademics.co.uk', password: 'Password123!' }
     });
     console.log(`[PASS] Tutor Authentication: status=${tutorLogin.status}, user="${tutorLogin.data.user.full_name}"`);
     const tutorToken = tutorLogin.data.token;
 
-    // 4. Student Login
-    const studentLogin = await makeRequest('/api/auth/login', {
-      method: 'POST',
-      body: { email: 'alex.morgan@edulearn.com', password: 'Password123!' }
-    });
-    console.log(`[PASS] Student Authentication: status=${studentLogin.status}, user="${studentLogin.data.user.full_name}"`);
-    const studentToken = studentLogin.data.token;
-
-    // 5. Parent Login
+    // 4. Parent Login
     const parentLogin = await makeRequest('/api/auth/login', {
       method: 'POST',
-      body: { email: 'david.morgan@edulearn.com', password: 'Password123!' }
+      body: { email: 'david.morgan@beaconbridgeacademics.co.uk', password: 'Password123!' }
     });
     console.log(`[PASS] Parent Authentication: status=${parentLogin.status}, user="${parentLogin.data.user.full_name}"`);
     const parentToken = parentLogin.data.token;
+
+    // 5. Student Login
+    const studentLogin = await makeRequest('/api/auth/login', {
+      method: 'POST',
+      body: { email: 'alex.morgan@beaconbridgeacademics.co.uk', password: 'Password123!' }
+    });
+    console.log(`[PASS] Student Authentication: status=${studentLogin.status}, user="${studentLogin.data.user.full_name}"`);
+    const studentToken = studentLogin.data.token;
 
     // 6. Platform Stats (Superadmin Protected)
     const stats = await makeRequest('/api/users/stats', {

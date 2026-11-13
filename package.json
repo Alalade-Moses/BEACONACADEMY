@@ -1,7 +1,7 @@
 {
-  "name": "edulearn-lms-platform",
+  "name": "beaconbridge-academics-platform",
   "version": "1.0.0",
-  "description": "Enterprise Learning Management System with Live Virtual Classroom",
+  "description": "Beacon Bridge Academics — UK & International Virtual Classroom & LMS Platform",
   "private": true,
   "workspaces": [
     "server",

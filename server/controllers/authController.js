@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { store } from '../database/store.js';
 import { generateToken } from '../middleware/authMiddleware.js';
+import { sendRegistrationWelcome, sendPaymentProofAdminAlert } from '../services/emailService.js';
 
 export const login = async (req, res, next) => {
   try {
@@ -17,6 +18,14 @@ export const login = async (req, res, next) => {
 
     if (user.status === 'suspended') {
       return res.status(403).json({ success: false, message: 'Your account has been suspended. Contact support.' });
+    }
+
+    if (user.status === 'pending_verification') {
+      return res.status(403).json({
+        success: false,
+        pending_verification: true,
+        message: 'Your registration is currently pending admin payment verification. Both parent and student accounts will be unlocked once an administrator confirms your payment proof.'
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
@@ -96,7 +105,7 @@ export const register = async (req, res, next) => {
     // Welcome notification
     await store.createNotification({
       user_id: newUser.id,
-      title: 'Welcome to EduLearn!',
+      title: 'Welcome to Beacon Bridge Academics!',
       message: `Welcome ${full_name}! Your ${role} account is now active. Explore your dashboard to get started.`,
       type: 'system',
       link: `/${role}/dashboard`
@@ -109,6 +118,74 @@ export const register = async (req, res, next) => {
       message: 'Account registered successfully.',
       token,
       user: safeUser
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const registerJoint = async (req, res, next) => {
+  try {
+    const { student, parent, course_id, course_track, selected_subjects, payment_proof_url, bank_reference, amount } = req.body;
+
+    if (!student || !parent) {
+      return res.status(400).json({ success: false, message: 'Both student and parent information are required.' });
+    }
+
+    if (!student.email || !student.password || !student.full_name) {
+      return res.status(400).json({ success: false, message: 'Student full name, email, and password are required.' });
+    }
+
+    if (!parent.email || !parent.password || !parent.full_name) {
+      return res.status(400).json({ success: false, message: 'Parent full name, email, and password are required.' });
+    }
+
+    const result = await store.registerJoint({
+      student,
+      parent,
+      course_id,
+      course_track,
+      selected_subjects: selected_subjects || [],
+      payment_proof_url,
+      bank_reference,
+      amount
+    });
+
+    // Send Welcome Email to Parent & Student asynchronously
+    (async () => {
+      try {
+        const courses = await store.getCourses();
+        const course = courses.find(c => c.id === course_id);
+        await sendRegistrationWelcome({
+          student: result.student,
+          parent: result.parent,
+          course,
+          track: course_track,
+          amount
+        });
+
+        if (payment_proof_url && result.payment) {
+          await sendPaymentProofAdminAlert({
+            payment: result.payment,
+            student: result.student,
+            parent: result.parent
+          });
+        }
+      } catch (emailErr) {
+        console.warn('[Registration Email Warning]', emailErr.message);
+      }
+    })();
+
+    res.status(201).json({
+      success: true,
+      message: 'Joint parent & student registration submitted successfully. Accounts are awaiting admin payment verification before login is permitted.',
+      data: {
+        student_id: result.student.id,
+        parent_id: result.parent.id,
+        payment_id: result.payment.id,
+        bank_reference: result.payment.bank_reference,
+        status: 'pending_verification'
+      }
     });
   } catch (err) {
     next(err);

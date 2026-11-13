@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { store } from '../database/store.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'edulearn_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'beaconbridge_super_secret_jwt_key_2026';
 
 export const generateToken = (user) => {
   return jwt.sign(
@@ -35,6 +35,14 @@ export const authenticate = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'This account has been suspended by an administrator.' });
     }
 
+    if (user.status === 'pending_verification') {
+      return res.status(403).json({
+        success: false,
+        pending_verification: true,
+        message: 'Your registration is currently pending admin payment verification. Please wait for verification or contact administration.'
+      });
+    }
+
     req.user = user;
     next();
   } catch (error) {
@@ -58,4 +66,9 @@ export const requireRole = (allowedRoles) => {
 
     next();
   };
+};
+
+export const authorize = (...roles) => {
+  const flatRoles = roles.flat();
+  return requireRole(flatRoles);
 };

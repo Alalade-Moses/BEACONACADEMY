@@ -10,7 +10,7 @@ const api = axios.create({
 // Request interceptor to attach JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('edulearn_token');
+    const token = localStorage.getItem('bba_token') || localStorage.getItem('edulearn_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,6 +26,8 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // Avoid infinite redirect loops if already on auth pages
       if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register') && window.location.pathname !== '/') {
+        localStorage.removeItem('bba_token');
+        localStorage.removeItem('bba_user');
         localStorage.removeItem('edulearn_token');
         localStorage.removeItem('edulearn_user');
         window.location.href = '/login?expired=true';

@@ -12,9 +12,9 @@ import {
 
 export const AdminSettings = () => {
   const [settings, setSettings] = useState({
-    platform_name: 'EduLearn Global LMS',
-    contact_email: 'support@edulearn.com',
-    currency: 'USD',
+    platform_name: 'Beacon Bridge Academics',
+    contact_email: 'info@beaconbridgeacademics.co.uk',
+    currency: 'GBP',
     allow_public_registration: 'true',
     enable_recordings: 'true',
     enable_whiteboard: 'true',

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- EDULEARN LMS & LIVE VIRTUAL CLASSROOM DATABASE SCHEMA
+-- BEACON BRIDGE ACADEMICS LMS & LIVE VIRTUAL CLASSROOM DATABASE SCHEMA
 -- PostgreSQL / Supabase Compatible DDL
 -- ==============================================================================
 
@@ -10,6 +10,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS announcements CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS assignment_submissions CASCADE;
+DROP TABLE IF EXISTS assignments CASCADE;
+DROP TABLE IF EXISTS payments CASCADE;
 DROP TABLE IF EXISTS class_recordings CASCADE;
 DROP TABLE IF EXISTS learning_materials CASCADE;
 DROP TABLE IF EXISTS class_attendance CASCADE;
@@ -31,7 +34,7 @@ CREATE TABLE profiles (
     avatar_url TEXT,
     phone VARCHAR(50),
     bio TEXT,
-    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'pending')),
+    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'pending', 'pending_verification')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -173,13 +176,68 @@ CREATE TABLE notifications (
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
-    type VARCHAR(50) DEFAULT 'system' CHECK (type IN ('class', 'course', 'announcement', 'system', 'attendance')),
+    type VARCHAR(50) DEFAULT 'system' CHECK (type IN ('class', 'course', 'announcement', 'system', 'attendance', 'assignment', 'payment')),
     link TEXT,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
+
+-- 11. ASSIGNMENTS & HOMEWORK
+CREATE TABLE assignments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    tutor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    due_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    max_score INTEGER DEFAULT 100,
+    file_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_assignments_course ON assignments(course_id);
+CREATE INDEX idx_assignments_tutor ON assignments(tutor_id);
+
+-- 12. ASSIGNMENT SUBMISSIONS
+CREATE TABLE assignment_submissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    assignment_id UUID NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+    student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    submission_text TEXT,
+    file_url TEXT,
+    score INTEGER,
+    feedback TEXT,
+    status VARCHAR(50) DEFAULT 'submitted' CHECK (status IN ('submitted', 'graded', 'late')),
+    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    graded_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(assignment_id, student_id)
+);
+
+CREATE INDEX idx_submissions_assignment ON assignment_submissions(assignment_id);
+CREATE INDEX idx_submissions_student ON assignment_submissions(student_id);
+
+-- 13. TUITION PAYMENTS & PROOF OF PAYMENT
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    parent_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency VARCHAR(10) DEFAULT 'GBP',
+    bank_reference VARCHAR(100),
+    proof_url TEXT,
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'rejected')),
+    admin_notes TEXT,
+    verified_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    verified_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_payments_parent ON payments(parent_id);
+CREATE INDEX idx_payments_student ON payments(student_id);
+CREATE INDEX idx_payments_status ON payments(status);
 
 -- 11. ANNOUNCEMENTS
 CREATE TABLE announcements (

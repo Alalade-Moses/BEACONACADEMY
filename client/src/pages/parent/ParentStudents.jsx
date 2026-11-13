@@ -17,7 +17,7 @@ export const ParentStudents = () => {
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    student_email: 'alex.morgan@edulearn.com',
+    student_email: 'alex.morgan@beaconbridgeacademics.co.uk',
     relationship: 'Father'
   });
   const [formError, setFormError] = useState('');
@@ -158,12 +158,12 @@ export const ParentStudents = () => {
                     required
                     value={formData.student_email}
                     onChange={(e) => setFormData({ ...formData, student_email: e.target.value })}
-                    placeholder="student@edulearn.com"
+                    placeholder="student@beaconbridgeacademics.co.uk"
                     className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 outline-none"
                   />
                 </div>
                 <span className="text-[10px] text-slate-400 mt-1 block">
-                  Demo student email: alex.morgan@edulearn.com or sophia.williams@edulearn.com
+                  Enter your child's registered student email address to link profiles.
                 </span>
               </div>
 

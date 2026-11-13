@@ -22,6 +22,12 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import assignmentRoutes from './routes/assignmentRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import tutorApplicationRoutes from './routes/tutorApplicationRoutes.js';
+import emailRoutes from './routes/emailRoutes.js';
+import { store } from './database/store.js';
 
 dotenv.config();
 
@@ -55,7 +61,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    service: 'EduLearn LMS & Live Virtual Classroom API',
+    service: 'Beacon Bridge Academics LMS & Live Virtual Classroom API',
     version: '1.0.0'
   });
 });
@@ -72,6 +78,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/tutor-applications', tutorApplicationRoutes);
+app.use('/api/emails', emailRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
@@ -79,10 +90,19 @@ app.use(errorHandler);
 // Initialize Virtual Classroom Real-Time Socket
 initClassroomSocket(io);
 
+// Periodically check approaching deadlines every 15 minutes
+setInterval(async () => {
+  try {
+    await store.checkApproachingDeadlines();
+  } catch (err) {
+    console.error('Deadline check error:', err);
+  }
+}, 15 * 60 * 1000);
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`======================================================`);
-  console.log(`🚀 EduLearn LMS Server running on port ${PORT}`);
+  console.log(`🚀 Beacon Bridge Academics LMS Server running on port ${PORT}`);
   console.log(`📡 Socket.IO Real-time Classroom Gateway active`);
   console.log(`🔗 Health Check: http://localhost:${PORT}/api/health`);
   console.log(`======================================================`);

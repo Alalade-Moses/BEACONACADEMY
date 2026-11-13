@@ -21,9 +21,11 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+  if (allowedRoles && !allowedRoles.includes(user?.role) && user?.role !== 'superadmin') {
     // Redirect to their own dashboard
-    const defaultDashboard = `/${user?.role}/dashboard`;
+    const defaultDashboard = (user?.role === 'superadmin' || user?.role === 'admin')
+      ? '/admin/dashboard'
+      : `/${user?.role}/dashboard`;
     return <Navigate to={defaultDashboard} replace />;
   }
 
