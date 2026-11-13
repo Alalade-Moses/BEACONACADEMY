@@ -175,59 +175,6 @@ export const LoginPage = () => {
               </>
             )}
           </button>
-
-          {/* Quick Demo Credentials for Effortless Testing */}
-          <div className="mt-5 pt-4 border-t border-slate-100">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block text-center mb-2">
-              Quick 1-Click Role Testing:
-            </span>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('alex.morgan@beaconbridgeacademics.co.uk');
-                  setPassword('Password123!');
-                }}
-                className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-bold text-left transition-all active:scale-95"
-              >
-                <span className="block font-extrabold text-[11px] text-emerald-700">👨‍🎓 Student</span>
-                <span className="text-[10px] text-emerald-800">Alex Morgan</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('dr.sarah@beaconbridgeacademics.co.uk');
-                  setPassword('Password123!');
-                }}
-                className="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 font-bold text-left transition-all active:scale-95"
-              >
-                <span className="block font-extrabold text-[11px] text-blue-700">👩‍🏫 Tutor</span>
-                <span className="text-[10px] text-blue-800">Dr. Sarah Jenkins</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('admin@beaconbridgeacademics.co.uk');
-                  setPassword('Password123!');
-                }}
-                className="p-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-900 font-bold text-left transition-all active:scale-95"
-              >
-                <span className="block font-extrabold text-[11px] text-purple-700">🛡️ Superadmin</span>
-                <span className="text-[10px] text-purple-800">Admin Portal</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('david.morgan@beaconbridgeacademics.co.uk');
-                  setPassword('Password123!');
-                }}
-                className="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-left transition-all active:scale-95"
-              >
-                <span className="block font-extrabold text-[11px] text-amber-700">👨‍👩‍👦 Parent</span>
-                <span className="text-[10px] text-amber-800">David Morgan</span>
-              </button>
-            </div>
-          </div>
         </form>
 
         {/* Clean Institutional Help & Registration Links */}
