@@ -121,12 +121,71 @@ const EXAM_BOARDS = [
   { id: 'Industry_Cert', name: 'Industry Professional Certification & Portfolio' }
 ];
 
+const INITIAL_COURSES = [
+  {
+    id: '20000000-0000-0000-0000-000000000001',
+    title: 'GCSE 5-Subject Core Bundle',
+    slug: 'gcse-5-subject-bundle',
+    description: 'Comprehensive GCSE curriculum covering Mathematics, English Language & Literature, Chemistry, Biology, and Physics. Includes opt-out exceptions.',
+    level: 'GCSE (Years 10–11)',
+    price: 299.00
+  },
+  {
+    id: '20000000-0000-0000-0000-000000000002',
+    title: 'UK A-Level 3-Subject Specialist Program',
+    slug: 'uk-a-level-3-subject-program',
+    description: 'Choose your 3 A-Level subjects from Pure & Further Maths, Sciences, Economics, English, and Computing.',
+    level: 'A-Level (Years 12–13)',
+    price: 349.00
+  },
+  {
+    id: '20000000-0000-0000-0000-000000000003',
+    title: 'Canada Senior Secondary & AP Program (Grade 11/12)',
+    slug: 'canada-senior-secondary-program',
+    description: 'Advanced Functions, Calculus & Vectors, Sciences, and English Grade 12 for university entry.',
+    level: 'Canada Grade 11–12',
+    price: 349.00
+  },
+  {
+    id: '20000000-0000-0000-0000-000000000004',
+    title: 'US High School Advanced & AP Mastery Program',
+    slug: 'us-high-school-ap-mastery',
+    description: 'AP Calculus BC, AP Chemistry, AP Physics 1/C, AP Biology, and AP English Literature.',
+    level: 'US High School / AP',
+    price: 349.00
+  },
+  {
+    id: '20000000-0000-0000-0000-000000000005',
+    title: 'Key Stage 3 Foundation Bridge (Years 7–9)',
+    slug: 'ks3-foundation-bridge',
+    description: 'Foundational curriculum bridge across KS3 Maths, English, and Combined Science.',
+    level: 'KS3 (Years 7–9)',
+    price: 249.00
+  },
+  {
+    id: '20000000-0000-0000-0000-000000000006',
+    title: 'SOFTWARE DEVELOPMENT',
+    slug: 'software-development',
+    description: 'Industry-standard Software Development program. Choose between Frontend Development (£300/mo) or Backend Development (£420/mo).',
+    level: 'Professional / All Levels',
+    price: 300.00
+  },
+  {
+    id: '20000000-0000-0000-0000-000000000007',
+    title: 'GRAPHICS DESIGN',
+    slug: 'graphics-design',
+    description: 'Comprehensive Visual & Graphic Design: Figma UI/UX prototyping, brand identity, typography, Adobe Photoshop/Illustrator, and portfolio development.',
+    level: 'Professional / All Levels',
+    price: 300.00
+  }
+];
+
 export const RegisterPage = () => {
   const { registerJoint } = useAuth();
   const navigate = useNavigate();
 
-  // Courses list
-  const [courses, setCourses] = useState([]);
+  // Courses list initialized with full curriculum and technology tracks
+  const [courses, setCourses] = useState(INITIAL_COURSES);
   const [bankDetails, setBankDetails] = useState({
     bank_name: 'Barclays Bank UK PLC',
     account_name: 'Beacon Bridge Academics Ltd.',
@@ -218,12 +277,19 @@ export const RegisterPage = () => {
           api.get('/payments/bank-details')
         ]);
         if (courseRes.data.success && courseRes.data.courses.length > 0) {
-          setCourses(courseRes.data.courses);
-          const firstCourse = courseRes.data.courses[0];
+          const loaded = courseRes.data.courses;
+          const merged = [...loaded];
+          INITIAL_COURSES.forEach(ic => {
+            if (!merged.some(m => m.slug === ic.slug || m.title?.toLowerCase() === ic.title.toLowerCase())) {
+              merged.push(ic);
+            }
+          });
+          setCourses(merged);
+          const firstCourse = merged[0];
           setFormData(prev => ({ 
             ...prev, 
-            course_id: firstCourse.id,
-            amount: String(firstCourse.price || '299.00')
+            course_id: prev.course_id || firstCourse.id,
+            amount: prev.amount || String(firstCourse.price || '299.00')
           }));
         }
         if (bankRes.data.success && bankRes.data.bankDetails) {

@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { ScrollToTop } from './components/common/ScrollToTop';
 
 // Public Pages
 import { LandingPage } from './pages/public/LandingPage';
@@ -58,7 +59,9 @@ import { ClassroomPage } from './pages/classroom/ClassroomPage';
 
 export const App = () => {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       {/* Public Pages with Consistent Navbar & Footer */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
@@ -166,5 +169,6 @@ export const App = () => {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 };

@@ -59,6 +59,22 @@ export const CurriculumPage = () => {
       subtitle: 'Smooth transition across UK, US, Canada & Australia',
       description: 'Moving to or from the UK? Year groups, subjects and exam styles differ between the UK, US, Canada and Australia. Our teachers help your child bridge the gap without losing confidence.',
       features: ['Cross-curriculum alignment & mapping', 'Terminology and exam format translation', 'Pacing matched to the new country’s academic calendar']
+    },
+    {
+      id: 'software',
+      badge: 'Technology Track',
+      title: 'Software Development & Web Engineering',
+      subtitle: 'Frontend Engineering (£300/mo) & Backend Systems (£420/mo)',
+      description: 'Industry-standard modern software engineering tracks. Students build real-world responsive web applications, relational databases, REST APIs, and full-stack software architecture with expert code reviews.',
+      features: ['Frontend Track (£300/mo): HTML5, CSS3, Modern JavaScript, React.js & Tailwind CSS', 'Backend Track (£420/mo): Node.js, Express, PostgreSQL, WebSockets & Cloud DevOps', 'Direct portfolio building & live hands-on coding']
+    },
+    {
+      id: 'graphics',
+      badge: 'Digital Arts',
+      title: 'Professional Graphic Design & UI/UX',
+      subtitle: 'Visual identity, UI/UX prototyping & creative portfolio (£300/mo)',
+      description: 'Master industry-standard visual design workflows. Students learn brand identity, typography, Figma UI/UX prototyping, vector illustration in Illustrator, and Photoshop digital artistry.',
+      features: ['Figma interactive UI/UX prototyping & wireframing', 'Brand identity, typography, color theory & design systems', 'Adobe Illustrator & Photoshop production workflows']
     }
   ];
 
