@@ -283,7 +283,7 @@ CREATE TABLE IF NOT EXISTS tutor_applications (
     location VARCHAR(255),
     highest_qualification VARCHAR(255),
     years_experience VARCHAR(50),
-    "current_role" VARCHAR(255),
+    current_position VARCHAR(255),
     selected_subjects JSONB,
     bio TEXT,
     teaching_approach TEXT,
