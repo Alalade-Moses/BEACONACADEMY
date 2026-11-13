@@ -32,6 +32,7 @@ import { store } from './database/store.js';
 
 dotenv.config();
 
+// Version 1.0.1 - Beacon Bridge Production LMS Server
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
