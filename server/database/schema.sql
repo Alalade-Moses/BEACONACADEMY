@@ -308,26 +308,21 @@ CREATE INDEX IF NOT EXISTS idx_tutor_apps_status ON tutor_applications(status);
 CREATE INDEX IF NOT EXISTS idx_tutor_apps_email ON tutor_applications(email);
 
 -- ==============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
+-- ROW LEVEL SECURITY (RLS) POLICIES (Supabase Compatibility Guard)
 -- ==============================================================================
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE course_enrollments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE class_attendance ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DO $$ 
+BEGIN
+    -- Only apply Supabase-specific auth.uid() policies if the Supabase auth schema exists
+    IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'auth') THEN
+        EXECUTE 'ALTER TABLE profiles ENABLE ROW LEVEL SECURITY';
+        EXECUTE 'ALTER TABLE courses ENABLE ROW LEVEL SECURITY';
+        EXECUTE 'ALTER TABLE classes ENABLE ROW LEVEL SECURITY';
+        EXECUTE 'ALTER TABLE course_enrollments ENABLE ROW LEVEL SECURITY';
+        EXECUTE 'ALTER TABLE class_attendance ENABLE ROW LEVEL SECURITY';
+        EXECUTE 'ALTER TABLE notifications ENABLE ROW LEVEL SECURITY';
 
--- Allow public read of published courses
-CREATE POLICY "Public courses are viewable by everyone" 
-ON courses FOR SELECT 
-USING (status = 'published');
-
--- Allow users to read their own profile
-CREATE POLICY "Users can read own profile" 
-ON profiles FOR SELECT 
-USING (auth.uid() = id);
-
--- Allow users to read their own notifications
-CREATE POLICY "Users can view own notifications" 
-ON notifications FOR SELECT 
-USING (auth.uid() = user_id);
+        EXECUTE 'CREATE POLICY "Public courses are viewable by everyone" ON courses FOR SELECT USING (status = ''published'')';
+        EXECUTE 'CREATE POLICY "Users can read own profile" ON profiles FOR SELECT USING (auth.uid() = id)';
+        EXECUTE 'CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id)';
+    END IF;
+END $$;
