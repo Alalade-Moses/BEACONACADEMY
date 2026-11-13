@@ -742,7 +742,7 @@ export const TeacherApplicationPage = () => {
                       </span>
                       <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
                         <CheckCircle2 className="w-3 h-3" />
-                        Ready for Superadmin Evaluation
+                        Ready for Admin Evaluation
                       </span>
                     </div>
                   </div>
@@ -879,11 +879,11 @@ export const TeacherApplicationPage = () => {
                 {submitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Submitting Application to Superadmin...</span>
+                    <span>Submitting Application for Admin Evaluation...</span>
                   </>
                 ) : (
                   <>
-                    <span>Submit Teacher Application for Superadmin Evaluation</span>
+                    <span>Submit Application for Admin Evaluation</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

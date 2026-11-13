@@ -269,28 +269,25 @@ export const RegisterPage = () => {
   };
 
   useEffect(() => {
-    // Fetch available courses
+    // Fetch available courses from database
     const fetchCoursesAndBank = async () => {
       try {
         const [courseRes, bankRes] = await Promise.all([
           api.get('/courses'),
           api.get('/payments/bank-details')
         ]);
-        if (courseRes.data.success && courseRes.data.courses.length > 0) {
+        if (courseRes.data.success && Array.isArray(courseRes.data.courses) && courseRes.data.courses.length > 0) {
           const loaded = courseRes.data.courses;
-          const merged = [...loaded];
-          INITIAL_COURSES.forEach(ic => {
-            if (!merged.some(m => m.slug === ic.slug || m.title?.toLowerCase() === ic.title.toLowerCase())) {
-              merged.push(ic);
-            }
+          setCourses(loaded);
+          setFormData(prev => {
+            const hasCurrent = loaded.some(c => c.id === prev.course_id);
+            const activeCourse = hasCurrent ? loaded.find(c => c.id === prev.course_id) : loaded[0];
+            return {
+              ...prev,
+              course_id: activeCourse?.id || prev.course_id,
+              amount: prev.amount || String(activeCourse?.price || '299.00')
+            };
           });
-          setCourses(merged);
-          const firstCourse = merged[0];
-          setFormData(prev => ({ 
-            ...prev, 
-            course_id: prev.course_id || firstCourse.id,
-            amount: prev.amount || String(firstCourse.price || '299.00')
-          }));
         }
         if (bankRes.data.success && bankRes.data.bankDetails) {
           setBankDetails(bankRes.data.bankDetails);
@@ -346,9 +343,19 @@ export const RegisterPage = () => {
       setSelectedSubjects(['AP Calculus AB / BC', 'AP Chemistry', 'AP Physics 1 / C']);
       setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'US Grade 11/12 (AP)', amount: String(course.price || '349.00') }));
       setExamBoard('AP_US');
-    } else {
+    } else if (course.slug?.includes('ks3') || course.title?.toLowerCase().includes('ks3') || course.title?.toLowerCase().includes('key stage 3')) {
       setSelectedSubjects(KS3_SUBJECTS);
       setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Year 8 (KS3)', amount: String(course.price || '249.00') }));
+      setExamBoard('AQA');
+    } else {
+      // Custom course created by administrator
+      setSelectedSubjects([course.title]);
+      setFormData(prev => ({
+        ...prev,
+        course_id: courseId,
+        student_grade: course.level || 'Academic Program',
+        amount: String(course.price || '299.00')
+      }));
       setExamBoard('AQA');
     }
   };
@@ -405,11 +412,12 @@ export const RegisterPage = () => {
   const currentCourse = courses.find(c => c.id === formData.course_id) || courses[0];
   const isSoftwareCourse = currentCourse?.slug?.includes('software') || currentCourse?.title?.toLowerCase().includes('software development');
   const isGraphicsCourse = currentCourse?.slug?.includes('graphics') || currentCourse?.title?.toLowerCase().includes('graphics design');
-  const isAlevelCourse = (currentCourse?.title?.toLowerCase().includes('a-level') ||
-    currentCourse?.title?.toLowerCase().includes('canada') ||
-    currentCourse?.title?.toLowerCase().includes('us high school')) && !isSoftwareCourse && !isGraphicsCourse;
-  const isGcseCourse = (currentCourse?.title?.toLowerCase().includes('gcse') ||
-    currentCourse?.slug?.includes('gcse')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isGcseCourse = (currentCourse?.title?.toLowerCase().includes('gcse') || currentCourse?.slug?.includes('gcse')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isAlevelCourse = (currentCourse?.title?.toLowerCase().includes('a-level') || currentCourse?.slug?.includes('a-level')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isCanadaCourse = (currentCourse?.title?.toLowerCase().includes('canada') || currentCourse?.slug?.includes('canada')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isUsCourse = (currentCourse?.title?.toLowerCase().includes('us high school') || currentCourse?.slug?.includes('us') || currentCourse?.title?.toLowerCase().includes('ap mastery')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isKs3Course = (currentCourse?.title?.toLowerCase().includes('ks3') || currentCourse?.slug?.includes('ks3') || currentCourse?.title?.toLowerCase().includes('key stage 3')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isCustomCourse = !isGcseCourse && !isAlevelCourse && !isCanadaCourse && !isUsCourse && !isKs3Course && !isSoftwareCourse && !isGraphicsCourse;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1294,6 +1302,48 @@ export const RegisterPage = () => {
                         <span className="font-medium">{sub}</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Case H: Custom Academic Program (Admin Created) */}
+            {isCustomCourse && currentCourse && (
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#050167]/10 mb-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-[#001f3f] flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-[#050167]" />
+                      {currentCourse.title}
+                    </h4>
+                    <p className="text-xs text-[#001f3f]/70 mt-0.5">
+                      {currentCourse.description || 'Specialist program curated by Beacon Bridge educators.'}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#050167] text-[#40ffa7] border border-[#40ffa7]/30 whitespace-nowrap self-start sm:self-auto">
+                    {currentCourse.level || 'Academic Program'} • £{currentCourse.price || formData.amount} / month
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-[#050167]/15 space-y-3">
+                  <span className="text-xs font-bold text-[#001f3f] block">
+                    Curriculum & Syllabus Details:
+                  </span>
+                  <p className="text-xs text-[#001f3f]/80 leading-relaxed bg-[#f0faff]/60 p-3 rounded-lg border border-[#050167]/10">
+                    {currentCourse.description || 'Comprehensive syllabus designed with specialist tutors for exam excellence and skill mastery.'}
+                  </p>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#001f3f] mb-1">
+                      Specific Module Focus or Custom Learning Goals:
+                    </label>
+                    <input
+                      type="text"
+                      value={customExceptionNote}
+                      onChange={(e) => setCustomExceptionNote(e.target.value)}
+                      placeholder="e.g. Focus on core exam units, portfolio review, or target university requirements..."
+                      className="w-full px-3.5 py-2 rounded-xl border border-[#050167]/20 text-xs bg-white text-[#001f3f] focus:outline-none focus:ring-2 focus:ring-[#40ffa7]"
+                    />
                   </div>
                 </div>
               </div>

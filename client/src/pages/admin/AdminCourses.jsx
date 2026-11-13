@@ -18,17 +18,20 @@ export const AdminCourses = () => {
   const [categories, setCategories] = useState([]);
   const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
+  const [customLevelInput, setCustomLevelInput] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     category_id: '',
     tutor_id: '',
-    level: 'Beginner',
-    price: '0',
+    level: 'GCSE (Years 10–11)',
+    price: '299',
     thumbnail_url: '',
     status: 'published'
   });
@@ -60,13 +63,14 @@ export const AdminCourses = () => {
 
   const openCreateModal = () => {
     setEditingCourse(null);
+    setCustomLevelInput('');
     setFormData({
       title: '',
       description: '',
       category_id: categories[0]?.id || '',
       tutor_id: tutors[0]?.id || '',
-      level: 'Beginner',
-      price: '199',
+      level: 'GCSE (Years 10–11)',
+      price: '299',
       thumbnail_url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600',
       status: 'published'
     });
@@ -76,12 +80,27 @@ export const AdminCourses = () => {
 
   const openEditModal = (c) => {
     setEditingCourse(c);
+    const standardLevels = [
+      'GCSE (Years 10–11)',
+      'A-Level (Years 12–13)',
+      'Key Stage 3 (Years 7–9)',
+      'Canada Grade 11–12',
+      'US High School / AP',
+      'Professional / Tech',
+      'Creative / Digital Arts',
+      'Beginner',
+      'Intermediate',
+      'Advanced',
+      'All Levels'
+    ];
+    const isCustom = !standardLevels.includes(c.level);
+    setCustomLevelInput(isCustom ? c.level : '');
     setFormData({
       title: c.title,
       description: c.description,
       category_id: c.category_id || '',
       tutor_id: c.tutor_id || '',
-      level: c.level || 'Beginner',
+      level: isCustom ? 'Custom' : (c.level || 'GCSE (Years 10–11)'),
       price: String(c.price || 0),
       thumbnail_url: c.thumbnail_url || '',
       status: c.status || 'published'
@@ -96,10 +115,15 @@ export const AdminCourses = () => {
     setSaving(true);
 
     try {
+      const finalLevel = formData.level === 'Custom' ? (customLevelInput.trim() || 'Academic Program') : formData.level;
+      const submitPayload = {
+        ...formData,
+        level: finalLevel
+      };
       if (editingCourse) {
-        await api.put(`/courses/${editingCourse.id}`, formData);
+        await api.put(`/courses/${editingCourse.id}`, submitPayload);
       } else {
-        await api.post('/courses', formData);
+        await api.post('/courses', submitPayload);
       }
       setModalOpen(false);
       fetchData();
@@ -111,14 +135,27 @@ export const AdminCourses = () => {
   };
 
   const handleDelete = async (courseId) => {
-    if (!window.confirm('Are you sure you want to delete this course? Associated classes will also be affected.')) return;
+    if (!window.confirm('Are you sure you want to delete this course? It will be immediately removed from the platform and the client registration portal.')) return;
     try {
       await api.delete(`/courses/${courseId}`);
       fetchData();
     } catch (err) {
-      alert('Failed to delete course');
+      alert('Failed to delete course: ' + (err.response?.data?.message || err.message));
     }
   };
+
+  const filteredCourses = courses.filter((course) => {
+    const matchesSearch =
+      !searchQuery ||
+      course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.level?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      categoryFilter === 'all' ||
+      course.category_id === categoryFilter ||
+      course.category?.slug === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="space-y-6">
@@ -127,7 +164,7 @@ export const AdminCourses = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Courses & Curricula Oversight</h1>
-          <p className="text-xs text-slate-500 mt-1">Manage global learning programs, syllabus details, and assigned instructors</p>
+          <p className="text-xs text-slate-500 mt-1">Create, manage, and price global academic programs and technology tracks displayed across the student portal</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -138,15 +175,56 @@ export const AdminCourses = () => {
         </button>
       </div>
 
+      {/* Search & Category Filter Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search courses, levels, syllabus..."
+            className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+        </div>
+
+        <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto">
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              categoryFilter === 'all' ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            All Categories ({courses.length})
+          </button>
+          {categories.map((cat) => {
+            const count = courses.filter(c => c.category_id === cat.id).length;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setCategoryFilter(cat.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  categoryFilter === cat.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat.name} ({count})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Courses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <div className="col-span-3 text-center py-12 text-slate-400">Loading courses...</div>
-        ) : courses.length === 0 ? (
-          <div className="col-span-3 text-center py-12 text-slate-400">No courses registered yet.</div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="col-span-3 text-center py-12 text-slate-400">
+            {searchQuery ? 'No courses match your search criteria.' : 'No courses registered yet. Click "Create New Course" above.'}
+          </div>
         ) : (
-          courses.map((course) => (
-            <div key={course.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between">
+          filteredCourses.map((course) => (
+            <div key={course.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
               <div>
                 <div className="h-44 relative overflow-hidden bg-slate-100">
                   <img
@@ -154,8 +232,8 @@ export const AdminCourses = () => {
                     alt={course.title}
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/95 text-slate-800 shadow-sm">
-                    £{course.price} GBP
+                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-black bg-white/95 text-slate-900 shadow-sm border border-slate-200">
+                    £{course.price} GBP / mo
                   </span>
                   <span className="absolute bottom-3 left-3 px-2 py-0.5 rounded bg-slate-900/80 text-[11px] font-semibold text-white capitalize">
                     {course.level}
@@ -194,13 +272,15 @@ export const AdminCourses = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => openEditModal(course)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50"
+                    title="Edit Course Details & Price"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition-colors"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(course.id)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                    title="Delete Course (Removes from Client Registration)"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -283,43 +363,70 @@ export const AdminCourses = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Level</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Target Level</label>
                   <select
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
+                    <option value="GCSE (Years 10–11)">GCSE (Years 10–11)</option>
+                    <option value="A-Level (Years 12–13)">A-Level (Years 12–13)</option>
+                    <option value="Key Stage 3 (Years 7–9)">Key Stage 3 (Years 7–9)</option>
+                    <option value="Canada Grade 11–12">Canada Grade 11–12</option>
+                    <option value="US High School / AP">US High School / AP</option>
+                    <option value="Professional / Tech">Professional / Tech</option>
+                    <option value="Creative / Digital Arts">Creative / Digital Arts</option>
                     <option value="Beginner">Beginner</option>
                     <option value="Intermediate">Intermediate</option>
                     <option value="Advanced">Advanced</option>
                     <option value="All Levels">All Levels</option>
+                    <option value="Custom">Custom Level...</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Price (£ GBP)</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Monthly Tuition (£ GBP)</label>
                   <input
                     type="number"
+                    min="0"
+                    step="1"
+                    required
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    placeholder="e.g. 299"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
+                  <span className="text-[10px] text-slate-400">Charged monthly to student</span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Publication Status</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
+                    <option value="published">Published (Visible on Client)</option>
+                    <option value="draft">Draft (Hidden)</option>
                   </select>
                 </div>
               </div>
+
+              {formData.level === 'Custom' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Enter Custom Level Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={customLevelInput}
+                    onChange={(e) => setCustomLevelInput(e.target.value)}
+                    placeholder="e.g. Primary Key Stage 2 or IB Diploma"
+                    className="w-full px-3 py-2 rounded-xl border border-brand-300 bg-brand-50/30 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Thumbnail Image URL</label>

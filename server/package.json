@@ -1,6 +1,6 @@
 {
   "name": "beaconbridge-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Backend API & Real-time WebRTC/Socket.IO Server for Beacon Bridge Academics LMS",
   "main": "index.js",
   "type": "module",
