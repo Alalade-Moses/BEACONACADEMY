@@ -51,10 +51,10 @@ export const PublicFooter = () => {
           <div>
             <h4 className="text-white font-bold mb-4 tracking-wider uppercase text-xs">Students</h4>
             <ul className="space-y-2.5">
-              <li><a href="/#stages" className="hover:text-[#40ffa7] transition-colors">Online Tutoring</a></li>
-              <li><a href="/#exam-boards" className="hover:text-[#40ffa7] transition-colors">GCSE Exam Boards (AQA, Edexcel, OCR)</a></li>
-              <li><a href="/#virtual-classroom" className="hover:text-[#40ffa7] transition-colors">Live Virtual Classroom</a></li>
-              <li><a href="/#how-it-works" className="hover:text-[#40ffa7] transition-colors">Find Out More</a></li>
+              <li><Link to="/curriculum" className="hover:text-[#40ffa7] transition-colors">Online Tutoring</Link></li>
+              <li><Link to="/curriculum#exam-boards" className="hover:text-[#40ffa7] transition-colors">GCSE Exam Boards (AQA, Edexcel, OCR)</Link></li>
+              <li><Link to="/how-it-works#virtual-classroom" className="hover:text-[#40ffa7] transition-colors">Live Virtual Classroom</Link></li>
+              <li><Link to="/how-it-works" className="hover:text-[#40ffa7] transition-colors">Find Out More</Link></li>
               <li><Link to="/login" className="hover:text-[#40ffa7] transition-colors">Student Hub Login</Link></li>
             </ul>
           </div>
@@ -70,8 +70,8 @@ export const PublicFooter = () => {
                 </Link>
               </li>
               <li><Link to="/apply-to-teach" className="hover:text-[#40ffa7] transition-colors">A-Level Subject Openings</Link></li>
-              <li><a href="/#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding & DBS Policy</a></li>
-              <li><a href="/#virtual-classroom" className="hover:text-[#40ffa7] transition-colors">Live Interactive Tools</a></li>
+              <li><Link to="/about#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding & DBS Policy</Link></li>
+              <li><Link to="/how-it-works#virtual-classroom" className="hover:text-[#40ffa7] transition-colors">Live Interactive Tools</Link></li>
               <li><Link to="/login" className="hover:text-[#40ffa7] transition-colors">Tutor Portal Access</Link></li>
             </ul>
           </div>
@@ -80,11 +80,11 @@ export const PublicFooter = () => {
           <div>
             <h4 className="text-white font-bold mb-4 tracking-wider uppercase text-xs">Other</h4>
             <ul className="space-y-2.5">
-              <li><a href="/#about" className="hover:text-[#40ffa7] transition-colors">About Us</a></li>
+              <li><Link to="/about" className="hover:text-[#40ffa7] transition-colors">About Us</Link></li>
               <li><Link to="/register" className="hover:text-[#40ffa7] transition-colors font-bold text-[#40ffa7]">Book a Consultation</Link></li>
               <li><Link to="/payment-proof" className="hover:text-[#40ffa7] transition-colors">Tuition & Wire Account</Link></li>
-              <li><a href="/#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</a></li>
-              <li><a href="/#promise" className="hover:text-[#40ffa7] transition-colors">Our Promise to Parents</a></li>
+              <li><Link to="/about#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</Link></li>
+              <li><Link to="/about#promise" className="hover:text-[#40ffa7] transition-colors">Our Promise to Parents</Link></li>
             </ul>
           </div>
 

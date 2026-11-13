@@ -6,7 +6,8 @@ import {
   Calendar,
   Clock,
   X,
-  ExternalLink
+  ExternalLink,
+  Trash2
 } from 'lucide-react';
 
 export const TutorRecordings = () => {
@@ -30,6 +31,21 @@ export const TutorRecordings = () => {
     };
     fetchRecordings();
   }, []);
+
+  const handleDeleteRecording = async (id, title) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the recording "${title}"? This will remove the video file from storage to free up disk space.`)) {
+      return;
+    }
+    try {
+      const res = await api.delete(`/materials/recordings/${id}`);
+      if (res.data.success) {
+        setRecordings(prev => prev.filter(r => r.id !== id));
+        if (activePlayback?.id === id) setActivePlayback(null);
+      }
+    } catch (err) {
+      alert('Failed to delete recording: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -73,12 +89,22 @@ export const TutorRecordings = () => {
 
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-[11px] font-bold text-emerald-700">Published to Students</span>
-                <button
-                  onClick={() => setActivePlayback(rec)}
-                  className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors"
-                >
-                  Watch
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setActivePlayback(rec)}
+                    className="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                  >
+                    <Play className="w-3 h-3 fill-current" />
+                    <span>Watch</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteRecording(rec.id, rec.title)}
+                    title="Delete recording and video file"
+                    className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))

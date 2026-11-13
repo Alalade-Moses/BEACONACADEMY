@@ -1,5 +1,6 @@
 import { store } from '../database/store.js';
 import { sendTutorApplicationReceived } from '../services/emailService.js';
+import { safeDeleteUploadedFile } from '../services/fileCleanup.js';
 
 export const VALID_ALEVEL_SUBJECTS = [
   'A-Level Mathematics',
@@ -215,6 +216,49 @@ export const updateApplicationStatus = async (req, res, next) => {
       success: true,
       message: `Teacher application marked as ${status}. ${status === 'approved' ? 'Tutor faculty profile provisioned.' : ''}`,
       application: updated
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Superadmin / Admin endpoint: Permanently delete a teacher application and its video/files
+ * DELETE /api/tutor-applications/:id
+ */
+export const deleteApplication = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const app = await store.getTutorApplicationById(id);
+    if (!app) {
+      return res.status(404).json({ success: false, message: 'Teacher application not found.' });
+    }
+
+    // Delete uploaded intro video from disk
+    if (app.video_url) {
+      safeDeleteUploadedFile(app.video_url);
+    }
+    // Delete uploaded CV from disk
+    if (app.cv_url) {
+      safeDeleteUploadedFile(app.cv_url);
+    }
+
+    await store.deleteTutorApplication(id);
+
+    // Audit log
+    if (typeof store.logAudit === 'function') {
+      await store.logAudit({
+        user_id: req.user?.id || '00000000-0000-0000-0000-000000000001',
+        action: 'TUTOR_APPLICATION_DELETED',
+        resource: 'tutor_applications',
+        resource_id: id,
+        details: { applicant: app.full_name, email: app.email }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Application and associated video/document files permanently deleted.'
     });
   } catch (err) {
     next(err);

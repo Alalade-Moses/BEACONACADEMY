@@ -5,6 +5,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import { errorHandler } from './middleware/errorHandler.js';
@@ -52,8 +53,17 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(morgan('dev'));
 
-// Static files for materials/presentations
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static files for materials, presentations, and uploaded media
+const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+const decksDir = path.join(uploadDir, 'decks');
+if (!fs.existsSync(decksDir)) {
+  fs.mkdirSync(decksDir, { recursive: true });
+}
+
+app.use('/uploads', express.static(uploadDir));
 app.use('/slides', express.static(path.join(__dirname, 'public/slides')));
 
 // API Health Check
@@ -83,6 +93,23 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/tutor-applications', tutorApplicationRoutes);
 app.use('/api/emails', emailRoutes);
+
+// Serve static frontend build if client/dist exists
+const clientDist = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/uploads') ||
+      req.path.startsWith('/slides') ||
+      req.path.startsWith('/socket.io')
+    ) {
+      return next();
+    }
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 // Global Error Handler
 app.use(errorHandler);

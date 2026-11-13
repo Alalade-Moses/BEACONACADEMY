@@ -88,41 +88,30 @@ export const PublicNavbar = () => {
 
           {/* Desktop Navigation Links — Streamlined & Essential */}
           <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2 text-xs xl:text-sm font-semibold text-[#001f3f]/85">
-            <button
-              type="button"
-              onClick={() => scrollToSection('top')}
+            <Link
+              to="/"
               className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               Home
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('about')}
+            </Link>
+            <Link
+              to="/about"
               className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               About
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('stages')}
+            </Link>
+            <Link
+              to="/curriculum"
               className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               Curriculum
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('exam-boards')}
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
-            >
-              Exam Boards
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('how-it-works')}
+            </Link>
+            <Link
+              to="/how-it-works"
               className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               How It Works
-            </button>
+            </Link>
             <button
               type="button"
               onClick={() => scrollToSection('faq')}
@@ -195,46 +184,39 @@ export const PublicNavbar = () => {
       {mobileMenuOpen && (
         <div className="lg:hidden border-b border-[#050167]/15 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 shadow-xl animate-in slide-in-from-top-4 duration-200">
           <nav className="flex flex-col space-y-1 font-semibold text-sm text-[#001f3f]">
-            <button
-              type="button"
-              onClick={() => scrollToSection('top')}
+            <Link
+              to="/"
+              onClick={() => setMobileMenuOpen(false)}
               className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2"
             >
               <Home className="w-4 h-4 text-[#050167]" />
               <span>Home</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('about')}
+            </Link>
+            <Link
+              to="/about"
+              onClick={() => setMobileMenuOpen(false)}
               className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
             >
               About Beacon Bridge Academics
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('stages')}
+            </Link>
+            <Link
+              to="/curriculum"
+              onClick={() => setMobileMenuOpen(false)}
               className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
             >
               Curriculum (KS3, GCSE & A-Level)
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('exam-boards')}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
-            >
-              UK Exam Boards (AQA, Edexcel, OCR, WJEC)
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('how-it-works')}
+            </Link>
+            <Link
+              to="/how-it-works"
+              onClick={() => setMobileMenuOpen(false)}
               className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
             >
               How It Works
-            </button>
+            </Link>
             <button
               type="button"
               onClick={() => scrollToSection('faq')}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] flex items-center gap-2"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] flex items-center gap-2 cursor-pointer"
             >
               <HelpCircle className="w-4 h-4 text-[#050167]" />
               <span>Frequently Asked Questions</span>

@@ -24,7 +24,8 @@ import {
   Calendar,
   Sparkles,
   RefreshCw,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 
 const ALL_ALEVEL_SUBJECTS = [
@@ -112,6 +113,28 @@ export const AdminTutorApplications = () => {
       }
     } catch (err) {
       alert('Failed to update status: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setEvalSubmitting(false);
+    }
+  };
+
+  // Permanently Delete Application and Video Handler
+  const handleDeleteApplication = async (id, applicantName) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the application for "${applicantName}"? This will permanently delete their 3-minute video and uploaded CV from storage to free up disk space.`)) {
+      return;
+    }
+    try {
+      setEvalSubmitting(true);
+      const res = await api.delete(`/tutor-applications/${id}`);
+      if (res.data.success) {
+        setApplications(prev => prev.filter(a => a.id !== id));
+        if (selectedApp?.id === id) {
+          setSelectedApp(null);
+        }
+        alert('Application and uploaded video permanently removed from storage.');
+      }
+    } catch (err) {
+      alert('Failed to delete application: ' + (err.response?.data?.message || err.message));
     } finally {
       setEvalSubmitting(false);
     }
@@ -354,6 +377,14 @@ export const AdminTutorApplications = () => {
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Evaluate Application</span>
+                </button>
+
+                <button
+                  onClick={() => handleDeleteApplication(app.id, app.full_name)}
+                  title="Permanently Delete Application and Video"
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 transition-colors border border-slate-200 hover:border-rose-300"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -614,6 +645,15 @@ export const AdminTutorApplications = () => {
                       className="px-3.5 py-2 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition-all active:scale-95 disabled:opacity-50"
                     >
                       Reject Application
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteApplication(selectedApp.id, selectedApp.full_name)}
+                      disabled={evalSubmitting}
+                      className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700 font-bold text-xs transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Video & App</span>
                     </button>
                   </div>
 

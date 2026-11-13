@@ -1,4 +1,5 @@
 import { store } from '../database/store.js';
+import { safeDeleteUploadedFile } from '../services/fileCleanup.js';
 
 export const getMaterials = async (req, res, next) => {
   try {
@@ -60,8 +61,13 @@ export const deleteMaterial = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'You can only delete materials uploaded by you.' });
     }
 
+    // Clean up physical file from storage disk if applicable
+    if (material.file_url) {
+      safeDeleteUploadedFile(material.file_url);
+    }
+
     await store.deleteMaterial(material.id);
-    res.status(200).json({ success: true, message: 'Material deleted successfully.' });
+    res.status(200).json({ success: true, message: 'Material and file deleted successfully.' });
   } catch (err) {
     next(err);
   }
@@ -92,6 +98,26 @@ export const createRecording = async (req, res, next) => {
     });
 
     res.status(201).json({ success: true, message: 'Class recording saved successfully.', recording });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteRecording = async (req, res, next) => {
+  try {
+    const recordings = await store.getRecordings();
+    const rec = recordings.find(r => r.id === req.params.id);
+    if (!rec) {
+      return res.status(404).json({ success: false, message: 'Recording not found.' });
+    }
+
+    // Clean up physical recording video file from storage disk if applicable
+    if (rec.recording_url) {
+      safeDeleteUploadedFile(rec.recording_url);
+    }
+
+    await store.deleteRecording(rec.id);
+    res.status(200).json({ success: true, message: 'Recording and video file deleted successfully.' });
   } catch (err) {
     next(err);
   }

@@ -1028,6 +1028,17 @@ export const store = {
     return newRec;
   },
 
+  deleteRecording: async (id) => {
+    if (isSupabaseConfigured) {
+      await supabase.from('class_recordings').delete().eq('id', id);
+    }
+    const idx = memoryData.class_recordings.findIndex(r => r.id === id);
+    if (idx !== -1) {
+      return memoryData.class_recordings.splice(idx, 1)[0];
+    }
+    return true;
+  },
+
   // Parent-Student Links
   getParentStudentLinks: async () => {
     if (isSupabaseConfigured) {
@@ -1791,5 +1802,16 @@ export const store = {
     }
 
     return app;
+  },
+
+  deleteTutorApplication: async (id) => {
+    if (isSupabaseConfigured) {
+      await supabase.from('tutor_applications').delete().eq('id', id);
+    }
+    const idx = (memoryData.tutor_applications || []).findIndex(a => a.id === id);
+    if (idx !== -1) {
+      return memoryData.tutor_applications.splice(idx, 1)[0];
+    }
+    return null;
   }
 };

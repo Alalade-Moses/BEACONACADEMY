@@ -8,6 +8,9 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 
 // Public Pages
 import { LandingPage } from './pages/public/LandingPage';
+import { AboutPage } from './pages/public/AboutPage';
+import { HowItWorksPage } from './pages/public/HowItWorksPage';
+import { CurriculumPage } from './pages/public/CurriculumPage';
 import { LoginPage } from './pages/public/LoginPage';
 import { RegisterPage } from './pages/public/RegisterPage';
 import { PaymentProofPage } from './pages/public/PaymentProofPage';
@@ -59,6 +62,9 @@ export const App = () => {
       {/* Public Pages with Consistent Navbar & Footer */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/how-it-works" element={<HowItWorksPage />} />
+        <Route path="/curriculum" element={<CurriculumPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/payment-proof" element={<PaymentProofPage />} />

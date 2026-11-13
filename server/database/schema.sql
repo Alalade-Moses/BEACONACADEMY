@@ -274,6 +274,39 @@ CREATE TABLE platform_settings (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 14. TUTOR APPLICATIONS (A-Level Teacher Candidates & 3-Min Video Submissions)
+CREATE TABLE IF NOT EXISTS tutor_applications (
+    id VARCHAR(100) PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    location VARCHAR(255),
+    highest_qualification VARCHAR(255),
+    years_experience VARCHAR(50),
+    current_role VARCHAR(255),
+    selected_subjects JSONB,
+    bio TEXT,
+    teaching_approach TEXT,
+    video_url TEXT,
+    video_duration VARCHAR(50),
+    video_filename VARCHAR(255),
+    cv_url TEXT,
+    safeguarding_acknowledged BOOLEAN DEFAULT FALSE,
+    safeguarding_signature VARCHAR(255),
+    safeguarding_signed_at TIMESTAMP WITH TIME ZONE,
+    dbs_status VARCHAR(255),
+    dbs_certificate_number VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'under_review', 'approved', 'rejected')),
+    admin_notes TEXT,
+    reviewed_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tutor_apps_status ON tutor_applications(status);
+CREATE INDEX IF NOT EXISTS idx_tutor_apps_email ON tutor_applications(email);
+
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ==============================================================================

@@ -14,9 +14,13 @@ build/
 client/.env
 server/.env
 
-# Uploads and media
-uploads/
-server/uploads/
+# Uploads and media (ignore uploaded files but preserve directories)
+server/uploads/*
+!server/uploads/.gitkeep
+!server/uploads/decks/
+!server/uploads/decks/.gitkeep
+uploads/*
+!uploads/.gitkeep
 *.mp4
 *.webm
 

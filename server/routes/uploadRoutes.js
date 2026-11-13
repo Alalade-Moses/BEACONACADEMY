@@ -5,14 +5,19 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { parsePptx } from '../services/pptxParser.js';
+import { safeDeleteUploadedFile } from '../services/fileCleanup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadDir = path.join(__dirname, '../uploads');
+const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 
-// Ensure upload directory exists
+// Ensure upload directory and subfolders exist
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
+}
+const decksDir = path.join(uploadDir, 'decks');
+if (!fs.existsSync(decksDir)) {
+  fs.mkdirSync(decksDir, { recursive: true });
 }
 
 // Multer Storage Configuration
@@ -220,6 +225,20 @@ router.get('/presentation/:filename', (req, res) => {
 
     const result = processUploadedFile(fakeFile);
     return res.status(200).json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Endpoint to delete an uploaded file directly from storage
+router.delete('/:filename', (req, res) => {
+  try {
+    const filename = path.basename(req.params.filename);
+    const deleted = safeDeleteUploadedFile(`/uploads/${filename}`);
+    if (deleted) {
+      return res.status(200).json({ success: true, message: `File ${filename} deleted from storage.` });
+    }
+    return res.status(404).json({ success: false, message: 'File not found or already deleted.' });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

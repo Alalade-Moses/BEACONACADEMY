@@ -4,7 +4,8 @@ import {
   createMaterial, 
   deleteMaterial, 
   getRecordings, 
-  createRecording 
+  createRecording,
+  deleteRecording
 } from '../controllers/materialController.js';
 import { authenticate, requireRole } from '../middleware/authMiddleware.js';
 
@@ -18,5 +19,6 @@ router.delete('/:id', requireRole(['superadmin', 'tutor']), deleteMaterial);
 
 router.get('/recordings', getRecordings);
 router.post('/recordings', requireRole(['superadmin', 'tutor']), createRecording);
+router.delete('/recordings/:id', requireRole(['superadmin', 'admin', 'tutor']), deleteRecording);
 
 export default router;
