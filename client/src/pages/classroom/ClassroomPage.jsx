@@ -294,68 +294,120 @@ export const ClassroomPage = () => {
     }
   }, [stopAllMediaTracks, socket, classId, isTutor, user?.role, queryRole, location.state, navigate]);
 
-  const startMedia = useCallback(async () => {
+  // Dynamic media acquisition engine with user-gesture safety
+  const acquireMedia = useCallback(async (requestVideo = true, requestAudio = true) => {
+    setCameraError(null);
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setCameraError('Media access not supported in this browser environment.');
       setVideoActive(false);
       setMicActive(false);
       return;
     }
-    setCameraError(null);
+
     let stream = null;
     try {
-      // Tier 1: Try both video and audio
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: true
-      });
-      localStreamRef.current = stream;
-      setLocalStream(stream);
-      setVideoActive(true);
-      setMicActive(true);
-    } catch (primaryErr) {
-      console.warn('Initial media access failed, trying fallbacks:', primaryErr.name, primaryErr.message);
-      // If user dismissed permission or blocked access, do not rapid-loop getUserMedia
-      if (primaryErr.name === 'NotAllowedError' || primaryErr.name === 'PermissionDeniedError') {
-        setCameraError('Permission dismissed. Tap "Enable Camera" below or allow in browser site settings.');
-        setVideoActive(false);
-        setMicActive(false);
-        return;
-      }
-      // Tier 2: Try video only (if microphone is missing or blocked)
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 } },
-          audio: false
-        });
-        localStreamRef.current = stream;
-        setLocalStream(stream);
-        setVideoActive(true);
-        setMicActive(false);
-      } catch (videoErr) {
-        // Tier 3: Try audio only (if webcam is missing or blocked)
+      if (requestVideo && requestAudio) {
+        // Try user-facing camera + audio
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: true
+          });
+        } catch (e1) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          } catch (e2) {
+            // Try video only fallback
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              requestAudio = false;
+            } catch (e3) {
+              // Try audio only fallback
+              stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              requestVideo = false;
+            }
+          }
+        }
+      } else if (requestVideo) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        } catch (e1) {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
+      } else if (requestAudio) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+
+      if (stream) {
+        if (localStreamRef.current) {
+          // Merge newly acquired tracks into existing local stream
+          stream.getTracks().forEach(track => {
+            const sameKind = localStreamRef.current.getTracks().filter(t => t.kind === track.kind);
+            sameKind.forEach(t => {
+              localStreamRef.current.removeTrack(t);
+              t.stop();
+            });
+            localStreamRef.current.addTrack(track);
+          });
+          const updated = new MediaStream(localStreamRef.current.getTracks());
+          localStreamRef.current = updated;
+          setLocalStream(updated);
+        } else {
           localStreamRef.current = stream;
           setLocalStream(stream);
-          setVideoActive(false);
-          setMicActive(true);
-          setCameraError('Camera unavailable. Audio stream is active.');
-        } catch (audioErr) {
-          console.error('All media acquisition failed:', audioErr);
-          if (primaryErr.name === 'NotFoundError' || primaryErr.name === 'DevicesNotFoundError') {
-            setCameraError('No camera found on this device. Please connect a webcam.');
-          } else if (primaryErr.name === 'NotReadableError' || primaryErr.name === 'TrackStartError') {
-            setCameraError('Camera is in use by another app (Zoom, Teams, or another tab).');
-          } else {
-            setCameraError(`Camera error: ${primaryErr.message || 'Please check device permissions'}`);
-          }
-          setVideoActive(false);
-          setMicActive(false);
         }
+
+        if (requestVideo && stream.getVideoTracks().length > 0) {
+          setVideoActive(true);
+        }
+        if (requestAudio && stream.getAudioTracks().length > 0) {
+          setMicActive(true);
+        }
+        setCameraError(null);
       }
+    } catch (err) {
+      console.warn('acquireMedia error:', err.name, err.message);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setCameraError('Camera access dismissed or blocked. Click lock icon in URL bar to Allow, then Reload.');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setCameraError('No camera found on this device.');
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        setCameraError('Camera is in use by another application or tab.');
+      } else {
+        setCameraError(err.message || 'Camera unavailable.');
+      }
+      if (requestVideo) setVideoActive(false);
     }
   }, []);
+
+  // Safe mount initialization: only auto-stream if already granted; do NOT trigger auto-dismissal
+  const startMedia = useCallback(async () => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError('Media access not supported in this browser.');
+      setVideoActive(false);
+      setMicActive(false);
+      return;
+    }
+
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        const camPerm = await navigator.permissions.query({ name: 'camera' }).catch(() => null);
+        const micPerm = await navigator.permissions.query({ name: 'microphone' }).catch(() => null);
+
+        // Only auto-acquire if user already previously granted permissions!
+        if (camPerm?.state === 'granted' || micPerm?.state === 'granted') {
+          await acquireMedia(camPerm?.state === 'granted', micPerm?.state === 'granted');
+          return;
+        }
+      }
+    } catch (e) {
+      // Permission API not available
+    }
+
+    // Otherwise, start muted/off so the browser does not dismiss the prompt on page load
+    setVideoActive(false);
+    setMicActive(false);
+  }, [acquireMedia]);
 
   useEffect(() => {
     startMedia();
@@ -913,70 +965,27 @@ export const ClassroomPage = () => {
   const toggleMic = async () => {
     if (localStream && localStream.getAudioTracks().length > 0) {
       const track = localStream.getAudioTracks()[0];
-      track.enabled = !track.enabled;
-      setMicActive(track.enabled);
-    } else {
-      try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const newTrack = audioStream.getAudioTracks()[0];
-        if (localStream) {
-          localStream.addTrack(newTrack);
-          const updated = new MediaStream(localStream.getTracks());
-          localStreamRef.current = updated;
-          setLocalStream(updated);
-        } else {
-          localStreamRef.current = audioStream;
-          setLocalStream(audioStream);
-        }
-        setMicActive(true);
-      } catch (err) {
-        console.error('Failed to start microphone on toggle:', err);
-        setMicActive(false);
+      if (track.readyState === 'live') {
+        track.enabled = !track.enabled;
+        setMicActive(track.enabled);
+        return;
       }
     }
+    // Re-acquire audio on explicit user click
+    await acquireMedia(false, true);
   };
 
   const toggleVideo = async () => {
     if (localStream && localStream.getVideoTracks().length > 0) {
       const track = localStream.getVideoTracks()[0];
-      track.enabled = !track.enabled;
-      setVideoActive(track.enabled);
-    } else {
-      // Actively request video stream if not present yet
-      try {
-        setCameraError(null);
-        if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setCameraError('Camera access not supported in this browser.');
-          return;
-        }
-        const videoStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 } }
-        });
-        const newTrack = videoStream.getVideoTracks()[0];
-        if (localStream) {
-          localStream.addTrack(newTrack);
-          const updated = new MediaStream(localStream.getTracks());
-          localStreamRef.current = updated;
-          setLocalStream(updated);
-        } else {
-          localStreamRef.current = videoStream;
-          setLocalStream(videoStream);
-        }
-        setVideoActive(true);
-      } catch (err) {
-        console.warn('Failed to start camera on toggle:', err.name, err.message);
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          setCameraError('Camera access was dismissed or blocked. Tap the lock icon in your browser URL bar to allow.');
-        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-          setCameraError('No camera found on this device. Please connect a webcam.');
-        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-          setCameraError('Camera is in use by another app (Zoom, Teams, or another tab).');
-        } else {
-          setCameraError('Camera unavailable. Check browser site permissions.');
-        }
-        setVideoActive(false);
+      if (track.readyState === 'live') {
+        track.enabled = !track.enabled;
+        setVideoActive(track.enabled);
+        return;
       }
     }
+    // Re-acquire user-facing video on explicit user click
+    await acquireMedia(true, false);
   };
 
   // 8. Screen Sharing
@@ -1646,149 +1655,149 @@ export const ClassroomPage = () => {
       case 1:
         return (
           <div className="h-full flex flex-col justify-center items-center text-center p-8 bg-gradient-to-br from-indigo-950 via-slate-900 to-brand-950 text-white select-none">
-            <span className="px-3.5 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-bold uppercase tracking-wider mb-4 border border-brand-500/30">
+            <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full bg-brand-500/20 text-brand-300 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 sm:mb-4 border border-brand-500/30">
               Module 1 &bull; System Architecture
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold max-w-2xl leading-tight">
+            <h2 className="text-xl sm:text-3xl md:text-4xl font-extrabold max-w-2xl leading-snug sm:leading-tight px-2">
               Real-Time Bi-Directional WebSockets & Canvas Synchronization
             </h2>
-            <p className="text-slate-300 text-sm max-w-lg mt-4 leading-relaxed">
+            <p className="text-slate-300 text-xs sm:text-sm max-w-lg mt-2 sm:mt-4 leading-relaxed px-2">
               Dr. Sarah Jenkins &bull; Department of Distributed Systems & Web Engineering
             </p>
-            <div className="mt-8 flex items-center gap-4 text-xs text-slate-400">
-              <span className="px-3 py-1.5 rounded-xl bg-white/10">Beacon Bridge Classroom</span>
-              <span>&bull;</span>
-              <span className="px-3 py-1.5 rounded-xl bg-white/10">WebRTC Mesh Signaling</span>
+            <div className="mt-4 sm:mt-8 flex flex-wrap justify-center items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-slate-400">
+              <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white/10">Beacon Bridge Classroom</span>
+              <span className="hidden sm:inline">&bull;</span>
+              <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white/10">WebRTC Mesh Signaling</span>
             </div>
           </div>
         );
       case 2:
         return (
-          <div className="h-full flex flex-col justify-between p-8 bg-slate-900 text-white select-none">
+          <div className="h-full flex flex-col justify-between p-3 sm:p-6 md:p-8 bg-slate-900 text-white select-none overflow-y-auto">
             <div>
-              <span className="text-xs font-bold text-brand-400 uppercase tracking-widest block mb-2">Section 1.1</span>
-              <h3 className="text-2xl font-bold">Normalized UV Coordinate System (0.0 to 1.0)</h3>
-              <p className="text-slate-300 text-xs mt-2 max-w-xl leading-relaxed">
+              <span className="text-[10px] sm:text-xs font-bold text-brand-400 uppercase tracking-widest block mb-1">Section 1.1</span>
+              <h3 className="text-base sm:text-xl md:text-2xl font-bold">Normalized UV Coordinate System (0.0 to 1.0)</h3>
+              <p className="text-slate-300 text-[11px] sm:text-xs mt-1 sm:mt-2 max-w-xl leading-relaxed">
                 Why screen-fixed pixel coordinates fail across varied client displays and how unit-interval vector normalization guarantees identical cross-device fidelity:
               </p>
             </div>
             {/* Diagram */}
-            <div className="my-auto grid grid-cols-2 gap-6 max-w-2xl mx-auto w-full">
-              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80">
-                <h4 className="text-xs font-bold text-rose-400 mb-2">Fixed Pixel Coordinate (Anti-Pattern)</h4>
-                <code className="text-[11px] block text-slate-300 font-mono bg-slate-950 p-2.5 rounded-lg">
+            <div className="my-2 sm:my-auto grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 max-w-2xl mx-auto w-full">
+              <div className="p-3 sm:p-4 rounded-2xl bg-slate-800/80 border border-slate-700/80">
+                <h4 className="text-[11px] sm:text-xs font-bold text-rose-400 mb-1 sm:mb-2">Fixed Pixel Coordinate (Anti-Pattern)</h4>
+                <code className="text-[10px] sm:text-[11px] block text-slate-300 font-mono bg-slate-950 p-2 sm:p-2.5 rounded-lg">
                   point = (x: 820px, y: 440px)<br />
                   // Clamps or shifts off-screen on mobile!
                 </code>
               </div>
-              <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40">
-                <h4 className="text-xs font-bold text-emerald-400 mb-2">Normalized Vector (Beacon Bridge Standard)</h4>
-                <code className="text-[11px] block text-slate-200 font-mono bg-slate-950 p-2.5 rounded-lg">
+              <div className="p-3 sm:p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40">
+                <h4 className="text-[11px] sm:text-xs font-bold text-emerald-400 mb-1 sm:mb-2">Normalized Vector (Beacon Bridge Standard)</h4>
+                <code className="text-[10px] sm:text-[11px] block text-slate-200 font-mono bg-slate-950 p-2 sm:p-2.5 rounded-lg">
                   u = x / stageWidth = 0.512<br />
                   v = y / stageHeight = 0.380
                 </code>
               </div>
             </div>
-            <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-3">
+            <div className="text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-800 pt-2 sm:pt-3">
               Tutor annotation overlay remains strictly calibrated regardless of client DPI or viewport resolution.
             </div>
           </div>
         );
       case 3:
         return (
-          <div className="h-full flex flex-col justify-between p-8 bg-slate-900 text-white select-none">
+          <div className="h-full flex flex-col justify-between p-3 sm:p-6 md:p-8 bg-slate-900 text-white select-none overflow-y-auto">
             <div>
-              <span className="text-xs font-bold text-brand-400 uppercase tracking-widest block mb-2">Section 1.2</span>
-              <h3 className="text-2xl font-bold">WebRTC Signaling Pipeline & Mesh SFU Architecture</h3>
-              <p className="text-slate-300 text-xs mt-2 max-w-xl">
+              <span className="text-[10px] sm:text-xs font-bold text-brand-400 uppercase tracking-widest block mb-1">Section 1.2</span>
+              <h3 className="text-base sm:text-xl md:text-2xl font-bold">WebRTC Signaling Pipeline & Mesh SFU Architecture</h3>
+              <p className="text-slate-300 text-[11px] sm:text-xs mt-1 sm:mt-2 max-w-xl">
                 Peer-to-peer audio and video stream establishment via SDP offer/answer negotiation over WebSocket signaling rooms:
               </p>
             </div>
             {/* Flow sequence representation */}
-            <div className="my-auto p-6 rounded-2xl bg-slate-950/80 border border-slate-800 max-w-xl mx-auto w-full space-y-3 font-mono text-xs">
+            <div className="my-2 sm:my-auto p-3 sm:p-6 rounded-2xl bg-slate-950/80 border border-slate-800 max-w-xl mx-auto w-full space-y-2 sm:space-y-3 font-mono text-[10px] sm:text-xs">
               <div className="flex items-center justify-between text-slate-300">
                 <span className="text-brand-400 font-bold">Peer A (Tutor)</span>
-                <span className="text-slate-500">---- [SDP Offer] ----&gt;</span>
-                <span className="text-emerald-400 font-bold">Signaling Gateway</span>
+                <span className="text-slate-500 text-[9px] sm:text-xs">-- [Offer] --&gt;</span>
+                <span className="text-emerald-400 font-bold">Gateway</span>
               </div>
               <div className="flex items-center justify-between text-slate-300">
-                <span className="text-emerald-400 font-bold">Signaling Gateway</span>
-                <span className="text-slate-500">---- [Relay Offer] ---&gt;</span>
+                <span className="text-emerald-400 font-bold">Gateway</span>
+                <span className="text-slate-500 text-[9px] sm:text-xs">-- [Relay] --&gt;</span>
                 <span className="text-blue-400 font-bold">Peer B (Student)</span>
               </div>
               <div className="flex items-center justify-between text-slate-300">
                 <span className="text-blue-400 font-bold">Peer B (Student)</span>
-                <span className="text-slate-500">&lt;--- [SDP Answer] ---</span>
-                <span className="text-emerald-400 font-bold">Signaling Gateway</span>
+                <span className="text-slate-500 text-[9px] sm:text-xs">&lt;-- [Answer] --</span>
+                <span className="text-emerald-400 font-bold">Gateway</span>
               </div>
               <div className="flex items-center justify-between text-slate-300">
-                <span className="text-emerald-400 font-bold">Signaling Gateway</span>
-                <span className="text-slate-500">&lt;--- [ICE Candidate] -</span>
-                <span className="text-brand-400 font-bold">Direct P2P Stream</span>
+                <span className="text-emerald-400 font-bold">Gateway</span>
+                <span className="text-slate-500 text-[9px] sm:text-xs">&lt;-- [ICE] --</span>
+                <span className="text-brand-400 font-bold">P2P Stream</span>
               </div>
             </div>
-            <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-3">
+            <div className="text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-800 pt-2 sm:pt-3">
               Low-latency media tracks with dynamic Opus audio encoding and VP8/H.264 video hardware acceleration.
             </div>
           </div>
         );
       case 4:
         return (
-          <div className="h-full flex flex-col justify-between p-8 bg-slate-900 text-white select-none">
+          <div className="h-full flex flex-col justify-between p-3 sm:p-6 md:p-8 bg-slate-900 text-white select-none overflow-y-auto">
             <div>
-              <span className="text-xs font-bold text-brand-400 uppercase tracking-widest block mb-2">Section 2.1</span>
-              <h3 className="text-2xl font-bold">Asynchronous Event Loop & Concurrency Model</h3>
+              <span className="text-[10px] sm:text-xs font-bold text-brand-400 uppercase tracking-widest block mb-1">Section 2.1</span>
+              <h3 className="text-base sm:text-xl md:text-2xl font-bold">Asynchronous Event Loop & Concurrency Model</h3>
             </div>
-            <div className="my-auto max-w-xl mx-auto w-full space-y-4 text-xs leading-relaxed text-slate-300">
+            <div className="my-2 sm:my-auto max-w-xl mx-auto w-full space-y-3 sm:space-y-4 text-[11px] sm:text-xs leading-relaxed text-slate-300">
               <p>
                 Node.js operates on an event-driven, single-threaded execution thread backed by the <strong className="text-brand-400">libuv thread pool</strong> for background I/O operations (file system, socket polling, DNS lookup).
               </p>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-3 rounded-xl bg-slate-800 border border-slate-700 font-mono">
-                  <div className="font-bold text-white mb-1">Call Stack</div>
-                  <div className="text-[10px] text-slate-400">Synchronous Frames</div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 text-center">
+                <div className="p-2 sm:p-3 rounded-xl bg-slate-800 border border-slate-700 font-mono">
+                  <div className="font-bold text-white mb-0.5 sm:mb-1">Call Stack</div>
+                  <div className="text-[9px] sm:text-[10px] text-slate-400">Synchronous Frames</div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-800 border border-slate-700 font-mono">
-                  <div className="font-bold text-brand-400 mb-1">Microtasks</div>
-                  <div className="text-[10px] text-slate-400">Promises, process.nextTick</div>
+                <div className="p-2 sm:p-3 rounded-xl bg-slate-800 border border-slate-700 font-mono">
+                  <div className="font-bold text-brand-400 mb-0.5 sm:mb-1">Microtasks</div>
+                  <div className="text-[9px] sm:text-[10px] text-slate-400">Promises, nextTick</div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-800 border border-slate-700 font-mono">
-                  <div className="font-bold text-emerald-400 mb-1">Macrotasks</div>
-                  <div className="text-[10px] text-slate-400">Timers, I/O Poll</div>
+                <div className="p-2 sm:p-3 rounded-xl bg-slate-800 border border-slate-700 font-mono">
+                  <div className="font-bold text-emerald-400 mb-0.5 sm:mb-1">Macrotasks</div>
+                  <div className="text-[9px] sm:text-[10px] text-slate-400">Timers, I/O Poll</div>
                 </div>
               </div>
             </div>
-            <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-3">
+            <div className="text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-800 pt-2 sm:pt-3">
               Use whiteboard tools above to annotate and circle key phases.
             </div>
           </div>
         );
       case 5:
         return (
-          <div className="h-full flex flex-col justify-between p-8 bg-slate-900 text-white select-none">
+          <div className="h-full flex flex-col justify-between p-3 sm:p-6 md:p-8 bg-slate-900 text-white select-none overflow-y-auto">
             <div>
-              <span className="text-xs font-bold text-brand-400 uppercase tracking-widest block mb-2">Section 3.0</span>
-              <h3 className="text-2xl font-bold">Interactive Derivation & Case Analysis</h3>
-              <p className="text-xs text-slate-300 mt-2">
+              <span className="text-[10px] sm:text-xs font-bold text-brand-400 uppercase tracking-widest block mb-1">Section 3.0</span>
+              <h3 className="text-base sm:text-xl md:text-2xl font-bold">Interactive Derivation & Case Analysis</h3>
+              <p className="text-[11px] sm:text-xs text-slate-300 mt-1 sm:mt-2">
                 This slide is configured for tutor-led live whiteboard drawing and theorem proofs.
               </p>
             </div>
-            <div className="my-auto border border-dashed border-slate-700 rounded-2xl p-8 text-center text-slate-500 max-w-lg mx-auto w-full">
-              <PenTool className="w-8 h-8 text-brand-500/50 mx-auto mb-2" />
-              <p className="text-xs font-medium">Digital Whiteboard Derivation Area</p>
-              <p className="text-[11px] text-slate-600 mt-1">Select the Pen, Line, or Rectangle tool from the top toolbar to illustrate equations.</p>
+            <div className="my-2 sm:my-auto border border-dashed border-slate-700 rounded-2xl p-4 sm:p-8 text-center text-slate-500 max-w-lg mx-auto w-full">
+              <PenTool className="w-6 h-6 sm:w-8 sm:h-8 text-brand-500/50 mx-auto mb-2" />
+              <p className="text-xs sm:text-sm font-medium">Digital Whiteboard Derivation Area</p>
+              <p className="text-[10px] sm:text-[11px] text-slate-600 mt-1">Select the Pen, Line, or Rectangle tool from the top toolbar to illustrate equations.</p>
             </div>
-            <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-3">
+            <div className="text-[10px] sm:text-[11px] text-slate-400 border-t border-slate-800 pt-2 sm:pt-3">
               Annotations synchronize in real time to all attending students.
             </div>
           </div>
         );
       case 6:
         return (
-          <div className="h-full flex flex-col justify-center items-center text-center p-8 bg-gradient-to-br from-slate-950 to-indigo-950 text-white select-none">
-            <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-4" />
-            <h2 className="text-3xl font-extrabold">Lecture Summary & Q&A Discussion</h2>
-            <p className="text-slate-300 text-xs max-w-md mt-3 leading-relaxed">
+          <div className="h-full flex flex-col justify-center items-center text-center p-4 sm:p-8 bg-gradient-to-br from-slate-950 to-indigo-950 text-white select-none">
+            <CheckCircle2 className="w-10 h-10 sm:w-16 sm:h-16 text-emerald-400 mb-2 sm:mb-4" />
+            <h2 className="text-xl sm:text-3xl font-extrabold px-2">Lecture Summary & Q&A Discussion</h2>
+            <p className="text-slate-300 text-xs sm:text-sm max-w-md mt-2 sm:mt-3 leading-relaxed px-2">
               Session attendance has been logged. Students may unmute or raise hands to ask questions. Session recording will be available shortly in the Student and Parent hubs.
             </p>
           </div>
@@ -2003,28 +2012,28 @@ export const ClassroomPage = () => {
       )}
 
       {/* 1. TOP CLASSROOM STATUS BAR */}
-      <header className="h-14 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 z-20">
+      <header className="h-14 bg-slate-900 border-b border-slate-800 px-2.5 sm:px-4 flex items-center justify-between shrink-0 z-20 gap-2">
         
         {/* Left: Class Title & Info */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1 mr-1">
           <button
             onClick={handleLeaveClass}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors shrink-0"
             title="Leave Classroom"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
-          <div className="overflow-hidden">
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-xs sm:text-sm text-white truncate max-w-xs sm:max-w-md">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center space-x-1.5 sm:space-x-2 min-w-0">
+              <span className="font-bold text-xs sm:text-sm text-white truncate">
                 {classDetails?.title || 'Interactive Virtual Classroom Session'}
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[10px] font-bold border border-rose-500/30">
+              <span className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[9px] sm:text-[10px] font-bold border border-rose-500/30 shrink-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
                 LIVE
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 hidden sm:block truncate">
+            <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block truncate">
               Room: {classId} &bull; Instructor: {classDetails?.tutor?.full_name || 'Dr. Sarah Jenkins'}
             </p>
           </div>
@@ -2108,22 +2117,22 @@ export const ClassroomPage = () => {
         </div>
 
         {/* Right: Live Session Countdown Timer, Recording Status, Participants Count & Sidebar Toggle */}
-        <div className="flex items-center space-x-3">
-          {/* Class Minutes Countdown & Elapsed Timer (Counting on BOTH Student & Tutor platforms) */}
+        <div className="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+          {/* Class Minutes Countdown & Elapsed Timer */}
           <div 
-            className="flex items-center space-x-2 px-3 py-1 rounded-xl bg-slate-800/90 border border-slate-700 text-xs shadow-sm"
+            className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 rounded-xl bg-slate-800/90 border border-slate-700 text-xs shadow-sm shrink-0"
             title={`Scheduled: ${totalDurationMinutes} mins total | Elapsed: ${Math.floor(elapsedSeconds / 60)}m`}
           >
-            <Clock className={`w-3.5 h-3.5 ${
+            <Clock className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${
               isSessionEnded 
                 ? 'text-rose-400' 
                 : isTenMinutesOrLess 
                   ? 'text-amber-400 animate-pulse' 
                   : 'text-emerald-400'
             }`} />
-            <div className="flex items-center space-x-1.5 font-mono">
+            <div className="flex items-center space-x-1 font-mono text-[11px] sm:text-xs">
               {isSessionEnded ? (
-                <span className="text-rose-300 font-bold">Class Ended</span>
+                <span className="text-rose-300 font-bold">Ended</span>
               ) : (
                 <>
                   <span className={`font-bold ${isTenMinutesOrLess ? 'text-amber-300' : 'text-white'}`}>
@@ -2137,9 +2146,9 @@ export const ClassroomPage = () => {
             </div>
           </div>
           {isRecording && (
-            <div className="flex items-center space-x-2 px-3 py-1 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-mono font-bold animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-rose-500" />
-              <span>REC {Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60).toString().padStart(2, '0')}</span>
+            <div className="flex items-center space-x-1 px-2 py-1 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-[10px] sm:text-xs font-mono font-bold animate-pulse shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+              <span>REC</span>
             </div>
           )}
 
@@ -2148,20 +2157,22 @@ export const ClassroomPage = () => {
               setActiveTab('participants');
               setSidebarOpen(true);
             }}
-            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+            className="flex items-center space-x-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors shrink-0"
+            title="Attendees Roster"
           >
-            <Users className="w-4 h-4 text-emerald-400" />
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
             <span className="hidden sm:inline">{participants.length || 1} Attending</span>
-            <span className="sm:hidden">{participants.length || 1}</span>
+            <span className="sm:hidden text-[11px]">{participants.length || 1}</span>
           </button>
 
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`p-2 rounded-xl transition-colors ${
+            className={`p-1.5 sm:p-2 rounded-xl transition-colors shrink-0 ${
               sidebarOpen ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
+            title="Toggle Live Chat & Roster"
           >
-            <MessageSquare className="w-4 h-4" />
+            <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
 
@@ -2360,7 +2371,7 @@ export const ClassroomPage = () => {
               {isTutor ? (
                 /* Tutor's Own Broadcast Tile */
                 <div className={`absolute top-3 right-3 z-20 transition-all ${
-                  videoMinimized ? 'w-auto' : 'w-32 sm:w-48 aspect-video'
+                  videoMinimized ? 'w-auto' : 'w-32 sm:w-48 aspect-auto sm:aspect-video'
                 } rounded-xl overflow-hidden shadow-2xl border-2 border-emerald-500/80 bg-slate-900 group`}>
                   {videoMinimized ? (
                     <button
@@ -2383,25 +2394,43 @@ export const ClassroomPage = () => {
                       />
 
                       {(!videoActive || !localStream) && (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-1.5 sm:p-2 text-center select-none">
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-2 sm:p-2.5 text-center select-none min-h-[90px]">
                           <VideoOff className="w-4 h-4 mb-0.5 text-slate-500" />
                           <span className="text-[10px] font-bold truncate max-w-full text-slate-200">
                             {user?.full_name || 'Tutor'}
                           </span>
                           {cameraError ? (
-                            <span className="text-[8px] sm:text-[9px] text-amber-400 block leading-tight px-1 max-w-[170px] truncate">
-                              {cameraError}
-                            </span>
+                            <>
+                              <span className="text-[8px] text-amber-400 block leading-tight px-1 max-w-[170px] mt-0.5">
+                                {cameraError}
+                              </span>
+                              <div className="flex items-center gap-1 mt-1">
+                                <button
+                                  type="button"
+                                  onClick={toggleVideo}
+                                  className="px-2 py-0.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-[8px] font-bold shadow-sm"
+                                >
+                                  Retry
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => window.location.reload()}
+                                  className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 text-[8px] font-bold shadow-sm"
+                                >
+                                  Reload
+                                </button>
+                              </div>
+                            </>
                           ) : (
-                            <span className="text-[8px] sm:text-[9px] text-slate-500">Camera Off</span>
+                            <button
+                              type="button"
+                              onClick={toggleVideo}
+                              className="mt-1 px-2.5 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white text-[9px] font-bold shadow-sm transition-all active:scale-95 flex items-center space-x-1"
+                            >
+                              <VideoIcon className="w-3 h-3" />
+                              <span>Turn On Camera</span>
+                            </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={toggleVideo}
-                            className="mt-1 px-2 py-0.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-[9px] font-bold shadow-sm transition-all active:scale-95"
-                          >
-                            Enable Camera
-                          </button>
                         </div>
                       )}
 
@@ -2412,7 +2441,7 @@ export const ClassroomPage = () => {
                       >
                         <Minimize2 className="w-3 h-3" />
                       </button>
-                      <div className="absolute bottom-1 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[9px] font-bold text-emerald-400 flex items-center space-x-1">
+                      <div className="absolute bottom-1 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold text-emerald-400 flex items-center space-x-1">
                         <span>👨‍🏫 {user?.full_name?.split(' ')[0]} (Tutor)</span>
                         {!micActive && <MicOff className="w-2.5 h-2.5 text-rose-400" />}
                       </div>
@@ -2424,7 +2453,7 @@ export const ClassroomPage = () => {
                 <>
                   {/* Top-Right: Tutor Broadcast Tile (Prominent Live Teacher View) */}
                   <div className={`absolute top-3 right-3 z-20 transition-all ${
-                    videoMinimized ? 'w-auto' : 'w-36 sm:w-56 aspect-video'
+                    videoMinimized ? 'w-auto' : 'w-32 sm:w-56 aspect-auto sm:aspect-video'
                   } rounded-xl overflow-hidden shadow-2xl border-2 border-emerald-500 bg-slate-900 group`}>
                     {videoMinimized ? (
                       <button
@@ -2437,16 +2466,16 @@ export const ClassroomPage = () => {
                         <Maximize2 className="w-2.5 h-2.5 text-slate-400" />
                       </button>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-2 text-center relative overflow-hidden select-none">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-600/30 border border-emerald-400 flex items-center justify-center text-white font-extrabold text-xs sm:text-sm mb-0.5 shadow-lg">
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-2 text-center relative overflow-hidden select-none min-h-[92px]">
+                        <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-emerald-600/30 border border-emerald-400 flex items-center justify-center text-white font-extrabold text-xs sm:text-sm mb-0.5 shadow-lg shrink-0">
                           {classDetails?.tutor?.full_name?.charAt(0) || 'T'}
                         </div>
-                        <span className="text-[11px] sm:text-xs font-bold text-white truncate max-w-[140px] sm:max-w-[160px]">
+                        <span className="text-[10px] sm:text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[160px]">
                           {classDetails?.tutor?.full_name || 'Dr. Sarah Jenkins'}
                         </span>
                         <div className="flex items-center space-x-1 mt-0.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                          <span className="text-[9px] sm:text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider">
+                          <span className="text-[8px] sm:text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider">
                             Teaching Live
                           </span>
                         </div>
@@ -2469,8 +2498,8 @@ export const ClassroomPage = () => {
                     )}
                   </div>
 
-                  {/* Bottom-Right: Student Self-View PIP Tile */}
-                  <div className="absolute bottom-4 right-4 z-20 w-24 sm:w-36 aspect-video rounded-xl overflow-hidden shadow-xl border border-slate-700 bg-slate-900 group">
+                  {/* Bottom-Right: Student Self-View PIP Tile (Placed at bottom-14 on mobile to stay above bottom slide bar) */}
+                  <div className="absolute bottom-14 sm:bottom-4 right-3 sm:right-4 z-20 w-24 sm:w-36 aspect-video rounded-xl overflow-hidden shadow-xl border border-slate-700 bg-slate-900 group">
                     <video
                       ref={localVideoRef}
                       autoPlay
@@ -2480,19 +2509,31 @@ export const ClassroomPage = () => {
                     />
                     {(!videoActive || !localStream) && (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500 p-1 text-center select-none">
-                        <VideoOff className="w-3.5 h-3.5 mb-0.5" />
-                        <span className="text-[8px] text-slate-400">Camera Off</span>
-                        <button
-                          type="button"
-                          onClick={toggleVideo}
-                          className="mt-0.5 px-1.5 py-0.5 rounded bg-brand-600/80 hover:bg-brand-600 text-white text-[8px] font-bold shadow-sm transition-all"
-                        >
-                          Enable Cam
-                        </button>
+                        <VideoOff className="w-3 h-3 mb-0.5 text-slate-400" />
+                        <span className="text-[8px] text-slate-400 block leading-none mb-0.5">Camera Off</span>
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={toggleVideo}
+                            className="px-1.5 py-0.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-[8px] font-bold shadow-sm transition-all active:scale-95"
+                          >
+                            Turn On
+                          </button>
+                          {cameraError && (
+                            <button
+                              type="button"
+                              onClick={() => window.location.reload()}
+                              className="px-1 py-0.5 rounded bg-slate-700 text-slate-300 text-[8px] font-bold"
+                              title={cameraError}
+                            >
+                              Reload
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
-                    <div className="absolute bottom-1 left-1.5 bg-black/80 px-1 py-0.5 rounded text-[8px] font-bold text-slate-200 flex items-center space-x-1">
-                      <span className="truncate max-w-[65px]">{user?.full_name?.split(' ')[0] || 'Me'}</span>
+                    <div className="absolute bottom-0.5 left-1 bg-black/80 px-1 py-0.2 rounded text-[7px] sm:text-[8px] font-bold text-slate-200 flex items-center space-x-1">
+                      <span className="truncate max-w-[55px] sm:max-w-[65px]">{user?.full_name?.split(' ')[0] || 'Me'}</span>
                       {!micActive && <MicOff className="w-2 h-2 text-rose-400" />}
                     </div>
                   </div>
@@ -2598,9 +2639,10 @@ export const ClassroomPage = () => {
                 </>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <span className="px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-slate-800/80 border border-slate-700 text-[11px] sm:text-xs font-bold text-emerald-400 flex items-center gap-1.5 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    Slide {currentSlide} of {totalSlides} &bull; Synced with Tutor
+                    <span className="hidden sm:inline">Slide {currentSlide} of {totalSlides} &bull; Synced with Tutor</span>
+                    <span className="sm:hidden">{currentSlide}/{totalSlides} &bull; Synced</span>
                   </span>
                 </div>
               )}
