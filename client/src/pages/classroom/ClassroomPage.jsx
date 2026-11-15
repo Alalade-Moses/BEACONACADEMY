@@ -104,11 +104,17 @@ export const ClassroomPage = () => {
 
   // Sidebar Tabs & Fullscreen Display Controls
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'participants' | 'slides'
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return true;
+  });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [videoMinimized, setVideoMinimized] = useState(false);
   const stageContainerRef = useRef(null);
   const slideScrollRef = useRef(null);
+  const chatBottomRef = useRef(null);
 
   // Classroom Chat & Interactions
   const [messages, setMessages] = useState([]);
@@ -289,6 +295,12 @@ export const ClassroomPage = () => {
   }, [stopAllMediaTracks, socket, classId, isTutor, user?.role, queryRole, location.state, navigate]);
 
   const startMedia = useCallback(async () => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError('Media access not supported in this browser environment.');
+      setVideoActive(false);
+      setMicActive(false);
+      return;
+    }
     setCameraError(null);
     let stream = null;
     try {
@@ -303,6 +315,13 @@ export const ClassroomPage = () => {
       setMicActive(true);
     } catch (primaryErr) {
       console.warn('Initial media access failed, trying fallbacks:', primaryErr.name, primaryErr.message);
+      // If user dismissed permission or blocked access, do not rapid-loop getUserMedia
+      if (primaryErr.name === 'NotAllowedError' || primaryErr.name === 'PermissionDeniedError') {
+        setCameraError('Permission dismissed. Tap "Enable Camera" below or allow in browser site settings.');
+        setVideoActive(false);
+        setMicActive(false);
+        return;
+      }
       // Tier 2: Try video only (if microphone is missing or blocked)
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -324,12 +343,10 @@ export const ClassroomPage = () => {
           setCameraError('Camera unavailable. Audio stream is active.');
         } catch (audioErr) {
           console.error('All media acquisition failed:', audioErr);
-          if (primaryErr.name === 'NotAllowedError' || primaryErr.name === 'PermissionDeniedError') {
-            setCameraError('Camera access was blocked. Please click the lock or camera icon in your browser address bar to allow permissions.');
-          } else if (primaryErr.name === 'NotFoundError' || primaryErr.name === 'DevicesNotFoundError') {
-            setCameraError('No camera found on this computer. Please connect a webcam.');
+          if (primaryErr.name === 'NotFoundError' || primaryErr.name === 'DevicesNotFoundError') {
+            setCameraError('No camera found on this device. Please connect a webcam.');
           } else if (primaryErr.name === 'NotReadableError' || primaryErr.name === 'TrackStartError') {
-            setCameraError('Camera is in use by another app (Zoom, Teams, or another browser window).');
+            setCameraError('Camera is in use by another app (Zoom, Teams, or another tab).');
           } else {
             setCameraError(`Camera error: ${primaryErr.message || 'Please check device permissions'}`);
           }
@@ -368,16 +385,21 @@ export const ClassroomPage = () => {
   useEffect(() => {
     if (!socket || !user) return;
 
-    // Join the room
-    socket.emit('join_room', {
-      roomId: classId,
-      user: {
-        id: user.id,
-        full_name: user.full_name,
-        role: user.role,
-        avatar_url: user.avatar_url
-      }
-    });
+    const emitJoinRoom = () => {
+      socket.emit('join_room', {
+        roomId: classId,
+        user: {
+          id: user.id,
+          full_name: user.full_name,
+          role: user.role,
+          avatar_url: user.avatar_url
+        }
+      });
+    };
+
+    // Join room initially and re-join if connection is re-established (e.g. mobile tab resume)
+    emitJoinRoom();
+    socket.on('connect', emitJoinRoom);
 
     // Room initial state from server
     socket.on('room_init_state', async (state) => {
@@ -512,6 +534,7 @@ export const ClassroomPage = () => {
     });
 
     return () => {
+      socket.off('connect', emitJoinRoom);
       socket.off('room_init_state');
       socket.off('roster_update');
       socket.off('slide_updated');
@@ -536,6 +559,18 @@ export const ClassroomPage = () => {
         slideIndex,
         totalSlides
       });
+    }
+  };
+
+  const prevSlide = () => {
+    if (currentSlide > 1) {
+      goToSlide(currentSlide - 1);
+    }
+  };
+
+  const nextSlide = () => {
+    if (currentSlide < totalSlides) {
+      goToSlide(currentSlide + 1);
     }
   };
 
@@ -910,6 +945,10 @@ export const ClassroomPage = () => {
       // Actively request video stream if not present yet
       try {
         setCameraError(null);
+        if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setCameraError('Camera access not supported in this browser.');
+          return;
+        }
         const videoStream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 640 }, height: { ideal: 480 } }
         });
@@ -925,15 +964,15 @@ export const ClassroomPage = () => {
         }
         setVideoActive(true);
       } catch (err) {
-        console.error('Failed to start camera on toggle:', err);
+        console.warn('Failed to start camera on toggle:', err.name, err.message);
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          setCameraError('Camera access blocked. Click lock icon in browser URL bar to allow.');
-        } else if (err.name === 'NotFoundError') {
-          setCameraError('No camera found on this computer.');
-        } else if (err.name === 'NotReadableError') {
-          setCameraError('Camera is currently in use by another application.');
+          setCameraError('Camera access was dismissed or blocked. Tap the lock icon in your browser URL bar to allow.');
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          setCameraError('No camera found on this device. Please connect a webcam.');
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          setCameraError('Camera is in use by another app (Zoom, Teams, or another tab).');
         } else {
-          setCameraError('Camera unavailable.');
+          setCameraError('Camera unavailable. Check browser site permissions.');
         }
         setVideoActive(false);
       }
@@ -2109,10 +2148,11 @@ export const ClassroomPage = () => {
               setActiveTab('participants');
               setSidebarOpen(true);
             }}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
           >
             <Users className="w-4 h-4 text-emerald-400" />
-            <span>{participants.length || 1} Attending</span>
+            <span className="hidden sm:inline">{participants.length || 1} Attending</span>
+            <span className="sm:hidden">{participants.length || 1}</span>
           </button>
 
           <button
@@ -2320,7 +2360,7 @@ export const ClassroomPage = () => {
               {isTutor ? (
                 /* Tutor's Own Broadcast Tile */
                 <div className={`absolute top-3 right-3 z-20 transition-all ${
-                  videoMinimized ? 'w-auto' : 'w-36 sm:w-48 aspect-video'
+                  videoMinimized ? 'w-auto' : 'w-32 sm:w-48 aspect-video'
                 } rounded-xl overflow-hidden shadow-2xl border-2 border-emerald-500/80 bg-slate-900 group`}>
                   {videoMinimized ? (
                     <button
@@ -2343,18 +2383,25 @@ export const ClassroomPage = () => {
                       />
 
                       {(!videoActive || !localStream) && (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-2 text-center select-none">
-                          <VideoOff className="w-5 h-5 mb-1 text-slate-500" />
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-1.5 sm:p-2 text-center select-none">
+                          <VideoOff className="w-4 h-4 mb-0.5 text-slate-500" />
                           <span className="text-[10px] font-bold truncate max-w-full text-slate-200">
                             {user?.full_name || 'Tutor'}
                           </span>
                           {cameraError ? (
-                            <span className="text-[9px] text-amber-400 block leading-tight px-1 max-w-[170px]">
+                            <span className="text-[8px] sm:text-[9px] text-amber-400 block leading-tight px-1 max-w-[170px] truncate">
                               {cameraError}
                             </span>
                           ) : (
-                            <span className="text-[9px] text-slate-500 mt-0.5">Camera Off</span>
+                            <span className="text-[8px] sm:text-[9px] text-slate-500">Camera Off</span>
                           )}
+                          <button
+                            type="button"
+                            onClick={toggleVideo}
+                            className="mt-1 px-2 py-0.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-[9px] font-bold shadow-sm transition-all active:scale-95"
+                          >
+                            Enable Camera
+                          </button>
                         </div>
                       )}
 
@@ -2377,7 +2424,7 @@ export const ClassroomPage = () => {
                 <>
                   {/* Top-Right: Tutor Broadcast Tile (Prominent Live Teacher View) */}
                   <div className={`absolute top-3 right-3 z-20 transition-all ${
-                    videoMinimized ? 'w-auto' : 'w-44 sm:w-56 aspect-video'
+                    videoMinimized ? 'w-auto' : 'w-36 sm:w-56 aspect-video'
                   } rounded-xl overflow-hidden shadow-2xl border-2 border-emerald-500 bg-slate-900 group`}>
                     {videoMinimized ? (
                       <button
@@ -2391,25 +2438,25 @@ export const ClassroomPage = () => {
                       </button>
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-2 text-center relative overflow-hidden select-none">
-                        <div className="w-10 h-10 rounded-full bg-emerald-600/30 border border-emerald-400 flex items-center justify-center text-white font-extrabold text-sm mb-1 shadow-lg">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-600/30 border border-emerald-400 flex items-center justify-center text-white font-extrabold text-xs sm:text-sm mb-0.5 shadow-lg">
                           {classDetails?.tutor?.full_name?.charAt(0) || 'T'}
                         </div>
-                        <span className="text-xs font-bold text-white truncate max-w-[160px]">
+                        <span className="text-[11px] sm:text-xs font-bold text-white truncate max-w-[140px] sm:max-w-[160px]">
                           {classDetails?.tutor?.full_name || 'Dr. Sarah Jenkins'}
                         </span>
                         <div className="flex items-center space-x-1 mt-0.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                          <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider">
+                          <span className="text-[9px] sm:text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider">
                             Teaching Live
                           </span>
                         </div>
                         {/* Dynamic Live Audio Equalizer */}
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <span className="w-1 h-2.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1 h-4 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                          <span className="w-1 h-5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '100ms' }} />
-                          <span className="w-1 h-3 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="w-1 h-2 sm:h-2.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1 h-3 sm:h-4 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1 h-1.5 sm:h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          <span className="w-1 h-3.5 sm:h-5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '100ms' }} />
+                          <span className="w-1 h-2 sm:h-3 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
                         </div>
                         <button
                           onClick={() => setVideoMinimized(true)}
@@ -2423,7 +2470,7 @@ export const ClassroomPage = () => {
                   </div>
 
                   {/* Bottom-Right: Student Self-View PIP Tile */}
-                  <div className="absolute bottom-4 right-4 z-20 w-28 sm:w-36 aspect-video rounded-xl overflow-hidden shadow-xl border border-slate-700 bg-slate-900 group">
+                  <div className="absolute bottom-4 right-4 z-20 w-24 sm:w-36 aspect-video rounded-xl overflow-hidden shadow-xl border border-slate-700 bg-slate-900 group">
                     <video
                       ref={localVideoRef}
                       autoPlay
@@ -2432,9 +2479,16 @@ export const ClassroomPage = () => {
                       className={`w-full h-full object-cover mirror ${videoActive && localStream ? 'block' : 'hidden'}`}
                     />
                     {(!videoActive || !localStream) && (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500 p-1 text-center">
-                        <VideoOff className="w-4 h-4 mb-0.5" />
-                        <span className="text-[9px] text-slate-400">My Camera Off</span>
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500 p-1 text-center select-none">
+                        <VideoOff className="w-3.5 h-3.5 mb-0.5" />
+                        <span className="text-[8px] text-slate-400">Camera Off</span>
+                        <button
+                          type="button"
+                          onClick={toggleVideo}
+                          className="mt-0.5 px-1.5 py-0.5 rounded bg-brand-600/80 hover:bg-brand-600 text-white text-[8px] font-bold shadow-sm transition-all"
+                        >
+                          Enable Cam
+                        </button>
                       </div>
                     )}
                     <div className="absolute bottom-1 left-1.5 bg-black/80 px-1 py-0.5 rounded text-[8px] font-bold text-slate-200 flex items-center space-x-1">
@@ -2641,7 +2695,13 @@ export const ClassroomPage = () => {
 
         {/* RIGHT COLLAPSIBLE SIDEBAR: Chat, Participants, Slide Deck */}
         {sidebarOpen && (
-          <aside className="w-80 lg:w-96 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 z-20">
+          <>
+            {/* Mobile / Tablet Backdrop Overlay */}
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-85 md:w-96 lg:static lg:w-96 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 shadow-2xl lg:shadow-none animate-in slide-in-from-right duration-200">
             
             {/* Sidebar Tabs */}
             <div className="h-12 border-b border-slate-800 flex items-center justify-between px-3">
@@ -2715,6 +2775,7 @@ export const ClassroomPage = () => {
                       );
                     })
                   )}
+                  <div ref={chatBottomRef} />
                 </div>
 
                 {/* Chat Input */}
@@ -2868,73 +2929,74 @@ export const ClassroomPage = () => {
             )}
 
           </aside>
-        )}
+        </>
+      )}
 
       </div>
 
       {/* 3. BOTTOM CONTROL BAR (VIDEO, MIC, SCREEN SHARE, RECORD, HAND RAISE) */}
-      <footer className="h-18 bg-slate-900 border-t border-slate-800 px-4 py-3 flex items-center justify-between shrink-0 z-30">
+      <footer className="h-16 sm:h-18 bg-slate-900 border-t border-slate-800 px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between shrink-0 z-30">
         
         {/* Left: Class duration / Room info */}
-        <div className="flex items-center space-x-3 hidden sm:flex">
+        <div className="items-center space-x-3 hidden sm:flex">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-mono text-slate-300">Room: {classId}</span>
+          <span className="text-xs font-mono text-slate-300 truncate max-w-[150px]">Room: {classId}</span>
         </div>
 
         {/* Center: Essential Classroom Controls */}
-        <div className="flex items-center space-x-3 mx-auto">
+        <div className="flex items-center space-x-1.5 sm:space-x-3 mx-auto">
           
           {/* Mic */}
           <button
             onClick={toggleMic}
-            className={`p-3 rounded-2xl transition-all ${
+            className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
               micActive 
                 ? 'bg-slate-800 text-white hover:bg-slate-700' 
                 : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/30'
             }`}
             title={micActive ? 'Mute Microphone' : 'Unmute Microphone'}
           >
-            {micActive ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+            {micActive ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
 
           {/* Camera */}
           <button
             onClick={toggleVideo}
-            className={`p-3 rounded-2xl transition-all ${
+            className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
               videoActive 
                 ? 'bg-slate-800 text-white hover:bg-slate-700' 
                 : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/30'
             }`}
             title={videoActive ? 'Turn Off Camera' : 'Turn On Camera'}
           >
-            {videoActive ? <VideoIcon className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+            {videoActive ? <VideoIcon className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
 
           {/* Screen Share */}
           <button
             onClick={toggleScreenShare}
-            className={`p-3 rounded-2xl transition-all ${
+            className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
               isScreenSharing 
                 ? 'bg-brand-600 text-white shadow-md shadow-brand-500/30' 
                 : 'bg-slate-800 text-white hover:bg-slate-700'
             }`}
             title="Share Screen"
           >
-            <ScreenShare className="w-5 h-5" />
+            <ScreenShare className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {/* Student Raise Hand Toggle */}
           {!isTutor && (
             <button
               onClick={toggleHandRaise}
-              className={`p-3 rounded-2xl transition-all ${
+              className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
                 isHandRaised 
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-500/30 animate-pulse' 
                   : 'bg-slate-800 text-white hover:bg-slate-700'
               }`}
               title={isHandRaised ? 'Lower Hand' : 'Raise Hand'}
             >
-              <Hand className="w-5 h-5" />
+              <Hand className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
 
@@ -2942,36 +3004,38 @@ export const ClassroomPage = () => {
           {isTutor && (
             <button
               onClick={isRecording ? stopRecording : startRecording}
-              className={`px-4 py-3 rounded-2xl text-xs font-bold transition-all flex items-center space-x-2 ${
+              className={`px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-xs font-bold transition-all flex items-center space-x-1.5 sm:space-x-2 ${
                 isRecording 
                   ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/30' 
                   : 'bg-slate-800 text-white hover:bg-slate-700'
               }`}
             >
               {isRecording ? <StopCircle className="w-4 h-4" /> : <Radio className="w-4 h-4 text-rose-500" />}
-              <span>{isRecording ? 'Stop Recording' : 'Record Session'}</span>
+              <span className="hidden sm:inline">{isRecording ? 'Stop Recording' : 'Record Session'}</span>
             </button>
           )}
 
         </div>
 
         {/* Right: End Class / Leave Room */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
           {isTutor && (
             <button
               onClick={handleEndClassForAll}
-              className="px-4 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-md transition-colors active:scale-95 flex items-center space-x-1.5"
+              className="px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-md transition-colors active:scale-95 flex items-center space-x-1"
               title="Conclude live session for all students"
             >
               <Power className="w-3.5 h-3.5" />
-              <span>End Session for All</span>
+              <span className="hidden sm:inline">End Session for All</span>
+              <span className="sm:hidden">End</span>
             </button>
           )}
           <button
             onClick={handleLeaveClass}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs shadow-md transition-colors active:scale-95 flex items-center space-x-1.5 border border-slate-700"
+            className="px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs shadow-md transition-colors active:scale-95 flex items-center space-x-1 border border-slate-700"
           >
-            <span>Leave Session</span>
+            <span className="hidden sm:inline">Leave Session</span>
+            <span className="sm:hidden">Leave</span>
           </button>
         </div>
 
