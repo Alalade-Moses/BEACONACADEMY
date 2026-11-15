@@ -77,8 +77,9 @@ CREATE TABLE courses (
     category_id UUID REFERENCES course_categories(id) ON DELETE SET NULL,
     tutor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     thumbnail_url TEXT,
-    level VARCHAR(50) DEFAULT 'Beginner' CHECK (level IN ('Beginner', 'Intermediate', 'Advanced', 'All Levels')),
+    level VARCHAR(100) DEFAULT 'All Levels',
     price DECIMAL(10, 2) DEFAULT 0.00,
+    currency VARCHAR(10) DEFAULT 'GBP',
     status VARCHAR(50) DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
