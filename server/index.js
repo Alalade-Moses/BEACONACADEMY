@@ -128,7 +128,7 @@ setInterval(async () => {
 }, 15 * 60 * 1000);
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`======================================================`);
   console.log(`🚀 Beacon Bridge Academics LMS Server running on port ${PORT}`);
   console.log(`📡 Socket.IO Real-time Classroom Gateway active`);
