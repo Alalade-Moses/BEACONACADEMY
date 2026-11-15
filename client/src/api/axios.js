@@ -1,7 +1,22 @@
 import axios from 'axios';
 
+// Dynamically determine backend API URL
+const getBaseUrl = () => {
+  // If explicitly configured via Vite env
+  if (import.meta.env.VITE_API_URL) {
+    const raw = import.meta.env.VITE_API_URL.trim();
+    return raw.endsWith('/api') ? raw : `${raw.replace(/\/$/, '')}/api`;
+  }
+  // If running locally in development, use relative path (Vite proxy to localhost:5000)
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return '/api';
+  }
+  // Production default: live Railway backend server
+  return 'https://beaconbridge-server-production.up.railway.app/api';
+};
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

@@ -9,10 +9,12 @@ export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
 
   useEffect(() => {
-    // In local dev, connect directly to port 5000; in production use configured URL or same origin
+    // In local dev, connect directly to port 5000; in production use Railway backend server
     const socketUrl = import.meta.env.VITE_SOCKET_URL && import.meta.env.VITE_SOCKET_URL !== '/'
       ? import.meta.env.VITE_SOCKET_URL
-      : (window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin);
+      : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+          ? 'http://localhost:5000'
+          : 'https://beaconbridge-server-production.up.railway.app');
 
     const newSocket = io(socketUrl, {
       autoConnect: true,

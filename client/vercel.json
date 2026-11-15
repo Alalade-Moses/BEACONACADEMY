@@ -2,6 +2,18 @@
   "version": 2,
   "rewrites": [
     {
+      "source": "/api/:match*",
+      "destination": "https://beaconbridge-server-production.up.railway.app/api/:match*"
+    },
+    {
+      "source": "/uploads/:match*",
+      "destination": "https://beaconbridge-server-production.up.railway.app/uploads/:match*"
+    },
+    {
+      "source": "/slides/:match*",
+      "destination": "https://beaconbridge-server-production.up.railway.app/slides/:match*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
