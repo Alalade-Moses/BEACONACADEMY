@@ -8,13 +8,15 @@
     "client"
   ],
   "scripts": {
-    "start": "concurrently \"npm run start --workspace=server\" \"npm run dev --workspace=client\"",
+    "start": "node server/index.js",
+    "start:dev": "concurrently \"npm run start --workspace=server\" \"npm run dev --workspace=client\"",
     "start:server": "node server/index.js",
+    "build": "npm run build --workspace=client",
     "build:client": "npm run build --workspace=client",
+    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
     "dev:server": "npm run dev --workspace=server",
     "dev:client": "npm run dev --workspace=client",
     "db:init": "npm run db:init --workspace=server",
-    "build": "npm run build --workspace=client",
     "install:all": "npm install && npm install --workspace=server && npm install --workspace=client"
   },
   "dependencies": {
