@@ -5,7 +5,7 @@ import {
   createConsultation,
   updateConsultationStatus
 } from '../controllers/consultationController.js';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -13,8 +13,8 @@ const router = express.Router();
 router.post('/', createConsultation);
 
 // Administrative access: view and manage scheduled consultations
-router.get('/', authenticateToken, authorizeRoles('superadmin', 'admin', 'tutor'), getConsultations);
-router.get('/:id', authenticateToken, authorizeRoles('superadmin', 'admin', 'tutor'), getConsultationById);
-router.patch('/:id', authenticateToken, authorizeRoles('superadmin', 'admin'), updateConsultationStatus);
+router.get('/', authenticate, authorize('superadmin', 'admin', 'tutor'), getConsultations);
+router.get('/:id', authenticate, authorize('superadmin', 'admin', 'tutor'), getConsultationById);
+router.patch('/:id', authenticate, authorize('superadmin', 'admin'), updateConsultationStatus);
 
 export default router;

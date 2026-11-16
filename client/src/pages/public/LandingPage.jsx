@@ -283,6 +283,15 @@ export const LandingPage = () => {
             {/* Left Column: Headline, Copy, Actions & Trust Chips */}
             <div className="lg:col-span-7 space-y-6 text-left bg-[#001f3f]/65 lg:backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-white/15 shadow-2xl">
               
+              {/* Official Brand Logo Rectangle */}
+              <div className="inline-block bg-white px-4 py-2 rounded-2xl shadow-xl border border-white/30">
+                <img 
+                  src="/logo.png" 
+                  alt="Beacon Bridge Academics" 
+                  className="h-12 sm:h-14 w-auto object-contain" 
+                />
+              </div>
+
               {/* Badge */}
               <div className="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-[#40ffa7]/20 border border-[#40ffa7]/40 text-[#40ffa7] text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#40ffa7] animate-pulse" />

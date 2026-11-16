@@ -611,27 +611,29 @@ export const RegisterPage = () => {
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
       
-      {/* Header */}
-      <div className="text-center max-w-2xl mx-auto mb-10">
-        <Link to="/" className="inline-block group mb-3">
-          <img 
-            src="/logo.png" 
-            alt="Beacon Bridge Academics" 
-            className="h-16 w-auto object-contain mx-auto group-hover:scale-105 transition-transform" 
-          />
-        </Link>
-        <div>
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/10 text-[#050167] text-xs font-bold mb-4 border border-[#050167]/20">
+      {/* Master Registration Container Header */}
+      <div className="bg-white rounded-3xl border border-[#050167]/15 shadow-xl shadow-[#050167]/5 overflow-hidden mb-10">
+        <div className="w-full bg-gradient-to-b from-[#f0faff] to-slate-50 border-b border-[#050167]/10 px-6 py-6 sm:py-7 flex items-center justify-center rounded-t-3xl">
+          <Link to="/" className="inline-block group">
+            <img 
+              src="/logo.png" 
+              alt="Beacon Bridge Academics" 
+              className="h-16 sm:h-20 w-auto max-w-[280px] sm:max-w-xs object-contain transition-transform group-hover:scale-105" 
+            />
+          </Link>
+        </div>
+        <div className="p-6 sm:p-8 text-center max-w-2xl mx-auto">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/10 text-[#050167] text-xs font-bold mb-3 border border-[#050167]/20">
             <GraduationCap className="w-4 h-4 text-[#050167]" />
             <span>Unified Student & Parent Registration</span>
           </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#001f3f] tracking-tight">
+            Join Beacon Bridge Academics
+          </h1>
+          <p className="mt-2 text-[#001f3f]/75 text-xs sm:text-sm">
+            Complete the joint registration below. Both parent and student accounts are created simultaneously and unlocked upon administrator payment verification.
+          </p>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-[#001f3f] tracking-tight">
-          Join Beacon Bridge Academics
-        </h1>
-        <p className="mt-3 text-[#001f3f]/75 text-sm sm:text-base">
-          Complete the joint registration below. Both parent and student accounts are created simultaneously and unlocked upon administrator payment verification.
-        </p>
       </div>
 
       {error && (

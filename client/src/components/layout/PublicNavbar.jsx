@@ -72,11 +72,11 @@ export const PublicNavbar = () => {
         <div className="flex items-center justify-between h-20 gap-1.5 lg:gap-2">
           
           {/* Brand Logo */}
-          <Link to="/" onClick={() => scrollToSection('top')} className="flex items-center space-x-2 sm:space-x-2.5 group shrink-0">
+          <Link to="/" onClick={() => scrollToSection('top')} className="flex items-center space-x-2 sm:space-x-2.5 group shrink-0 py-1">
             <img 
               src="/logo.png" 
               alt="Beacon Bridge Academics" 
-              className="h-10 sm:h-12 w-auto object-contain transition-transform duration-200 group-hover:scale-105" 
+              className="h-13 sm:h-15 lg:h-16 w-auto max-h-[64px] object-contain transition-transform duration-200 group-hover:scale-105" 
             />
           </Link>
 
@@ -102,10 +102,9 @@ export const PublicNavbar = () => {
             </Link>
             <Link
               to="/book-consultation"
-              className="px-2 xl:px-3 py-1.5 rounded-lg text-[#050167] bg-[#40ffa7]/20 hover:bg-[#40ffa7]/35 active:scale-95 font-bold transition-all whitespace-nowrap flex items-center gap-1.5"
+              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-[#050167] bg-[#40ffa7]/20 hover:bg-[#40ffa7]/35 active:scale-95 font-bold transition-all whitespace-nowrap"
             >
-              <CalendarCheck className="w-3.5 h-3.5 text-[#050167]" />
-              <span>Book Consultation</span>
+              Book Consultation
             </Link>
             <Link
               to="/how-it-works"
@@ -122,10 +121,9 @@ export const PublicNavbar = () => {
             </button>
             <Link
               to="/apply-to-teach"
-              className="px-2 xl:px-3 py-1.5 rounded-lg text-emerald-700 hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer font-extrabold flex items-center gap-1"
+              className="px-2 xl:px-3 py-1.5 rounded-lg text-emerald-700 hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer font-extrabold"
             >
-              <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Teach With Us</span>
+              Teach With Us
             </Link>
           </nav>
 

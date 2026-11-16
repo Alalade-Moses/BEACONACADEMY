@@ -167,23 +167,34 @@ export const BookConsultationPage = () => {
   if (bookedData) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16">
-        <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-2xl border border-emerald-200 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-emerald-400 via-[#40ffa7] to-cyan-500" />
+        <div className="bg-white rounded-3xl shadow-2xl border border-emerald-200 text-center relative overflow-hidden">
           
-          <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-6 shadow-md shadow-emerald-500/10">
-            <CheckCircle2 className="w-10 h-10" />
+          {/* Top Rectangular Logo Header Banner matching container curves */}
+          <div className="w-full bg-gradient-to-b from-[#f0faff] to-slate-50 border-b border-[#050167]/10 px-6 py-6 flex items-center justify-center rounded-t-3xl">
+            <Link to="/" className="inline-block group">
+              <img 
+                src="/logo.png" 
+                alt="Beacon Bridge Academics" 
+                className="h-14 sm:h-16 w-auto max-w-[260px] object-contain transition-transform group-hover:scale-105" 
+              />
+            </Link>
           </div>
 
-          <span className="inline-block px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 mb-3">
-            Consultation Confirmed &bull; Reference BBA-CNS-{bookedData.id?.slice(0, 8)?.toUpperCase()}
-          </span>
+          <div className="p-8 sm:p-12">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-6 shadow-md shadow-emerald-500/10">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
 
-          <h1 className="text-2xl sm:text-3xl font-black text-[#001f3f] tracking-tight">
-            We Look Forward to Meeting You!
-          </h1>
-          <p className="mt-2 text-slate-600 max-w-lg mx-auto text-sm sm:text-base">
-            Your 1-on-1 academic consultation for <strong className="text-slate-900">{bookedData.student_name}</strong> has been scheduled with <strong className="text-slate-900">{bookedData.consultant_name}</strong>.
-          </p>
+            <span className="inline-block px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 mb-3">
+              Consultation Confirmed &bull; Reference BBA-CNS-{bookedData.id?.slice(0, 8)?.toUpperCase()}
+            </span>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-[#001f3f] tracking-tight">
+              We Look Forward to Meeting You!
+            </h1>
+            <p className="mt-2 text-slate-600 max-w-lg mx-auto text-sm sm:text-base">
+              Your 1-on-1 academic consultation for <strong className="text-slate-900">{bookedData.student_name}</strong> has been scheduled with <strong className="text-slate-900">{bookedData.consultant_name}</strong>.
+            </p>
 
           {/* Appointment Card */}
           <div className="mt-8 p-6 rounded-2xl bg-slate-50 border border-slate-200 text-left max-w-xl mx-auto space-y-3.5">
@@ -245,46 +256,52 @@ export const BookConsultationPage = () => {
           </div>
         </div>
       </div>
+      </div>
     );
   }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
       
-      {/* Brand Header */}
-      <div className="text-center max-w-3xl mx-auto mb-10">
-        <Link to="/" className="inline-block group mb-4">
-          <img 
-            src="/logo.png" 
-            alt="Beacon Bridge Academics" 
-            className="h-14 sm:h-16 w-auto object-contain mx-auto group-hover:scale-105 transition-transform" 
-          />
-        </Link>
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#40ffa7]/20 text-[#001f3f] text-xs font-black uppercase tracking-wider mb-3 border border-[#40ffa7]/40">
-          <Sparkles className="w-3.5 h-3.5 text-[#050167]" />
-          <span>Complimentary 1-on-1 Academic Consultation</span>
+      {/* Master Consultation Container Header */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden mb-10">
+        <div className="w-full bg-gradient-to-b from-[#f0faff] to-slate-50 border-b border-[#050167]/10 px-6 py-6 sm:py-7 flex items-center justify-center rounded-t-3xl">
+          <Link to="/" className="inline-block group">
+            <img 
+              src="/logo.png" 
+              alt="Beacon Bridge Academics" 
+              className="h-16 sm:h-20 w-auto max-w-[280px] sm:max-w-xs object-contain transition-transform group-hover:scale-105" 
+            />
+          </Link>
         </div>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#001f3f] tracking-tight leading-tight">
-          Book a 1-on-1 Consultation
-        </h1>
-        <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Discuss your child&apos;s academic targets, diagnostic exam assessments, and bespoke study plans with our Senior Faculty Advisor before enrolment.
-        </p>
+        
+        <div className="p-6 sm:p-10 text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#40ffa7]/20 text-[#001f3f] text-xs font-black uppercase tracking-wider mb-3 border border-[#40ffa7]/40">
+            <Sparkles className="w-3.5 h-3.5 text-[#050167]" />
+            <span>Complimentary 1-on-1 Academic Consultation</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#001f3f] tracking-tight leading-tight">
+            Book a 1-on-1 Consultation
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+            Discuss your child&apos;s academic targets, diagnostic exam assessments, and bespoke study plans with our Senior Faculty Advisor before enrolment.
+          </p>
 
-        {/* Trust Pills */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-bold text-slate-700">
-          <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
-            <Clock className="w-3.5 h-3.5 text-emerald-600" />
-            45-Minute Bespoke Assessment
-          </span>
-          <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
-            <Award className="w-3.5 h-3.5 text-emerald-600" />
-            Oxbridge & Imperial Mentorship
-          </span>
-          <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            Enhanced DBS Safeguarded
-          </span>
+          {/* Trust Pills */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-bold text-slate-700">
+            <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+              <Clock className="w-3.5 h-3.5 text-emerald-600" />
+              45-Minute Bespoke Assessment
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+              <Award className="w-3.5 h-3.5 text-emerald-600" />
+              Oxbridge & Imperial Mentorship
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              Enhanced DBS Safeguarded
+            </span>
+          </div>
         </div>
       </div>
 

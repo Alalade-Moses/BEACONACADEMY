@@ -60,26 +60,31 @@ export const LoginPage = () => {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-12">
-      <div className="text-center mb-8">
-        <Link to="/" className="inline-block group mb-2">
-          <img 
-            src="/logo.png" 
-            alt="Beacon Bridge Academics" 
-            className="h-16 w-auto object-contain mx-auto group-hover:scale-105 transition-transform" 
-          />
-        </Link>
-        <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold text-[#050167] tracking-tight">
-          Sign In to Your Portal
-        </h2>
-        <p className="mt-2 text-sm text-[#001f3f]/70">
-          Or{' '}
-          <Link to="/register" className="font-semibold text-[#050167] hover:text-[#001f3f] underline decoration-[#40ffa7] decoration-2 underline-offset-4">
-            register for student & parent admission
+      <div className="bg-white shadow-xl shadow-[#050167]/10 rounded-3xl border border-[#050167]/15 overflow-hidden">
+        
+        {/* Top Rectangular Logo Header Banner matching container curves */}
+        <div className="w-full bg-gradient-to-b from-[#f0faff] to-slate-50 border-b border-[#050167]/10 px-6 py-6 sm:py-7 flex items-center justify-center rounded-t-3xl">
+          <Link to="/" className="inline-block group">
+            <img 
+              src="/logo.png" 
+              alt="Beacon Bridge Academics" 
+              className="h-16 sm:h-20 w-auto max-w-[280px] sm:max-w-xs object-contain transition-transform group-hover:scale-105" 
+            />
           </Link>
-        </p>
-      </div>
+        </div>
 
-      <div className="bg-white py-8 px-6 shadow-xl shadow-[#050167]/5 rounded-3xl border border-[#050167]/15">
+        <div className="py-8 px-6 sm:px-8">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#050167] tracking-tight">
+              Sign In to Your Portal
+            </h2>
+            <p className="mt-2 text-sm text-[#001f3f]/70">
+              Or{' '}
+              <Link to="/register" className="font-semibold text-[#050167] hover:text-[#001f3f] underline decoration-[#40ffa7] decoration-2 underline-offset-4">
+                register for student & parent admission
+              </Link>
+            </p>
+          </div>
         
         {/* Pending Verification Alert Banner */}
         {pendingVerification && (
@@ -194,6 +199,44 @@ export const LoginPage = () => {
           </p>
         </div>
 
+        {/* Quick Demo Credentials for Fast Portal Access */}
+        <div className="mt-5 pt-4 border-t border-slate-100">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">
+            Test Access (Default: <code>Password123!</code>)
+          </p>
+          <div className="flex flex-wrap gap-1.5 justify-center">
+            <button
+              type="button"
+              onClick={() => { setEmail('admin@beaconbridgeacademics.co.uk'); setPassword('Password123!'); }}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#40ffa7]/30 text-slate-700 font-semibold transition-colors cursor-pointer"
+            >
+              Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('dr.sarah@beaconbridgeacademics.co.uk'); setPassword('Password123!'); }}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#40ffa7]/30 text-slate-700 font-semibold transition-colors cursor-pointer"
+            >
+              Tutor (Sarah)
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('alex.morgan@beaconbridgeacademics.co.uk'); setPassword('Password123!'); }}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#40ffa7]/30 text-slate-700 font-semibold transition-colors cursor-pointer"
+            >
+              Student (Alex)
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEmail('david.morgan@beaconbridgeacademics.co.uk'); setPassword('Password123!'); }}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#40ffa7]/30 text-slate-700 font-semibold transition-colors cursor-pointer"
+            >
+              Parent (David)
+            </button>
+          </div>
+        </div>
+
+        </div>
       </div>
     </div>
   );
