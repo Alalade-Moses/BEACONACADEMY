@@ -39,13 +39,17 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = http.createServer(app);
 
-// Socket.IO configuration with cross-origin compatibility
+// Socket.IO configuration with high-performance real-time WebSocket priority
 const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
-  }
+  },
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  allowUpgrades: true
 });
 
 // Middleware

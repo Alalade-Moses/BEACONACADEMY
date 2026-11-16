@@ -85,27 +85,40 @@ export const createClass = async (req, res, next) => {
       scheduled_at, 
       duration_minutes = 60, 
       presentation_url,
-      presentation_pages = 5 
+      presentation_pages = 6,
+      status = 'scheduled',
+      isInstant = false
     } = req.body;
 
-    if (!course_id || !title || !scheduled_at) {
-      return res.status(400).json({ success: false, message: 'Course, title, and scheduled date/time are required.' });
+    const classTitle = (title && title.trim()) || `Live Teaching Session - ${new Date().toLocaleDateString('en-GB')}`;
+    const scheduledTime = scheduled_at || new Date().toISOString();
+    const classStatus = isInstant || status === 'live' ? 'live' : 'scheduled';
+
+    // Gracefully resolve course_id fallback
+    let resolvedCourseId = course_id;
+    if (!resolvedCourseId || resolvedCourseId === 'general' || resolvedCourseId === 'all') {
+      try {
+        const allCourses = await store.getCourses();
+        resolvedCourseId = allCourses[0]?.id || null;
+      } catch (e) {
+        resolvedCourseId = null;
+      }
     }
 
     const tutor_id = req.user.role === 'tutor' ? req.user.id : (req.body.tutor_id || req.user.id);
     const meeting_room_id = `ROOM-${Date.now().toString(36).toUpperCase()}`;
 
     const newClass = await store.createClass({
-      course_id,
+      course_id: resolvedCourseId,
       tutor_id,
-      title,
-      description: description || '',
-      scheduled_at,
-      duration_minutes: parseInt(duration_minutes, 10),
+      title: classTitle,
+      description: description || 'Interactive live classroom with synchronized presentation deck and digital whiteboard.',
+      scheduled_at: scheduledTime,
+      duration_minutes: parseInt(duration_minutes, 10) || 60,
       meeting_room_id,
       presentation_url: presentation_url || '/slides/sample-presentation.pdf',
-      presentation_pages: parseInt(presentation_pages, 10) || 5,
-      status: 'scheduled'
+      presentation_pages: parseInt(presentation_pages, 10) || 6,
+      status: classStatus
     });
 
     // Notify all enrolled students in this course

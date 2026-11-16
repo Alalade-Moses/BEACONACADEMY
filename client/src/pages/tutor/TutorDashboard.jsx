@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -13,28 +13,40 @@ import {
   FileText,
   UserCheck,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Zap
 } from 'lucide-react';
 
 export const TutorDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [launchingInstant, setLaunchingInstant] = useState(false);
 
   useEffect(() => {
     const fetchTutorData = async () => {
       try {
         const [coursesRes, classesRes, attendanceRes] = await Promise.all([
-          api.get(`/courses?tutor_id=${user.id}`),
+          api.get(`/courses?tutor_id=${user.id}`).catch(() => ({ data: { success: true, courses: [] } })),
           api.get('/classes'),
           api.get('/attendance')
         ]);
 
-        if (coursesRes.data.success) setCourses(coursesRes.data.courses);
-        if (classesRes.data.success) setClasses(classesRes.data.classes);
-        if (attendanceRes.data.success) setAttendance(attendanceRes.data.records);
+        let courseList = (coursesRes.data.success && coursesRes.data.courses) || [];
+        if (courseList.length === 0) {
+          try {
+            const allCrs = await api.get('/courses');
+            if (allCrs.data.success && allCrs.data.courses) {
+              courseList = allCrs.data.courses;
+            }
+          } catch (e) {}
+        }
+        setCourses(courseList);
+        if (classesRes.data.success) setClasses(classesRes.data.classes || []);
+        if (attendanceRes.data.success) setAttendance(attendanceRes.data.records || []);
       } catch (err) {
         console.error('Failed to load tutor data', err);
       } finally {
@@ -44,6 +56,30 @@ export const TutorDashboard = () => {
 
     if (user?.id) fetchTutorData();
   }, [user?.id]);
+
+  const handleStartInstantClass = async () => {
+    try {
+      setLaunchingInstant(true);
+      const res = await api.post('/classes', {
+        title: `Live Session with ${user?.full_name || 'Faculty Tutor'}`,
+        description: 'Interactive live academic lecture session with synchronized digital presentation deck and whiteboard.',
+        course_id: courses[0]?.id || null,
+        isInstant: true,
+        status: 'live',
+        scheduled_at: new Date().toISOString(),
+        duration_minutes: 60,
+        presentation_url: '/slides/sample-presentation.pdf',
+        presentation_pages: 6
+      });
+      if (res.data.success && res.data.class) {
+        navigate(`/classroom/${res.data.class.meeting_room_id}?as=tutor`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to start instant class. Please check server connection.');
+    } finally {
+      setLaunchingInstant(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,6 +106,24 @@ export const TutorDashboard = () => {
           <p className="mt-2 text-slate-300 text-sm leading-relaxed">
             Manage your academic courses, launch real-time interactive lectures with slide annotations, and track student attendance.
           </p>
+
+          <div className="mt-5 flex items-center gap-3 flex-wrap">
+            <button
+              onClick={handleStartInstantClass}
+              disabled={launchingInstant}
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-lg shadow-emerald-950/40 transition-all disabled:opacity-50"
+            >
+              <Zap className="w-4 h-4 fill-current text-amber-300 animate-pulse" />
+              <span>{launchingInstant ? 'Launching Live Class...' : '⚡ Launch Instant Live Class'}</span>
+            </button>
+            <Link
+              to="/tutor/classes"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>View All Classes</span>
+            </Link>
+          </div>
         </div>
 
         {liveClass && (
@@ -82,7 +136,7 @@ export const TutorDashboard = () => {
               </div>
             </div>
             <Link
-              to={`/classroom/${liveClass.meeting_room_id}`}
+              to={`/classroom/${liveClass.meeting_room_id}?as=tutor`}
               className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-lg flex items-center space-x-2"
             >
               <Play className="w-3.5 h-3.5 fill-current" />

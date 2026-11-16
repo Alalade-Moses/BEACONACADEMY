@@ -10,7 +10,15 @@ INSERT INTO profiles (id, email, password_hash, full_name, role, avatar_url, pho
 
 -- Lead Faculty Tutors
 ('00000000-0000-0000-0000-000000000002', 'dr.sarah@beaconbridgeacademics.co.uk', '$2a$10$wT8K8U4/c3q5gNvZG1uIkeYQp6Q9Y2k9e9D7l8l5jFkZtq4r1e.Xa', 'Dr. Sarah Jenkins', 'tutor', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', '+44 7700 900143', 'PhD in Pure Mathematics & Physics (Oxford), 12 years UK GCSE and A-Level tutoring experience across AQA, Edexcel, and OCR.', 'active'),
-('00000000-0000-0000-0000-000000000003', 'prof.chen@beaconbridgeacademics.co.uk', '$2a$10$wT8K8U4/c3q5gNvZG1uIkeYQp6Q9Y2k9e9D7l8l5jFkZtq4r1e.Xa', 'Prof. Michael Chen', 'tutor', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', '+44 7700 900288', 'Head of Science & Advanced STEM, specialized in A-Level Chemistry, Biology & North American AP curricula.', 'active')
+('00000000-0000-0000-0000-000000000003', 'prof.chen@beaconbridgeacademics.co.uk', '$2a$10$wT8K8U4/c3q5gNvZG1uIkeYQp6Q9Y2k9e9D7l8l5jFkZtq4r1e.Xa', 'Prof. Michael Chen', 'tutor', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', '+44 7700 900288', 'Head of Science & Advanced STEM, specialized in A-Level Chemistry, Biology & North American AP curricula.', 'active'),
+
+-- Sample Enrolled Students
+('00000000-0000-0000-0000-000000000004', 'alex.morgan@beaconbridgeacademics.co.uk', '$2a$10$wT8K8U4/c3q5gNvZG1uIkeYQp6Q9Y2k9e9D7l8l5jFkZtq4r1e.Xa', 'Alex Morgan', 'student', 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150', '+44 7700 900512', 'Year 11 GCSE Student preparing for AQA & Edexcel Core Science and Higher Tier Mathematics.', 'active'),
+('00000000-0000-0000-0000-000000000006', 'liam.chen@beaconbridgeacademics.co.uk', '$2a$10$wT8K8U4/c3q5gNvZG1uIkeYQp6Q9Y2k9e9D7l8l5jFkZtq4r1e.Xa', 'Liam Chen', 'student', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', '+44 7700 900620', 'Software Development Student enrolled in Frontend Development Track (£300/mo).', 'active'),
+
+-- Sample Associated Parents
+('00000000-0000-0000-0000-000000000005', 'david.morgan@beaconbridgeacademics.co.uk', '$2a$10$wT8K8U4/c3q5gNvZG1uIkeYQp6Q9Y2k9e9D7l8l5jFkZtq4r1e.Xa', 'David Morgan', 'parent', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', '+44 7700 900513', 'Parent of Alex Morgan (Father)', 'active'),
+('00000000-0000-0000-0000-000000000007', 'grace.chen@beaconbridgeacademics.co.uk', '$2a$10$wT8K8U4/c3q5gNvZG1uIkeYQp6Q9Y2k9e9D7l8l5jFkZtq4r1e.Xa', 'Grace Chen', 'parent', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', '+44 7700 900621', 'Parent of Liam Chen (Mother)', 'active')
 ON CONFLICT (email) DO NOTHING;
 
 -- 2. INSERT COURSE CATEGORIES
@@ -51,3 +59,22 @@ INSERT INTO platform_settings (key, value, description) VALUES
 ('enable_recordings', 'true', 'Enable virtual classroom recordings'),
 ('enable_whiteboard', 'true', 'Enable digital whiteboard and slide annotations')
 ON CONFLICT (key) DO NOTHING;
+
+-- 5. PARENT STUDENT LINKS
+INSERT INTO parent_student_links (id, parent_id, student_id, relationship, status) VALUES
+('40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000004', 'Father', 'active'),
+('40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000006', 'Mother', 'active')
+ON CONFLICT (id) DO NOTHING;
+
+-- 6. COURSE ENROLLMENTS
+INSERT INTO course_enrollments (id, course_id, student_id, status) VALUES
+('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000004', 'enrolled'),
+('50000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000006', 'enrolled')
+ON CONFLICT (id) DO NOTHING;
+
+-- 7. DEFAULT LIVE & SCHEDULED CLASSES
+INSERT INTO classes (id, course_id, tutor_id, title, description, scheduled_at, duration_minutes, meeting_room_id, presentation_url, presentation_pages, status) VALUES
+('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'GCSE Higher Mathematics: Quadratic Graphs & Algebraic Fractions', 'Live interactive workshop focusing on quadratic transformations and algebraic fraction simplification with step-by-step whiteboard derivations.', NOW(), 75, 'ROOM-GCSE-MATH-LIVE', '/slides/sample-presentation.pdf', 6, 'live'),
+('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003', 'A-Level Pure Mathematics: Calculus & Differential Equations Masterclass', 'Integration techniques, differential equation solving, and Oxford/Cambridge STEP problem-solving heuristics.', NOW() + INTERVAL '2 hours', 90, 'ROOM-ALEVEL-MATH-01', '/slides/sample-presentation.pdf', 8, 'scheduled'),
+('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000003', 'Full-Stack Software Engineering Live Lecture', 'Live interactive coding lecture covering React frontend components, WebSocket bi-directional state, and Node.js microservices.', NOW(), 60, 'ROOM-SOFTDEV-LIVE', '/slides/sample-presentation.pdf', 5, 'live')
+ON CONFLICT (id) DO NOTHING;

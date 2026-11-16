@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -12,14 +12,21 @@ import {
   X,
   FileText,
   AlertCircle,
-  FileUp
+  FileUp,
+  Zap,
+  Copy,
+  Check,
+  Radio
 } from 'lucide-react';
 
 export const TutorClasses = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [launchingInstant, setLaunchingInstant] = useState(false);
+  const [copiedRoomId, setCopiedRoomId] = useState(null);
 
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -40,15 +47,24 @@ export const TutorClasses = () => {
       setLoading(true);
       const [clsRes, crsRes] = await Promise.all([
         api.get('/classes'),
-        api.get(`/courses?tutor_id=${user.id}`)
+        api.get(`/courses?tutor_id=${user.id}`).catch(() => ({ data: { success: true, courses: [] } }))
       ]);
 
-      if (clsRes.data.success) setClasses(clsRes.data.classes);
-      if (crsRes.data.success) {
-        setCourses(crsRes.data.courses);
-        if (crsRes.data.courses.length > 0) {
-          setFormData(prev => ({ ...prev, course_id: crsRes.data.courses[0].id }));
-        }
+      if (clsRes.data.success) setClasses(clsRes.data.classes || []);
+      
+      let courseList = (crsRes.data.success && crsRes.data.courses) || [];
+      // If user has no specific assigned courses (e.g. admin or newly appointed tutor), fallback to all published courses!
+      if (courseList.length === 0) {
+        try {
+          const allCrsRes = await api.get('/courses');
+          if (allCrsRes.data.success && allCrsRes.data.courses) {
+            courseList = allCrsRes.data.courses;
+          }
+        } catch (e) {}
+      }
+      setCourses(courseList);
+      if (courseList.length > 0) {
+        setFormData(prev => ({ ...prev, course_id: courseList[0].id }));
       }
     } catch (err) {
       console.error('Failed to load classes', err);
@@ -60,6 +76,39 @@ export const TutorClasses = () => {
   useEffect(() => {
     if (user?.id) fetchData();
   }, [user?.id]);
+
+  const handleStartInstantClass = async () => {
+    try {
+      setLaunchingInstant(true);
+      const defaultCourseId = courses[0]?.id || null;
+      const res = await api.post('/classes', {
+        title: `Live Session with ${user?.full_name || 'Faculty Tutor'}`,
+        description: 'Interactive live academic lecture session with synchronized digital presentation deck and whiteboard.',
+        course_id: defaultCourseId,
+        isInstant: true,
+        status: 'live',
+        scheduled_at: new Date().toISOString(),
+        duration_minutes: 60,
+        presentation_url: '/slides/sample-presentation.pdf',
+        presentation_pages: 6
+      });
+      if (res.data.success && res.data.class) {
+        navigate(`/classroom/${res.data.class.meeting_room_id}?as=tutor`);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to start instant class. Please check server connection.');
+    } finally {
+      setLaunchingInstant(false);
+    }
+  };
+
+  const copyRoomLink = (roomId) => {
+    const link = `${window.location.origin}/classroom/${roomId}?as=student`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedRoomId(roomId);
+      setTimeout(() => setCopiedRoomId(null), 2500);
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -113,16 +162,32 @@ export const TutorClasses = () => {
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Live Classes & Lecture Schedule</h1>
           <p className="text-xs text-slate-500 mt-1">Schedule live virtual classrooms, attach slide decks, and launch real-time teaching sessions</p>
         </div>
-        <button
-          onClick={() => {
-            setFormError('');
-            setModalOpen(true);
-          }}
-          className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Schedule Live Class</span>
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={handleStartInstantClass}
+            disabled={launchingInstant}
+            className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all disabled:opacity-50"
+          >
+            <Zap className="w-4 h-4 fill-current text-amber-300 animate-pulse" />
+            <span>{launchingInstant ? 'Launching...' : '⚡ Start Instant Live Class'}</span>
+          </button>
+          <button
+            onClick={() => {
+              setFormError('');
+              const defaultTime = new Date(Date.now() + 1800000).toISOString().slice(0, 16);
+              setFormData(prev => ({
+                ...prev,
+                scheduled_at: defaultTime,
+                course_id: courses[0]?.id || ''
+              }));
+              setModalOpen(true);
+            }}
+            className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Schedule Class</span>
+          </button>
+        </div>
       </div>
 
       {/* Classes List */}
@@ -146,14 +211,33 @@ export const TutorClasses = () => {
                 </tr>
               ) : classes.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-400">No classes scheduled yet. Click Schedule Live Class to set one up!</td>
+                  <td colSpan={6} className="text-center py-12 text-slate-400">No classes scheduled yet. Click &apos;⚡ Start Instant Live Class&apos; to begin teaching!</td>
                 </tr>
               ) : (
                 classes.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3.5 px-6">
                       <span className="font-bold text-slate-900 block">{c.title}</span>
-                      <span className="text-[11px] text-slate-400">Room: {c.meeting_room_id}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] font-mono text-slate-400">{c.meeting_room_id}</span>
+                        <button
+                          onClick={() => copyRoomLink(c.meeting_room_id)}
+                          title="Copy Student Join Link"
+                          className="inline-flex items-center gap-1 text-[10px] text-emerald-600 hover:text-emerald-700 font-bold"
+                        >
+                          {copiedRoomId === c.meeting_room_id ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" />
+                              <span>Copied Link</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy Link</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </td>
                     <td className="py-3.5 px-6 text-emerald-700 font-semibold">
                       {c.course?.title || 'General Curriculum'}
@@ -168,7 +252,7 @@ export const TutorClasses = () => {
                       {c.status === 'live' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping inline-block" />
-                          LIVE
+                          LIVE NOW
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 capitalize">
@@ -195,7 +279,7 @@ export const TutorClasses = () => {
                           </button>
                         )}
                         <Link
-                          to={`/classroom/${c.meeting_room_id}`}
+                          to={`/classroom/${c.meeting_room_id}?as=tutor`}
                           className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center space-x-1"
                         >
                           <Play className="w-3 h-3 fill-current" />
@@ -232,14 +316,20 @@ export const TutorClasses = () => {
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Select Course</label>
                 <select
-                  required
                   value={formData.course_id}
                   onChange={(e) => setFormData({ ...formData, course_id: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none"
                 >
-                  {courses.map((crs) => (
-                    <option key={crs.id} value={crs.id}>{crs.title}</option>
-                  ))}
+                  {courses.length === 0 ? (
+                    <option value="">General Academic Session (No Specific Course)</option>
+                  ) : (
+                    <>
+                      {courses.map((crs) => (
+                        <option key={crs.id} value={crs.id}>{crs.title}</option>
+                      ))}
+                      <option value="">General Academic Session</option>
+                    </>
+                  )}
                 </select>
               </div>
 

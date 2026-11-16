@@ -18,13 +18,15 @@ export const SocketProvider = ({ children }) => {
 
     const newSocket = io(socketUrl, {
       autoConnect: true,
-      transports: ['polling', 'websocket'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 15000
     });
 
     newSocket.on('connect', () => {
-      console.log('⚡ Socket connected to server:', newSocket.id);
+      console.log('⚡ Socket connected to server via WebSocket:', newSocket.id);
     });
 
     newSocket.on('connect_error', (err) => {
@@ -36,7 +38,7 @@ export const SocketProvider = ({ children }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, [user?.id]);
+  }, []);
 
   return (
     <SocketContext.Provider value={{ socket }}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import {
   Video,
@@ -7,12 +7,23 @@ import {
   Calendar,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  KeyRound,
+  ArrowRight
 } from 'lucide-react';
 
 export const StudentClasses = () => {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [customRoomCode, setCustomRoomCode] = useState('');
+
+  const handleJoinCustomRoom = (e) => {
+    e.preventDefault();
+    const code = customRoomCode.trim().toUpperCase();
+    if (!code) return;
+    navigate(`/classroom/${code}?as=student`, { state: { from: 'student' } });
+  };
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -35,9 +46,32 @@ export const StudentClasses = () => {
     <div className="space-y-6">
       
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Live Classes & Timetable</h1>
-        <p className="text-xs text-slate-500 mt-1">Scheduled interactive sessions with synchronized presentation decks, whiteboard, and live voice</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Live Classes & Timetable</h1>
+          <p className="text-xs text-slate-500 mt-1">Scheduled interactive sessions with synchronized presentation decks, whiteboard, and live voice</p>
+        </div>
+
+        {/* Quick Join with Room Code Form */}
+        <form onSubmit={handleJoinCustomRoom} className="flex items-center gap-2">
+          <div className="relative">
+            <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={customRoomCode}
+              onChange={(e) => setCustomRoomCode(e.target.value)}
+              placeholder="Enter Room Code (e.g. ROOM-...)"
+              className="pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs font-mono font-bold uppercase focus:ring-2 focus:ring-brand-500 outline-none w-56 sm:w-64"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all shrink-0"
+          >
+            <span>Join Room</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </form>
       </div>
 
       {/* Classes List */}

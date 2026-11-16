@@ -1,6 +1,33 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import pg from 'pg';
+import dotenv from 'dotenv';
 import { supabase, isSupabaseConfigured } from '../config/supabase.js';
+
+dotenv.config();
+
+const { Pool } = pg;
+const databaseUrl = process.env.DATABASE_URL;
+
+export const pool = databaseUrl
+  ? new Pool({
+      connectionString: databaseUrl,
+      ssl: databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1')
+        ? false
+        : { rejectUnauthorized: false },
+      max: 15,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 6000
+    })
+  : null;
+
+if (pool) {
+  pool.query('SELECT NOW()').then(() => {
+    console.log('✅ PostgreSQL connection pool initialized successfully for LMS Store.');
+  }).catch(err => {
+    console.warn('⚠️ PostgreSQL pool connection warning, running on hybrid memory fallback:', err.message);
+  });
+}
 
 // Pre-computed hash for 'Password123!'
 const DEFAULT_HASH = bcrypt.hashSync('Password123!', 10);
@@ -716,6 +743,14 @@ const memoryData = {
 export const store = {
   // Profiles / Users
   getProfiles: async () => {
+    if (pool) {
+      try {
+        const res = await pool.query('SELECT * FROM profiles ORDER BY created_at ASC');
+        if (res.rows && res.rows.length > 0) return res.rows;
+      } catch (e) {
+        console.warn('[store] pg getProfiles fallback:', e.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('profiles').select('*');
       if (!error && data) return data;
@@ -724,6 +759,14 @@ export const store = {
   },
 
   getProfileById: async (id) => {
+    if (pool) {
+      try {
+        const res = await pool.query('SELECT * FROM profiles WHERE id = $1', [id]);
+        if (res.rows && res.rows[0]) return res.rows[0];
+      } catch (e) {
+        console.warn('[store] pg getProfileById fallback:', e.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
       if (!error && data) return data;
@@ -736,6 +779,16 @@ export const store = {
     const normalized = email.toLowerCase().trim();
     const prefix = normalized.split('@')[0];
 
+    if (pool) {
+      try {
+        const res = await pool.query('SELECT * FROM profiles WHERE LOWER(email) = LOWER($1)', [normalized]);
+        if (res.rows && res.rows[0]) return res.rows[0];
+        const prefixRes = await pool.query('SELECT * FROM profiles WHERE LOWER(split_part(email, \'@\', 1)) = LOWER($1)', [prefix]);
+        if (prefixRes.rows && prefixRes.rows[0]) return prefixRes.rows[0];
+      } catch (e) {
+        console.warn('[store] pg getProfileByEmail fallback:', e.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('profiles').select('*').ilike('email', normalized).single();
       if (!error && data) return data;
@@ -789,6 +842,23 @@ export const store = {
 
   // Courses
   getCourses: async () => {
+    if (pool) {
+      try {
+        const query = `
+          SELECT c.*, 
+            row_to_json(cat.*) as category, 
+            row_to_json(p.*) as tutor 
+          FROM courses c 
+          LEFT JOIN course_categories cat ON c.category_id = cat.id 
+          LEFT JOIN profiles p ON c.tutor_id = p.id 
+          ORDER BY c.created_at ASC
+        `;
+        const res = await pool.query(query);
+        if (res.rows && res.rows.length > 0) return res.rows;
+      } catch (e) {
+        console.warn('[store] pg getCourses fallback:', e.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('courses').select('*, tutor:profiles(full_name, email, avatar_url), category:course_categories(name)');
       if (!error && data) return data;
@@ -881,6 +951,23 @@ export const store = {
 
   // Classes
   getClasses: async () => {
+    if (pool) {
+      try {
+        const query = `
+          SELECT cl.*, 
+            row_to_json(c.*) as course, 
+            row_to_json(p.*) as tutor 
+          FROM classes cl 
+          LEFT JOIN courses c ON cl.course_id = c.id 
+          LEFT JOIN profiles p ON cl.tutor_id = p.id 
+          ORDER BY cl.scheduled_at ASC
+        `;
+        const res = await pool.query(query);
+        if (res.rows && res.rows.length > 0) return res.rows;
+      } catch (e) {
+        console.warn('[store] pg getClasses fallback:', e.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('classes').select('*, course:courses(*), tutor:profiles(*)');
       if (!error && data) return data;
@@ -899,23 +986,70 @@ export const store = {
 
   createClass: async (classData) => {
     const newClass = {
-      id: uuidv4(),
+      id: classData.id || uuidv4(),
       meeting_room_id: classData.meeting_room_id || `ROOM-${Date.now().toString(36).toUpperCase()}`,
-      status: 'scheduled',
-      presentation_pages: 5,
+      status: classData.status || 'scheduled',
+      presentation_pages: classData.presentation_pages || 5,
       ...classData,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+    if (pool) {
+      try {
+        const query = `
+          INSERT INTO classes (id, course_id, tutor_id, title, description, scheduled_at, duration_minutes, meeting_room_id, presentation_url, presentation_pages, status)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          RETURNING *
+        `;
+        const res = await pool.query(query, [
+          newClass.id,
+          newClass.course_id || null,
+          newClass.tutor_id,
+          newClass.title,
+          newClass.description || '',
+          newClass.scheduled_at,
+          parseInt(newClass.duration_minutes, 10) || 60,
+          newClass.meeting_room_id,
+          newClass.presentation_url || '/slides/sample-presentation.pdf',
+          parseInt(newClass.presentation_pages, 10) || 5,
+          newClass.status
+        ]);
+        if (res.rows && res.rows[0]) {
+          memoryData.classes.unshift(res.rows[0]);
+          return res.rows[0];
+        }
+      } catch (e) {
+        console.warn('[store] pg createClass fallback:', e.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('classes').insert([newClass]).select().single();
       if (!error && data) return data;
     }
-    memoryData.classes.push(newClass);
+    memoryData.classes.unshift(newClass);
     return newClass;
   },
 
   updateClass: async (id, updates) => {
+    if (pool) {
+      try {
+        const keys = Object.keys(updates);
+        if (keys.length > 0) {
+          const setClause = keys.map((k, idx) => `"${k}" = $${idx + 1}`).join(', ');
+          const values = Object.values(updates);
+          values.push(id);
+          const query = `UPDATE classes SET ${setClause}, updated_at = NOW() WHERE id = $${values.length} OR meeting_room_id = $${values.length} RETURNING *`;
+          const res = await pool.query(query, values);
+          if (res.rows && res.rows[0]) {
+            const idx = memoryData.classes.findIndex(c => c.id === id || c.meeting_room_id === id);
+            if (idx !== -1) memoryData.classes[idx] = { ...memoryData.classes[idx], ...res.rows[0] };
+            return res.rows[0];
+          }
+        }
+      } catch (e) {
+        console.warn('[store] pg updateClass fallback:', e.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('classes').update(updates).eq('id', id).select().single();
       if (!error && data) return data;

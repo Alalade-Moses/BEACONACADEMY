@@ -51,6 +51,7 @@ import {
 
 export const ClassroomPage = () => {
   const { classId } = useParams();
+  const normClassId = (classId || '').trim().toUpperCase();
   const { user } = useAuth();
   const socket = useSocket();
   const navigate = useNavigate();
@@ -439,7 +440,7 @@ export const ClassroomPage = () => {
 
     const emitJoinRoom = () => {
       socket.emit('join_room', {
-        roomId: classId,
+        roomId: normClassId,
         user: {
           id: user.id,
           full_name: user.full_name,
@@ -457,6 +458,7 @@ export const ClassroomPage = () => {
     socket.on('room_init_state', async (state) => {
       if (state.currentSlide) setCurrentSlide(state.currentSlide);
       if (state.totalSlides) setTotalSlides(state.totalSlides);
+      if (state.slideMode) setSlideMode(state.slideMode);
       if (state.presentationSlides && state.presentationSlides.length > 0) {
         setCustomSlides(state.presentationSlides);
       } else if (state.presentationUrl) {
@@ -497,6 +499,40 @@ export const ClassroomPage = () => {
       setCurrentSlide(data.currentSlide || 1);
       setTotalSlides(data.totalSlides || (data.slides && data.slides.length > 0 ? data.slides.length : 6));
       setStrokesBySlide({});
+    });
+
+    // Slide Mode synchronization (Digital Whiteboard vs Presentation Deck)
+    socket.on('slide_mode_updated', (data) => {
+      if (data?.mode) {
+        setSlideMode(data.mode);
+      }
+    });
+
+    // Live continuous drawing stream (Sub-50ms stroke animation)
+    socket.on('stroke_step_received', (step) => {
+      if (step.slideIndex !== currentSlide) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.beginPath();
+      if (step.tool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.lineWidth = step.width * 3;
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = step.color;
+        ctx.lineWidth = step.width;
+      }
+      ctx.lineCap = 'round';
+      ctx.globalAlpha = step.isHighlighter ? 0.35 : 1.0;
+      ctx.moveTo(step.from.u * width, step.from.v * height);
+      ctx.lineTo(step.to.u * width, step.to.v * height);
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1.0;
     });
 
     // Roster update
@@ -590,6 +626,8 @@ export const ClassroomPage = () => {
       socket.off('room_init_state');
       socket.off('roster_update');
       socket.off('slide_updated');
+      socket.off('slide_mode_updated');
+      socket.off('stroke_step_received');
       socket.off('stroke_received');
       socket.off('canvas_cleared');
       socket.off('stroke_undone');
@@ -599,7 +637,7 @@ export const ClassroomPage = () => {
       socket.off('class_ended');
       socket.off('force_mute');
     };
-  }, [socket, classId, user?.id, isTutor]);
+  }, [socket, normClassId, user?.id, isTutor, currentSlide]);
 
   // 4. Slide Navigation
   const goToSlide = (slideIndex) => {
@@ -607,9 +645,19 @@ export const ClassroomPage = () => {
     setCurrentSlide(slideIndex);
     if (isTutor && socket) {
       socket.emit('slide_change', {
-        roomId: classId,
+        roomId: normClassId,
         slideIndex,
         totalSlides
+      });
+    }
+  };
+
+  const switchSlideMode = (newMode) => {
+    setSlideMode(newMode);
+    if (isTutor && socket) {
+      socket.emit('slide_mode_change', {
+        roomId: normClassId,
+        mode: newMode
       });
     }
   };
@@ -738,20 +786,39 @@ export const ClassroomPage = () => {
     redrawCanvas();
   }, [redrawCanvas]);
 
-  // Adjust canvas resolution dynamically to match stage container
+  // Adjust canvas resolution dynamically to match stage container using ResizeObserver
   useEffect(() => {
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (canvas && canvas.parentElement) {
-        canvas.width = canvas.parentElement.clientWidth;
-        canvas.height = canvas.parentElement.clientHeight;
+    const canvas = canvasRef.current;
+    if (!canvas || !canvas.parentElement) return;
+
+    const updateResolution = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const rect = parent.getBoundingClientRect();
+      const w = Math.max(1, Math.round(rect.width));
+      const h = Math.max(1, Math.round(rect.height));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
         redrawCanvas();
       }
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    updateResolution();
+
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => {
+        updateResolution();
+      });
+      ro.observe(canvas.parentElement);
+    }
+
+    window.addEventListener('resize', updateResolution);
+    return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', updateResolution);
+    };
   }, [redrawCanvas]);
 
   // Full Screen Presentation Mode Controls
@@ -829,25 +896,28 @@ export const ClassroomPage = () => {
     }
   };
 
-  // 6. Drawing Mouse/Touch Handlers
+  // 6. Drawing Mouse/Touch Handlers (Normalized Coordinates with Pointer Events)
   const getCanvasCoords = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return { u: 0, v: 0 };
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    if (!rect.width || !rect.height) return { u: 0, v: 0 };
+    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
     const x = clientX - rect.left;
     const y = clientY - rect.top;
     return {
-      u: Math.max(0, Math.min(1, x / canvas.width)),
-      v: Math.max(0, Math.min(1, y / canvas.height))
+      u: Math.max(0, Math.min(1, x / rect.width)),
+      v: Math.max(0, Math.min(1, y / rect.height))
     };
   };
 
   const handlePointerDown = (e) => {
     // Only tutor or authorized participant can draw
     if (!isTutor) return;
-    e.preventDefault();
+    if (e.pointerId && e.target && e.target.setPointerCapture) {
+      try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+    }
     isDrawingRef.current = true;
     const coords = getCanvasCoords(e);
     currentPathRef.current = [coords];
@@ -855,7 +925,6 @@ export const ClassroomPage = () => {
 
   const handlePointerMove = (e) => {
     if (!isDrawingRef.current || !isTutor) return;
-    e.preventDefault();
     const coords = getCanvasCoords(e);
     currentPathRef.current.push(coords);
 
@@ -888,11 +957,33 @@ export const ClassroomPage = () => {
         ctx.globalAlpha = 1.0;
       }
     }
+
+    // Stream step to students for instant live drawing feedback
+    if (socket && (currentTool === 'pen' || currentTool === 'highlighter' || currentTool === 'eraser')) {
+      const pts = currentPathRef.current;
+      if (pts.length >= 2) {
+        socket.emit('draw_step', {
+          roomId: normClassId,
+          step: {
+            tool: currentTool,
+            color: strokeColor,
+            width: strokeWidth,
+            isHighlighter: currentTool === 'highlighter',
+            from: pts[pts.length - 2],
+            to: pts[pts.length - 1],
+            slideIndex: currentSlide
+          }
+        });
+      }
+    }
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e) => {
     if (!isDrawingRef.current || !isTutor) return;
     isDrawingRef.current = false;
+    if (e && e.pointerId && e.target && e.target.releasePointerCapture) {
+      try { e.target.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
     const pts = currentPathRef.current;
     if (pts.length === 0) return;
 
@@ -927,7 +1018,7 @@ export const ClassroomPage = () => {
       // Broadcast to room
       if (socket) {
         socket.emit('draw_stroke', {
-          roomId: classId,
+          roomId: normClassId,
           stroke: strokeObj
         });
       }
@@ -946,14 +1037,14 @@ export const ClassroomPage = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
     if (socket) {
-      socket.emit('clear_canvas', { roomId: classId, slideIndex: currentSlide });
+      socket.emit('clear_canvas', { roomId: normClassId, slideIndex: currentSlide });
     }
   };
 
   const undoStroke = () => {
     if (!isTutor) return;
     if (socket) {
-      socket.emit('undo_stroke', { roomId: classId, slideIndex: currentSlide });
+      socket.emit('undo_stroke', { roomId: normClassId, slideIndex: currentSlide });
     }
     setStrokesBySlide(prev => {
       const existing = prev[currentSlide] || [];
@@ -2053,7 +2144,7 @@ export const ClassroomPage = () => {
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700/80">
               <button
-                onClick={() => setSlideMode('presentation')}
+                onClick={() => switchSlideMode('presentation')}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                   slideMode === 'presentation' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
@@ -2061,7 +2152,7 @@ export const ClassroomPage = () => {
                 Slide Presentation
               </button>
               <button
-                onClick={() => setSlideMode('whiteboard')}
+                onClick={() => switchSlideMode('whiteboard')}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                   slideMode === 'whiteboard' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
@@ -2355,14 +2446,12 @@ export const ClassroomPage = () => {
               {/* REAL-TIME VECTOR ANNOTATION CANVAS (OVERLAY) */}
               <canvas
                 ref={canvasRef}
-                onMouseDown={handlePointerDown}
-                onMouseMove={handlePointerMove}
-                onMouseUp={handlePointerUp}
-                onTouchStart={handlePointerDown}
-                onTouchMove={handlePointerMove}
-                onTouchEnd={handlePointerUp}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerCancel={handlePointerUp}
                 onWheel={handleCanvasWheel}
-                className={`absolute inset-0 z-10 w-full h-full ${
+                className={`absolute inset-0 z-10 w-full h-full touch-none ${
                   isTutor ? 'cursor-crosshair' : 'cursor-default pointer-events-none'
                 }`}
               />
