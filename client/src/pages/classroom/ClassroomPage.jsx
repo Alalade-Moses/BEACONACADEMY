@@ -1905,8 +1905,8 @@ export const ClassroomPage = () => {
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 flex items-center justify-center text-white font-extrabold shadow-lg">
-              <GraduationCap className="w-6 h-6" />
+            <div className="bg-white px-2.5 py-1.5 rounded-xl shadow-md shrink-0">
+              <img src="/logo.png" alt="Beacon Bridge Academics" className="h-7 w-auto object-contain" />
             </div>
             <div>
               <h1 className="text-sm font-extrabold text-white tracking-tight">Beacon Bridge Academics</h1>

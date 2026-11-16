@@ -73,17 +73,11 @@ export const PublicNavbar = () => {
           
           {/* Brand Logo */}
           <Link to="/" onClick={() => scrollToSection('top')} className="flex items-center space-x-2 sm:space-x-2.5 group shrink-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#050167] to-[#001f3f] flex items-center justify-center text-[#40ffa7] shadow-md shadow-[#050167]/20 group-hover:scale-105 transition-transform duration-200 shrink-0 border border-[#40ffa7]/30">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm sm:text-base xl:text-lg font-black tracking-tight text-[#001f3f] leading-none group-hover:text-[#050167] transition-colors whitespace-nowrap">
-                Beacon Bridge
-              </span>
-              <span className="text-[9px] sm:text-[10px] xl:text-xs font-extrabold uppercase tracking-widest text-[#050167] mt-0.5">
-                Academics
-              </span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Beacon Bridge Academics" 
+              className="h-10 sm:h-12 w-auto object-contain transition-transform duration-200 group-hover:scale-105" 
+            />
           </Link>
 
           {/* Desktop Navigation Links — Streamlined & Essential */}
@@ -107,6 +101,13 @@ export const PublicNavbar = () => {
               Curriculum
             </Link>
             <Link
+              to="/book-consultation"
+              className="px-2 xl:px-3 py-1.5 rounded-lg text-[#050167] bg-[#40ffa7]/20 hover:bg-[#40ffa7]/35 active:scale-95 font-bold transition-all whitespace-nowrap flex items-center gap-1.5"
+            >
+              <CalendarCheck className="w-3.5 h-3.5 text-[#050167]" />
+              <span>Book Consultation</span>
+            </Link>
+            <Link
               to="/how-it-works"
               className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
@@ -128,7 +129,7 @@ export const PublicNavbar = () => {
             </Link>
           </nav>
 
-          {/* Desktop Right Actions (Sign In / Book a Consultation / My Portal) */}
+          {/* Desktop Right Actions (Sign In / Register with Us / My Portal) */}
           <div className="hidden lg:flex items-center space-x-1.5 xl:space-x-2 shrink-0">
             {isAuthenticated ? (
               <div className="flex items-center space-x-1.5 xl:space-x-2 shrink-0">
@@ -148,26 +149,41 @@ export const PublicNavbar = () => {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-1.5 xl:space-x-2 shrink-0">
+              <div className="flex items-center space-x-2 shrink-0">
                 <Link
                   to="/login"
-                  className="px-2.5 xl:px-3.5 py-1.5 xl:py-2 rounded-xl text-[#001f3f] hover:text-[#050167] hover:bg-[#f0faff] active:scale-95 font-bold text-xs xl:text-sm transition-colors whitespace-nowrap shrink-0"
+                  className="px-3 xl:px-3.5 py-1.5 xl:py-2 rounded-xl text-[#001f3f] hover:text-[#050167] hover:bg-[#f0faff] active:scale-95 font-bold text-xs xl:text-sm transition-colors whitespace-nowrap shrink-0"
                 >
                   Log In
                 </Link>
                 <Link
                   to="/register"
-                  className="inline-flex items-center space-x-1.5 px-3 xl:px-4 py-1.5 xl:py-2 rounded-xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-xs xl:text-sm transition-all shadow-md shadow-[#40ffa7]/25 hover:shadow-lg hover:shadow-[#40ffa7]/35 hover:-translate-y-0.5 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3.5 xl:px-4 py-1.5 xl:py-2 rounded-xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-xs xl:text-sm transition-all shadow-md shadow-[#40ffa7]/25 hover:shadow-lg hover:shadow-[#40ffa7]/35 hover:-translate-y-0.5 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  <CalendarCheck className="w-3.5 h-3.5 text-[#001f3f] shrink-0" />
-                  <span>Book a Consultation</span>
+                  <span>Register with Us</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#001f3f] shrink-0" />
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Mobile menu trigger */}
-          <div className="flex lg:hidden">
+          {/* Mobile Header Actions (Prominent Log In + Menu Trigger) */}
+          <div className="flex items-center space-x-2 lg:hidden">
+            {!isAuthenticated ? (
+              <Link
+                to="/login"
+                className="px-3 py-1.5 rounded-xl bg-[#050167]/5 text-[#050167] font-extrabold text-xs border border-[#050167]/15 hover:bg-[#050167]/10 active:scale-95 transition-all shadow-sm"
+              >
+                Log In
+              </Link>
+            ) : (
+              <Link
+                to={getDashboardPath()}
+                className="px-2.5 py-1.5 rounded-xl bg-[#050167] text-white font-bold text-xs shadow-sm"
+              >
+                Portal
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -191,6 +207,14 @@ export const PublicNavbar = () => {
             >
               <Home className="w-4 h-4 text-[#050167]" />
               <span>Home</span>
+            </Link>
+            <Link
+              to="/book-consultation"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full text-left py-2.5 px-3 rounded-xl bg-[#40ffa7]/20 text-[#050167] font-bold flex items-center gap-2"
+            >
+              <CalendarCheck className="w-4 h-4 text-[#050167]" />
+              <span>Book a 1-on-1 Consultation</span>
             </Link>
             <Link
               to="/about"
@@ -254,7 +278,7 @@ export const PublicNavbar = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full text-center py-3 rounded-xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-sm shadow-lg shadow-[#40ffa7]/30 whitespace-nowrap flex items-center justify-center space-x-2"
                 >
-                  <span>Book a Consultation</span>
+                  <span>Register with Us</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </>

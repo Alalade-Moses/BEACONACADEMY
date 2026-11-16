@@ -308,6 +308,32 @@ CREATE TABLE IF NOT EXISTS tutor_applications (
 CREATE INDEX IF NOT EXISTS idx_tutor_apps_status ON tutor_applications(status);
 CREATE INDEX IF NOT EXISTS idx_tutor_apps_email ON tutor_applications(email);
 
+-- 17. ACADEMIC CONSULTATIONS (1-on-1 Faculty Advisor Appointments)
+CREATE TABLE IF NOT EXISTS consultations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    parent_name VARCHAR(255) NOT NULL,
+    student_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(100) NOT NULL,
+    curriculum VARCHAR(100) NOT NULL,
+    subjects VARCHAR(255),
+    exam_board VARCHAR(100),
+    current_grade VARCHAR(50),
+    target_grade VARCHAR(50),
+    consultation_day VARCHAR(50) NOT NULL,
+    consultation_time VARCHAR(50) NOT NULL,
+    consultation_date VARCHAR(50),
+    consultant_name VARCHAR(255) DEFAULT 'Dr. Sarah Jenkins',
+    mode VARCHAR(100) DEFAULT 'Live Interactive Video (Classroom / Meet)',
+    notes TEXT,
+    status VARCHAR(50) DEFAULT 'confirmed',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_consultations_email ON consultations(email);
+CREATE INDEX IF NOT EXISTS idx_consultations_date ON consultations(consultation_date);
+
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES (Supabase Compatibility Guard)
 -- ==============================================================================

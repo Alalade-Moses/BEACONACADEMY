@@ -16,6 +16,7 @@ import { LoginPage } from './pages/public/LoginPage';
 import { RegisterPage } from './pages/public/RegisterPage';
 import { PaymentProofPage } from './pages/public/PaymentProofPage';
 import { TeacherApplicationPage } from './pages/public/TeacherApplicationPage';
+import { BookConsultationPage } from './pages/public/BookConsultationPage';
 
 // Admin Portal Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -70,6 +71,8 @@ export const App = () => {
         <Route path="/curriculum" element={<CurriculumPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/book-consultation" element={<BookConsultationPage />} />
+        <Route path="/consultation" element={<BookConsultationPage />} />
         <Route path="/payment-proof" element={<PaymentProofPage />} />
         <Route path="/apply-to-teach" element={<TeacherApplicationPage />} />
         <Route path="/tutor/apply" element={<TeacherApplicationPage />} />

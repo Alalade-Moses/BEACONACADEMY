@@ -613,9 +613,18 @@ export const RegisterPage = () => {
       
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-10">
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/10 text-[#050167] text-xs font-bold mb-4 border border-[#050167]/20">
-          <GraduationCap className="w-4 h-4 text-[#050167]" />
-          <span>Unified Student & Parent Registration</span>
+        <Link to="/" className="inline-block group mb-3">
+          <img 
+            src="/logo.png" 
+            alt="Beacon Bridge Academics" 
+            className="h-16 w-auto object-contain mx-auto group-hover:scale-105 transition-transform" 
+          />
+        </Link>
+        <div>
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/10 text-[#050167] text-xs font-bold mb-4 border border-[#050167]/20">
+            <GraduationCap className="w-4 h-4 text-[#050167]" />
+            <span>Unified Student & Parent Registration</span>
+          </div>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-[#001f3f] tracking-tight">
           Join Beacon Bridge Academics

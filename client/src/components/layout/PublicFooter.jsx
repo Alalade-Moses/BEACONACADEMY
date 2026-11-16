@@ -10,12 +10,13 @@ export const PublicFooter = () => {
           
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#050167] to-[#001f3f] flex items-center justify-center text-[#40ffa7] border border-[#40ffa7]/30 shadow-lg">
-                <GraduationCap className="w-6 h-6" />
-              </div>
-              <span className="text-xl font-bold text-white tracking-tight">Beacon Bridge Academics</span>
-            </div>
+            <Link to="/" className="inline-block bg-white px-3 py-2 rounded-2xl shadow-md group">
+              <img 
+                src="/logo.png" 
+                alt="Beacon Bridge Academics" 
+                className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" 
+              />
+            </Link>
             <p className="text-[#f0faff] text-sm max-w-sm leading-relaxed font-medium">
               Beacon Bridge Academics: online tutoring that helps children catch up, feel confident and get exam-ready.
             </p>
@@ -81,7 +82,8 @@ export const PublicFooter = () => {
             <h4 className="text-white font-bold mb-4 tracking-wider uppercase text-xs">Other</h4>
             <ul className="space-y-2.5">
               <li><Link to="/about" className="hover:text-[#40ffa7] transition-colors">About Us</Link></li>
-              <li><Link to="/register" className="hover:text-[#40ffa7] transition-colors font-bold text-[#40ffa7]">Book a Consultation</Link></li>
+              <li><Link to="/book-consultation" className="hover:text-[#40ffa7] transition-colors font-bold text-[#40ffa7]">Book a 1-on-1 Consultation</Link></li>
+              <li><Link to="/register" className="hover:text-[#40ffa7] transition-colors">Register with Us</Link></li>
               <li><Link to="/payment-proof" className="hover:text-[#40ffa7] transition-colors">Tuition & Wire Account</Link></li>
               <li><Link to="/about#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</Link></li>
               <li><Link to="/about#promise" className="hover:text-[#40ffa7] transition-colors">Our Promise to Parents</Link></li>

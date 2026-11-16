@@ -28,6 +28,7 @@ import assignmentRoutes from './routes/assignmentRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import tutorApplicationRoutes from './routes/tutorApplicationRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
+import consultationRoutes from './routes/consultationRoutes.js';
 import { store } from './database/store.js';
 
 dotenv.config();
@@ -98,6 +99,7 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/tutor-applications', tutorApplicationRoutes);
 app.use('/api/emails', emailRoutes);
+app.use('/api/consultations', consultationRoutes);
 
 // Serve static frontend build if client/dist exists
 const clientDist = path.join(__dirname, '../client/dist');

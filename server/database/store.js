@@ -736,7 +736,30 @@ const memoryData = {
     bank_iban: 'GB29BARC20457783920147',
     bank_instructions: 'Please transfer the monthly tuition fee in British Pounds (£ GBP) using the Student Full Name and Reference Code in the payment description. After completing payment, upload your transfer confirmation receipt or slip.',
     default_tuition_fee: '£300.00 GBP / month'
-  }
+  },
+  consultations: [
+    {
+      id: '00000000-0000-0000-0000-000000000101',
+      parent_name: 'David Morgan',
+      student_name: 'Alex Morgan',
+      email: 'david.morgan@example.co.uk',
+      phone: '+44 7911 123456',
+      curriculum: 'GCSE (Year 11)',
+      subjects: 'Mathematics (Higher Tier), Chemistry',
+      exam_board: 'Edexcel',
+      current_grade: 'Grade 6',
+      target_grade: 'Grade 9',
+      consultation_day: 'Tuesday',
+      consultation_time: '10:00 AM – 10:45 AM (UK GMT)',
+      consultation_date: 'Upcoming Tuesday',
+      consultant_name: 'Dr. Sarah Jenkins',
+      mode: 'Live Interactive Video (Classroom / Meet)',
+      notes: 'Needs help with quadratic equations and exam timing.',
+      status: 'confirmed',
+      created_at: new Date('2026-02-01T10:00:00Z').toISOString(),
+      updated_at: new Date('2026-02-01T10:00:00Z').toISOString()
+    }
+  ]
 };
 
 // Unified Data Repository Interface
@@ -1948,5 +1971,112 @@ export const store = {
       return memoryData.tutor_applications.splice(idx, 1)[0];
     }
     return null;
+  },
+
+  // 1-on-1 Academic Consultations
+  getConsultations: async () => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT * FROM consultations ORDER BY created_at DESC');
+        return rows;
+      } catch (err) {
+        console.warn('⚠️ PostgreSQL query failed, using memory fallback:', err.message);
+      }
+    }
+    return memoryData.consultations || [];
+  },
+
+  getConsultationById: async (id) => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT * FROM consultations WHERE id = $1', [id]);
+        if (rows.length > 0) return rows[0];
+      } catch (err) {
+        console.warn('⚠️ PostgreSQL query failed, using memory fallback:', err.message);
+      }
+    }
+    return (memoryData.consultations || []).find(c => c.id === id) || null;
+  },
+
+  createConsultation: async (data) => {
+    const consultationId = uuidv4();
+    const newRecord = {
+      id: consultationId,
+      parent_name: data.parent_name?.trim() || '',
+      student_name: data.student_name?.trim() || '',
+      email: data.email?.trim().toLowerCase() || '',
+      phone: data.phone?.trim() || '',
+      curriculum: data.curriculum || 'GCSE (Year 10-11)',
+      subjects: data.subjects?.trim() || '',
+      exam_board: data.exam_board?.trim() || 'AQA',
+      current_grade: data.current_grade?.trim() || '',
+      target_grade: data.target_grade?.trim() || '',
+      consultation_day: data.consultation_day || 'Tuesday',
+      consultation_time: data.consultation_time || '10:00 AM – 10:45 AM (UK GMT)',
+      consultation_date: data.consultation_date || '',
+      consultant_name: data.consultant_name || 'Dr. Sarah Jenkins',
+      mode: data.mode || 'Live Interactive Video (Classroom / Meet)',
+      notes: data.notes?.trim() || '',
+      status: 'confirmed',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (pool) {
+      try {
+        const insertQuery = `
+          INSERT INTO consultations (
+            id, parent_name, student_name, email, phone, curriculum,
+            subjects, exam_board, current_grade, target_grade,
+            consultation_day, consultation_time, consultation_date,
+            consultant_name, mode, notes, status, created_at, updated_at
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6,
+            $7, $8, $9, $10,
+            $11, $12, $13,
+            $14, $15, $16, $17, $18, $19
+          ) RETURNING *;
+        `;
+        const values = [
+          newRecord.id, newRecord.parent_name, newRecord.student_name, newRecord.email, newRecord.phone, newRecord.curriculum,
+          newRecord.subjects, newRecord.exam_board, newRecord.current_grade, newRecord.target_grade,
+          newRecord.consultation_day, newRecord.consultation_time, newRecord.consultation_date,
+          newRecord.consultant_name, newRecord.mode, newRecord.notes, newRecord.status, newRecord.created_at, newRecord.updated_at
+        ];
+        const { rows } = await pool.query(insertQuery, values);
+        if (rows.length > 0) {
+          if (!memoryData.consultations) memoryData.consultations = [];
+          memoryData.consultations.unshift(rows[0]);
+          return rows[0];
+        }
+      } catch (err) {
+        console.warn('⚠️ PostgreSQL insert failed, fallback to memory:', err.message);
+      }
+    }
+
+    if (!memoryData.consultations) memoryData.consultations = [];
+    memoryData.consultations.unshift(newRecord);
+    return newRecord;
+  },
+
+  updateConsultationStatus: async (id, status, notes) => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query(
+          'UPDATE consultations SET status = $1, notes = COALESCE($2, notes), updated_at = NOW() WHERE id = $3 RETURNING *',
+          [status, notes, id]
+        );
+        if (rows.length > 0) return rows[0];
+      } catch (err) {
+        console.warn('⚠️ PostgreSQL update failed, fallback to memory:', err.message);
+      }
+    }
+    const rec = (memoryData.consultations || []).find(c => c.id === id);
+    if (rec) {
+      rec.status = status;
+      if (notes) rec.notes = notes;
+      rec.updated_at = new Date().toISOString();
+    }
+    return rec;
   }
 };

@@ -61,13 +61,14 @@ export const LoginPage = () => {
   return (
     <div className="max-w-lg mx-auto px-4 py-12">
       <div className="text-center mb-8">
-        <Link to="/" className="inline-flex items-center space-x-3 group">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#050167] to-[#001f3f] flex items-center justify-center text-[#40ffa7] border border-[#40ffa7]/30 shadow-lg shadow-[#050167]/25 group-hover:scale-105 transition-transform">
-            <GraduationCap className="w-7 h-7" />
-          </div>
-          <span className="text-2xl font-black tracking-tight text-[#001f3f]">Beacon Bridge Academics</span>
+        <Link to="/" className="inline-block group mb-2">
+          <img 
+            src="/logo.png" 
+            alt="Beacon Bridge Academics" 
+            className="h-16 w-auto object-contain mx-auto group-hover:scale-105 transition-transform" 
+          />
         </Link>
-        <h2 className="mt-6 text-2xl sm:text-3xl font-extrabold text-[#050167] tracking-tight">
+        <h2 className="mt-4 text-2xl sm:text-3xl font-extrabold text-[#050167] tracking-tight">
           Sign In to Your Portal
         </h2>
         <p className="mt-2 text-sm text-[#001f3f]/70">

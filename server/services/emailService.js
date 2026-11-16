@@ -411,6 +411,100 @@ export const sendTutorMessage = async ({ tutor, student, parent, subject, messag
   });
 };
 
+// 7. Academic Consultation Booking Notification (Dispatched to info@beaconbridgeacademics.co.uk & Parent)
+export const sendConsultationBookingNotifications = async (consultation) => {
+  const infoEmail = process.env.SUPPORT_EMAIL || 'info@beaconbridgeacademics.co.uk';
+
+  // 1. Email to Platform Operations & Info Inbox (info@beaconbridgeacademics.co.uk)
+  const staffHtml = buildEmailTemplate({
+    headerTitle: 'New 1-on-1 Academic Consultation Booked',
+    contentHtml: `
+      <p>A new UK 1-on-1 academic consultation has been scheduled through the Beacon Bridge Academics portal.</p>
+      
+      <div class="card" style="border-left: 4px solid #059669;">
+        <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 16px;">Consultation Appointment Details</h3>
+        <p style="margin: 4px 0;"><strong>Advisor:</strong> ${consultation.consultant_name || 'Dr. Sarah Jenkins'}</p>
+        <p style="margin: 4px 0;"><strong>Scheduled Slot:</strong> <span class="badge badge-gold">${consultation.consultation_day} &bull; ${consultation.consultation_time}</span></p>
+        <p style="margin: 4px 0;"><strong>Specific Date:</strong> ${consultation.consultation_date || 'Upcoming'}</p>
+        <p style="margin: 4px 0;"><strong>Format / Mode:</strong> ${consultation.mode || 'Live Interactive Video'}</p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 15px;">Parent & Student Information</h3>
+        <p style="margin: 4px 0;"><strong>Parent / Guardian:</strong> ${consultation.parent_name}</p>
+        <p style="margin: 4px 0;"><strong>Student Name:</strong> ${consultation.student_name}</p>
+        <p style="margin: 4px 0;"><strong>Email:</strong> <a href="mailto:${consultation.email}">${consultation.email}</a></p>
+        <p style="margin: 4px 0;"><strong>UK Phone / WhatsApp:</strong> <a href="tel:${consultation.phone}">${consultation.phone}</a></p>
+        <p style="margin: 4px 0;"><strong>Curriculum & Level:</strong> ${consultation.curriculum}</p>
+        <p style="margin: 4px 0;"><strong>Subject(s):</strong> ${consultation.subjects || 'General Academic Assessment'}</p>
+        <p style="margin: 4px 0;"><strong>Exam Board:</strong> ${consultation.exam_board || 'AQA / Edexcel'}</p>
+        <p style="margin: 4px 0;"><strong>Current Grade:</strong> ${consultation.current_grade || 'N/A'} &rarr; <strong>Target Grade:</strong> ${consultation.target_grade || 'N/A'}</p>
+        ${consultation.notes ? `<p style="margin: 8px 0 0 0; padding-top: 8px; border-top: 1px dashed #cbd5e1;"><strong>Specific Learning Notes / Goals:</strong><br/><em>"${consultation.notes}"</em></p>` : ''}
+      </div>
+    `,
+    callToAction: {
+      label: 'Open Admin Portal',
+      url: `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/admin/dashboard`
+    }
+  });
+
+  // 2. Email Confirmation to Parent / Student
+  const parentHtml = buildEmailTemplate({
+    headerTitle: 'Academic Consultation Confirmed',
+    contentHtml: `
+      <p>Dear <strong>${consultation.parent_name}</strong>,</p>
+      <p>Thank you for scheduling a private academic consultation for <strong>${consultation.student_name}</strong> with <strong>Beacon Bridge Academics</strong>.</p>
+      
+      <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
+        <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 16px;">Confirmed Appointment Details</h3>
+        <p style="margin: 4px 0;"><strong>Academic Advisor:</strong> ${consultation.consultant_name || 'Dr. Sarah Jenkins (Head of Academic Advisory)'}</p>
+        <p style="margin: 4px 0;"><strong>Day & Time:</strong> <span class="badge badge-green">${consultation.consultation_day} &bull; ${consultation.consultation_time}</span></p>
+        <p style="margin: 4px 0;"><strong>Curriculum / Target:</strong> ${consultation.curriculum} &bull; ${consultation.subjects || 'All Core Subjects'}</p>
+        <p style="margin: 4px 0;"><strong>Exam Board:</strong> ${consultation.exam_board || 'AQA / Edexcel'}</p>
+        <p style="margin: 4px 0;"><strong>Format:</strong> ${consultation.mode || 'Live Interactive Video'}</p>
+        <p style="margin: 4px 0;"><strong>Booking Reference:</strong> <code style="font-weight: 800; color: #065f46;">BBA-CNS-${consultation.id?.substring(0, 8)?.toUpperCase()}</code></p>
+      </div>
+
+      <div class="card">
+        <h4 style="margin: 0 0 8px 0; color: #1e3a8a;">What to expect during the consultation:</h4>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+          <li>A comprehensive review of ${consultation.student_name}'s current academic performance and exam board requirements.</li>
+          <li>Identification of syllabus knowledge gaps, exam technique hurdles, and revision timelines.</li>
+          <li>A tailored tuition plan and matching with an Oxford/Cambridge or Russell Group subject specialist tutor.</li>
+        </ul>
+      </div>
+
+      <p>Our advisor will send a direct meeting link 24 hours prior to the session. If you have any questions or need to reschedule, please email <a href="mailto:info@beaconbridgeacademics.co.uk" style="color: #059669;">info@beaconbridgeacademics.co.uk</a>.</p>
+    `,
+    callToAction: {
+      label: 'Visit Beacon Bridge Academics',
+      url: `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}`
+    }
+  });
+
+  // Dispatch staff notification to info@beaconbridgeacademics.co.uk
+  const staffNotice = await sendEmail({
+    to: infoEmail,
+    subject: `[New Consultation Booked] ${consultation.student_name} (${consultation.curriculum}) — ${consultation.consultation_day} ${consultation.consultation_time}`,
+    html: staffHtml,
+    senderType: 'admissions',
+    replyTo: consultation.email
+  });
+
+  // Dispatch confirmation to parent
+  let parentNotice = { success: true };
+  if (consultation.email) {
+    parentNotice = await sendEmail({
+      to: consultation.email,
+      subject: `Consultation Confirmed: ${consultation.student_name} with Beacon Bridge Academics`,
+      html: parentHtml,
+      senderType: 'admissions'
+    });
+  }
+
+  return { staffNotice, parentNotice };
+};
+
 export default {
   sendEmail,
   resolveSenderIdentity,
@@ -419,5 +513,6 @@ export default {
   sendPaymentProofAdminAlert,
   sendPaymentVerifiedReceipt,
   sendTutorApplicationReceived,
-  sendTutorMessage
+  sendTutorMessage,
+  sendConsultationBookingNotifications
 };

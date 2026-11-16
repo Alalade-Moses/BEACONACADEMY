@@ -29,6 +29,7 @@ import {
   Compass,
   Check,
   Calendar,
+  CalendarCheck,
   Layers,
   MessageSquare,
   HelpCircle,
@@ -303,21 +304,29 @@ export const LandingPage = () => {
               </p>
 
               {/* Action Buttons */}
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <Link
                   to="/register"
                   className="px-8 py-4 rounded-2xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-base shadow-xl shadow-[#40ffa7]/30 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
                 >
-                  <span>Book a Consultation</span>
+                  <span>Register with Us</span>
                   <ArrowRight className="w-5 h-5 text-[#001f3f]" />
+                </Link>
+
+                <Link
+                  to="/book-consultation"
+                  className="px-7 py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-[#f0faff] font-bold text-base border border-white/25 backdrop-blur-md transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CalendarCheck className="w-5 h-5 text-[#40ffa7]" />
+                  <span>Book a Consultation</span>
                 </Link>
 
                 <button
                   type="button"
                   onClick={() => scrollTo('how-it-works')}
-                  className="px-7 py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-[#f0faff] font-bold text-base border border-white/25 backdrop-blur-md transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+                  className="px-5 py-4 rounded-2xl text-slate-300 hover:text-white font-medium text-sm transition-all flex items-center justify-center cursor-pointer"
                 >
-                  See How It Works
+                  How It Works &darr;
                 </button>
               </div>
 
@@ -1105,16 +1114,17 @@ export const LandingPage = () => {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/register"
-              className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-base shadow-2xl shadow-[#40ffa7]/40 transition-all hover:-translate-y-1 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-9 py-5 rounded-2xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-base shadow-2xl shadow-[#40ffa7]/40 transition-all hover:-translate-y-1 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>Book a Consultation</span>
+              <span>Register with Us</span>
               <ArrowRight className="w-5 h-5 text-[#001f3f]" />
             </Link>
             <Link
-              to="/payment-proof"
-              className="w-full sm:w-auto px-8 py-5 rounded-2xl bg-white/10 hover:bg-white/20 text-[#f0faff] font-bold text-base border border-white/25 transition-all active:scale-95 flex items-center justify-center"
+              to="/book-consultation"
+              className="w-full sm:w-auto px-8 py-5 rounded-2xl bg-white/10 hover:bg-white/20 text-[#f0faff] font-bold text-base border border-white/25 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              Tuition Coordinates
+              <CalendarCheck className="w-5 h-5 text-[#40ffa7]" />
+              <span>Book a 1-on-1 Consultation</span>
             </Link>
           </div>
 
