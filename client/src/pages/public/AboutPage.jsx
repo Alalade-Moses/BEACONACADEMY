@@ -216,9 +216,54 @@ export const AboutPage = () => {
           </div>
 
           <div className="mt-10 text-center text-xs text-[#001f3f]/70 bg-[#f0faff] p-4 rounded-2xl border border-[#050167]/10 max-w-xl mx-auto">
-            Read our <a href="#safeguarding" className="font-bold text-[#050167] hover:underline">Safeguarding Policy</a> and <a href="#safeguarding" className="font-bold text-[#050167] hover:underline">Parent Code of Conduct</a> for full details.
+            Read our <a href="#safeguarding" className="font-bold text-[#050167] hover:underline">Safeguarding Policy</a> and <a href="#cancellation" className="font-bold text-[#050167] hover:underline">Lesson Cancellation Policy</a> for full details.
           </div>
 
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* TUTORIAL & LESSON CANCELLATION POLICY                     */}
+      {/* ========================================================= */}
+      <section id="cancellation" className="scroll-mt-24 sm:scroll-mt-28 py-16 sm:py-24 bg-slate-50 border-b border-[#050167]/10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/10 text-[#050167] text-xs font-bold uppercase tracking-wider mb-3">
+              <span>Fair & Transparent Academic Policies</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#001f3f] tracking-tight">
+              Tutorial & Lesson Cancellation Policy
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Clear, parent-first terms designed to protect student learning momentum while respecting tutor scheduling.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <span className="text-2xl">⏳</span>
+              <h3 className="font-bold text-slate-900 text-base">24-Hour Free Rescheduling</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Parents or students may reschedule any 1-on-1 tutorial or consultation free of charge by notifying the platform at least 24 hours in advance via the portal, email, or WhatsApp.
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <span className="text-2xl">🩺</span>
+              <h3 className="font-bold text-slate-900 text-base">Emergency & Illness Guarantee</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                We understand children fall ill unexpectedly. In cases of certified medical illness or family emergencies within 24 hours, sessions are credited and rescheduled without penalty.
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+              <span className="text-2xl">🛡️</span>
+              <h3 className="font-bold text-slate-900 text-base">Tutor Absence Protection</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                If a tutor ever needs to reschedule due to unforeseen circumstances, families receive prompt advance notification, a complimentary makeup session, and full lesson continuity.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

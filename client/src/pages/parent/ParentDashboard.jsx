@@ -12,7 +12,8 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  UserPlus
+  UserPlus,
+  PlayCircle
 } from 'lucide-react';
 
 export const ParentDashboard = () => {
@@ -109,7 +110,7 @@ export const ParentDashboard = () => {
           {activeChild && (
             <div className="space-y-8">
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
@@ -137,8 +138,24 @@ export const ParentDashboard = () => {
                 <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Attendance Compliance</p>
-                      <h3 className="text-2xl font-black text-emerald-600 mt-1">100% Present</h3>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Classes Watched / Done</p>
+                      <h3 className="text-2xl font-black text-[#050167] mt-1">
+                        {activeChild.watch_stats?.total_watched ?? (activeChild.watchedClasses?.length || 0)}
+                      </h3>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-[#f0faff] border border-[#050167]/20 text-[#050167] flex items-center justify-center">
+                      <PlayCircle className="w-6 h-6" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Class Completion Rate</p>
+                      <h3 className="text-2xl font-black text-emerald-600 mt-1">
+                        {activeChild.watch_stats?.overall_rate || 100}%
+                      </h3>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
                       <CheckCircle2 className="w-6 h-6" />

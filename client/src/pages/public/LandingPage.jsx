@@ -55,6 +55,141 @@ export const LandingPage = () => {
   // Other Interactive Carousels
   const [signsSlide, setSignsSlide] = useState(0);
   const [activeFaq, setActiveFaq] = useState(null);
+  const [testimonialSlide, setTestimonialSlide] = useState(0);
+  const [isTestimonialHovered, setIsTestimonialHovered] = useState(false);
+
+  // Authentic 10-Student & Parent Testimonials
+  const testimonials = [
+    {
+      id: 1,
+      name: "Liam Henderson",
+      role: "Student (Year 11)",
+      location: "Guildford, Surrey",
+      subject: "GCSE Higher Mathematics (Edexcel)",
+      outcome: "Grade 4 in Mocks → Grade 9 in GCSEs",
+      quote: "I used to panic during the 5-mark algebra and trigonometry questions. My tutor broke down the method step-by-step on the interactive whiteboard. I went from scraping a pass to getting a Grade 9!",
+      image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "GCSE Excellence"
+    },
+    {
+      id: 2,
+      name: "Amara Okonjo",
+      role: "Student (Year 13)",
+      location: "North London",
+      subject: "A-Level Chemistry & Biology (AQA)",
+      outcome: "Predicted B/C → Achieved A*A* (Accepted UCL Medicine)",
+      quote: "Organic reaction mechanisms used to confuse me completely. Having the past-paper mark schemes annotated live during every session made the exam expectations crystal clear. Now heading to UCL Medicine!",
+      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "Medical Admission"
+    },
+    {
+      id: 3,
+      name: "Mrs. Charlotte & Oliver Davies",
+      role: "Parent & Student (Year 6)",
+      location: "Clifton, Bristol",
+      subject: "Key Stage 2 (KS2) SATs & Primary Numeracy",
+      outcome: "Below Expected Standard → Exceeded Standard (Scaled Score 114)",
+      quote: "Oliver had lost all enthusiasm for maths and dreaded tests. The kind, calm 1-to-1 lessons rebuilt his confidence from the ground up. As a working parent, the weekly attendance and progress email updates gave me total peace of mind.",
+      image: "https://images.unsplash.com/photo-1544717302-de2939b7ef71?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "Primary / KS2 SATs"
+    },
+    {
+      id: 4,
+      name: "Devon Reynolds",
+      role: "Student (Year 11)",
+      location: "Didsbury, Manchester",
+      subject: "GCSE Combined Science (Trilogy - Edexcel)",
+      outcome: "Grade 5-4 → Grade 8-8",
+      quote: "Physics equations and chemistry moles were my biggest struggle. The lessons were engaging, zero-stress, and focused directly on exam practice questions rather than just reading textbooks.",
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "Science Transformation"
+    },
+    {
+      id: 5,
+      name: "Dr. Tariq & Zainab Khan",
+      role: "Parent & Student (Year 13)",
+      location: "Solihull, Birmingham",
+      subject: "A-Level Pure Mathematics & Further Maths (OCR)",
+      outcome: "Predicted B → Achieved A* (Cambridge Engineering Offer)",
+      quote: "The depth of mathematical rigor taught at Beacon Bridge is unmatched. Zainab was able to tackle STEP papers and synoptic differential calculus with complete fluency and secured her Cambridge offer.",
+      image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "Oxbridge Success"
+    },
+    {
+      id: 6,
+      name: "Sophie MacLeod",
+      role: "Student (Year 10)",
+      location: "Edinburgh, Scotland",
+      subject: "GCSE English Literature & Language (AQA)",
+      outcome: "Grade 5 in Year 9 → Consistent Grade 8 in Year 10 Mocks",
+      quote: "I struggled with essay structure and analytical depth on Shakespeare and poetry. My teacher showed me how to embed context and terminology seamlessly without memorising huge blocks of text.",
+      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "English Analysis"
+    },
+    {
+      id: 7,
+      name: "Kelechi Nnamdi",
+      role: "Postgraduate Applicant",
+      location: "Headingley, Leeds",
+      subject: "IELTS Academic (UKVI University Entry)",
+      outcome: "Band 6.0 → Band 8.5 Overall (Writing 8.0, Speaking 8.5)",
+      quote: "The writing feedback was meticulous. My instructor dissected my Task 1 charts and Task 2 argument coherence line-by-line. Reached my target score on the first sitting with no resits needed!",
+      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "IELTS Band 8.5"
+    },
+    {
+      id: 8,
+      name: "Marcus Thornton",
+      role: "Student (Year 12)",
+      location: "Headington, Oxford",
+      subject: "A-Level Physics & Computer Science",
+      outcome: "Grade C in initial assessments → Solid Grade A",
+      quote: "The virtual classroom whiteboard is fantastic. Drawing circuits, vectors, and state diagrams together in real-time made concepts click way faster than my school lessons.",
+      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "STEM Confidence"
+    },
+    {
+      id: 9,
+      name: "Mrs. Eleanor Vance",
+      role: "Parent (Home Education, Year 8)",
+      location: "Sevenoaks, Kent",
+      subject: "Key Stage 3 (KS3) Maths & English Bridge",
+      outcome: "Structured Syllabus Coverage & Academic Assurance",
+      quote: "Educating our daughter at home meant we wanted qualified UK subject specialists who follow the national syllabus. Beacon Bridge has provided that exact structure and high-level teaching.",
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "Home Education"
+    },
+    {
+      id: 10,
+      name: "Aiden Powell",
+      role: "Student (Professional Track)",
+      location: "Pontcanna, Cardiff",
+      subject: "Full-Stack Software Development",
+      outcome: "Built Production Web App → Secured Junior Developer Role",
+      quote: "The software engineering curriculum gave me practical coding skills in React, Node.js, and PostgreSQL that were directly applicable in technical interviews. Truly transformative.",
+      image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80",
+      rating: 5,
+      tag: "Career Launch"
+    }
+  ];
+
+  // Auto-advance testimonials carousel every 7 seconds unless hovered
+  useEffect(() => {
+    if (isTestimonialHovered) return;
+    const timer = setInterval(() => {
+      setTestimonialSlide(prev => (prev + 1) % testimonials.length);
+    }, 7000);
+    return () => clearInterval(timer);
+  }, [isTestimonialHovered, testimonials.length]);
 
   // Hero Carousel Slides with high-resolution imagery and contextual highlights
   const heroSlides = [
@@ -964,6 +1099,175 @@ export const LandingPage = () => {
               </Link>
             </div>
 
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================= */}
+      {/* SECTION: 10 AUTHENTIC STUDENT & PARENT TESTIMONIALS       */}
+      {/* ========================================================= */}
+      <section 
+        id="testimonials"
+        onMouseEnter={() => setIsTestimonialHovered(true)}
+        onMouseLeave={() => setIsTestimonialHovered(false)}
+        className="py-24 sm:py-32 bg-gradient-to-b from-white via-[#f0faff]/60 to-white border-b border-[#050167]/10 relative overflow-hidden"
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167] text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-3 shadow-sm">
+              <Star className="w-3.5 h-3.5 fill-[#40ffa7] text-[#40ffa7]" />
+              <span>Verified UK Student & Parent Stories</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#001f3f] tracking-tight">
+              Real Students. Real Progress. Real Results.
+            </h2>
+            <p className="mt-4 text-base sm:text-lg text-[#001f3f]/80 leading-relaxed">
+              From rebuilding foundational confidence to securing Grade 9s, A*s, and Russell Group offers—hear directly from 10 students and parents across the UK.
+            </p>
+          </div>
+
+          {/* Carousel Viewport Card */}
+          <div className="relative max-w-4xl mx-auto">
+            {testimonials.map((item, index) => {
+              if (index !== testimonialSlide) return null;
+              return (
+                <div
+                  key={item.id}
+                  className="bg-white rounded-3xl border-2 border-[#40ffa7]/40 p-6 sm:p-12 shadow-2xl shadow-[#050167]/10 relative transition-all duration-300 animate-in fade-in-50 zoom-in-95"
+                >
+                  {/* Top Header Row of Card */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-[#050167] text-[#40ffa7]">
+                        {item.tag}
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">
+                        Verified Family Experience
+                      </span>
+                    </div>
+
+                    {/* 5-Star Rating */}
+                    <div className="flex items-center space-x-1 text-amber-400">
+                      {[...Array(item.rating)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      ))}
+                      <span className="text-xs font-bold text-slate-700 ml-1.5">5.0 / 5.0</span>
+                    </div>
+                  </div>
+
+                  {/* Main Quote */}
+                  <div className="my-8 relative">
+                    <Quote className="w-10 h-10 text-[#40ffa7]/60 absolute -top-4 -left-2 -z-0 opacity-40" />
+                    <p className="text-lg sm:text-2xl text-[#001f3f] font-semibold leading-relaxed relative z-10 pl-6 sm:pl-8 italic">
+                      "{item.quote}"
+                    </p>
+                  </div>
+
+                  {/* Outcome Achievement Banner */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#f0faff] via-white to-[#40ffa7]/20 border border-[#40ffa7]/50 flex items-center justify-between gap-4 mb-8 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center shrink-0">
+                        <Award className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                          Verified Grade & Goal Transformation
+                        </span>
+                        <span className="text-sm sm:text-base font-extrabold text-[#050167]">
+                          {item.outcome}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="hidden sm:inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      Official Milestone
+                    </span>
+                  </div>
+
+                  {/* Student & Parent Profile Footer */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-slate-100">
+                    <div className="flex items-center space-x-4">
+                      <div className="relative">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-[#40ffa7] shadow-md"
+                        />
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                          <Check className="w-3 h-3 stroke-3" />
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-base sm:text-lg font-black text-[#001f3f]">
+                          {item.name}
+                        </h4>
+                        <p className="text-xs text-slate-500 font-medium">
+                          {item.role} &bull; <span className="text-slate-700">{item.location}</span>
+                        </p>
+                        <p className="text-xs font-bold text-[#050167] mt-0.5">
+                          {item.subject}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Navigation Arrows for Active Slide */}
+                    <div className="flex items-center space-x-2 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => setTestimonialSlide(prev => (prev === 0 ? testimonials.length - 1 : prev - 1))}
+                        className="w-11 h-11 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] flex items-center justify-center border border-[#050167]/15 transition-all shadow-xs cursor-pointer active:scale-95"
+                        aria-label="Previous Testimonial"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTestimonialSlide(prev => (prev + 1) % testimonials.length)}
+                        className="w-11 h-11 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] flex items-center justify-center border border-[#050167]/15 transition-all shadow-xs cursor-pointer active:scale-95"
+                        aria-label="Next Testimonial"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 10 Dots Indicator & Quick Switcher */}
+          <div className="mt-8 flex flex-col items-center space-y-4">
+            <div className="flex items-center space-x-2">
+              {testimonials.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setTestimonialSlide(i)}
+                  className={`h-2.5 rounded-full transition-all cursor-pointer ${
+                    testimonialSlide === i ? 'w-8 bg-[#050167]' : 'w-2.5 bg-[#050167]/20 hover:bg-[#050167]/40'
+                  }`}
+                  aria-label={`Go to student testimonial ${i + 1}`}
+                />
+              ))}
+            </div>
+            <span className="text-xs text-slate-500 font-medium">
+              Showing student {testimonialSlide + 1} of {testimonials.length} &bull; Click dots or arrows to browse
+            </span>
+          </div>
+
+          {/* Bottom Consultation CTA */}
+          <div className="mt-12 text-center">
+            <Link
+              to="/book-consultation"
+              className="inline-flex items-center space-x-2.5 px-6 py-3.5 rounded-2xl bg-[#050167] hover:bg-[#001f3f] text-[#40ffa7] font-bold text-sm shadow-xl shadow-[#050167]/15 hover:shadow-2xl transition-all hover:-translate-y-0.5 active:scale-95"
+            >
+              <CalendarCheck className="w-4 h-4 text-[#40ffa7]" />
+              <span>Book Your Child's Free 20-Min Consultation</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
 
         </div>

@@ -30,6 +30,7 @@ import tutorApplicationRoutes from './routes/tutorApplicationRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import consultationRoutes from './routes/consultationRoutes.js';
 import { store } from './database/store.js';
+import { startClassReminderScheduler } from './services/classReminderScheduler.js';
 
 dotenv.config();
 
@@ -132,6 +133,9 @@ setInterval(async () => {
     console.error('Deadline check error:', err);
   }
 }, 15 * 60 * 1000);
+
+// Initialize automated 1-hour class reminder scheduler
+startClassReminderScheduler();
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => {

@@ -104,7 +104,7 @@ export const PublicNavbar = () => {
               to="/book-consultation"
               className="px-2.5 xl:px-3 py-1.5 rounded-lg text-[#050167] bg-[#40ffa7]/20 hover:bg-[#40ffa7]/35 active:scale-95 font-bold transition-all whitespace-nowrap"
             >
-              Book Consultation
+              Book a Free Consultation
             </Link>
             <Link
               to="/how-it-works"
@@ -209,10 +209,9 @@ export const PublicNavbar = () => {
             <Link
               to="/book-consultation"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl bg-[#40ffa7]/20 text-[#050167] font-bold flex items-center gap-2"
+              className="w-full text-left py-2.5 px-3 rounded-xl bg-[#40ffa7]/20 text-[#050167] font-bold flex items-center"
             >
-              <CalendarCheck className="w-4 h-4 text-[#050167]" />
-              <span>Book a 1-on-1 Consultation</span>
+              <span>Book a Free Consultation</span>
             </Link>
             <Link
               to="/about"
@@ -246,10 +245,9 @@ export const PublicNavbar = () => {
             <Link
               to="/apply-to-teach"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] text-emerald-800 font-bold flex items-center gap-2"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] text-emerald-800 font-bold flex items-center"
             >
-              <GraduationCap className="w-4 h-4 text-emerald-600" />
-              <span>Teach With Us (Teacher Application)</span>
+              <span>Teach With Us</span>
             </Link>
           </nav>
 

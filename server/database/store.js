@@ -375,6 +375,30 @@ const memoryData = {
       status: 'published',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
+    },
+    {
+      id: '20000000-0000-0000-0000-000000000008',
+      title: 'IELTS Academic & UKVI Exam Preparation',
+      slug: 'ielts-academic-exam-preparation',
+      description: 'Target Band 7.5+ for UK University & Visa (UKVI) admissions. Intensive coaching in IELTS Academic Writing (Task 1 & 2), Speaking fluency, Reading speed, and Listening under exam conditions.',
+      category_id: '10000000-0000-0000-0000-000000000001',
+      tutor_id: '00000000-0000-0000-0000-000000000003',
+      thumbnail_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600',
+      level: 'English Language Proficiency (IELTS)',
+      price: 300.00,
+      pricing_type: 'monthly',
+      currency: 'GBP',
+      has_subtracks: false,
+      default_subjects: [
+        'IELTS Academic Writing Task 1 (Data & Process Analysis)',
+        'IELTS Academic Writing Task 2 (Discursive Essays & Coherence)',
+        'IELTS 1-on-1 Speaking Fluency & Pronunciation Mock Exams',
+        'IELTS Academic Reading & Skim-Scanning Mastery',
+        'IELTS Listening & Distractor Elimination Strategies'
+      ],
+      status: 'published',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ],
 
@@ -1891,6 +1915,8 @@ export const store = {
       video_duration: data.video_duration || 'Approx. 3 minutes',
       video_filename: data.video_filename || '',
       cv_url: data.cv_url || null,
+      degree_certificate_url: data.degree_certificate_url || null,
+      teaching_licence_url: data.teaching_licence_url || null,
       safeguarding_acknowledged: Boolean(data.safeguarding_acknowledged),
       safeguarding_version: 'v2.4-2026-UK-DFE-COMPLIANT',
       safeguarding_signature: data.safeguarding_signature?.trim() || data.full_name?.trim(),
@@ -1907,6 +1933,29 @@ export const store = {
       memoryData.tutor_applications = [];
     }
     memoryData.tutor_applications.unshift(newApp);
+
+    if (pool) {
+      try {
+        await pool.query(`
+          INSERT INTO tutor_applications (
+            id, full_name, email, phone, location, highest_qualification, years_experience,
+            current_position, selected_subjects, bio, teaching_approach, video_url,
+            video_duration, video_filename, cv_url, degree_certificate_url, teaching_licence_url,
+            safeguarding_acknowledged, safeguarding_signature, safeguarding_signed_at,
+            dbs_status, dbs_certificate_number, status, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+        `, [
+          newApp.id, newApp.full_name, newApp.email, newApp.phone, newApp.location, newApp.highest_qualification,
+          newApp.years_experience, newApp.current_position, JSON.stringify(newApp.selected_subjects), newApp.bio,
+          newApp.teaching_approach, newApp.video_url, newApp.video_duration, newApp.video_filename, newApp.cv_url,
+          newApp.degree_certificate_url, newApp.teaching_licence_url, newApp.safeguarding_acknowledged,
+          newApp.safeguarding_signature, newApp.safeguarding_signed_at, newApp.dbs_status, newApp.dbs_certificate_number,
+          newApp.status, newApp.created_at, newApp.updated_at
+        ]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL tutor_applications insert notice:', dbErr.message);
+      }
+    }
 
     // Notify Super Admin
     const admins = memoryData.profiles.filter(p => p.role === 'superadmin' || p.role === 'admin');

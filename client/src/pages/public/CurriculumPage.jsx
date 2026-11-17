@@ -75,6 +75,18 @@ export const CurriculumPage = () => {
       subtitle: 'Visual identity, UI/UX prototyping & creative portfolio (£300/mo)',
       description: 'Master industry-standard visual design workflows. Students learn brand identity, typography, Figma UI/UX prototyping, vector illustration in Illustrator, and Photoshop digital artistry.',
       features: ['Figma interactive UI/UX prototyping & wireframing', 'Brand identity, typography, color theory & design systems', 'Adobe Illustrator & Photoshop production workflows']
+    },
+    {
+      id: 'ielts',
+      badge: 'Language Proficiency',
+      title: 'IELTS Academic & UKVI Exam Preparation',
+      subtitle: 'Target Band 7.5+ for UK University & Visa (UKVI) Entry (£300/mo)',
+      description: 'Comprehensive preparation for the International English Language Testing System. Master all four components: Speaking fluency, Academic Writing (Task 1 data analysis & Task 2 argument essays), Reading speed, and Listening under exam conditions.',
+      features: [
+        'Academic Writing Task 1 (graphs/processes) & Task 2 (discursive essays) grading against official rubrics',
+        '1-on-1 Speaking mock interviews with live pronunciation & lexical resource coaching',
+        'Speed-reading techniques for complex academic texts and listening distractor elimination'
+      ]
     }
   ];
 
@@ -116,7 +128,9 @@ export const CurriculumPage = () => {
     { title: "GCSE English tutors", desc: "English Language & English Literature analysis." },
     { title: "GCSE Science tutors", desc: "Biology, Chemistry, and Physics (Combined & Triple)." },
     { title: "KS3 Maths and English tutors", desc: "Foundational numeracy and literacy for Years 7-9." },
+    { title: "Key Stage 2 (KS2) Primary", desc: "Years 3–6 foundational literacy, numeracy and SATs preparation." },
     { title: "A-Level tutors", desc: "Advanced specialist subject coaching & mock exam prep." },
+    { title: "IELTS Exam Preparation", desc: "Academic & UKVI preparation targeting Band 7.0–8.5+ for university admissions." },
     { title: "Homeschool tutoring", desc: "Complete syllabus coverage and structured assessments." },
     { title: "US, Canadian & Australian curricula", desc: "Cross-system bridge support for relocating families." }
   ];

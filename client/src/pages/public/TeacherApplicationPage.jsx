@@ -59,6 +59,8 @@ export const TeacherApplicationPage = () => {
     video_duration: '',
     video_filename: '',
     cv_url: '',
+    degree_certificate_url: '',
+    teaching_licence_url: '',
     safeguarding_acknowledged: false,
     safeguarding_signature: '',
     dbs_consent: false,
@@ -75,6 +77,12 @@ export const TeacherApplicationPage = () => {
   // CV Upload
   const [uploadingCv, setUploadingCv] = useState(false);
   const [cvFileName, setCvFileName] = useState('');
+
+  // Degree Certificate & Teaching Licence Upload
+  const [uploadingDegree, setUploadingDegree] = useState(false);
+  const [degreeFileName, setDegreeFileName] = useState('');
+  const [uploadingLicence, setUploadingLicence] = useState(false);
+  const [licenceFileName, setLicenceFileName] = useState('');
 
   // Submission State
   const [submitting, setSubmitting] = useState(false);
@@ -176,6 +184,54 @@ export const TeacherApplicationPage = () => {
       alert('Failed to upload CV: ' + (err.response?.data?.message || err.message));
     } finally {
       setUploadingCv(false);
+    }
+  };
+
+  // Degree Certificate Upload Handler
+  const handleDegreeUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const uploadPayload = new FormData();
+    uploadPayload.append('file', file);
+
+    setUploadingDegree(true);
+    try {
+      const res = await api.post('/upload', uploadPayload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data.success) {
+        setFormData(prev => ({ ...prev, degree_certificate_url: res.data.url }));
+        setDegreeFileName(file.name);
+      }
+    } catch (err) {
+      alert('Failed to upload Degree Certificate: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setUploadingDegree(false);
+    }
+  };
+
+  // Teaching Licence / QTS Upload Handler (Optional)
+  const handleLicenceUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const uploadPayload = new FormData();
+    uploadPayload.append('file', file);
+
+    setUploadingLicence(true);
+    try {
+      const res = await api.post('/upload', uploadPayload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data.success) {
+        setFormData(prev => ({ ...prev, teaching_licence_url: res.data.url }));
+        setLicenceFileName(file.name);
+      }
+    } catch (err) {
+      alert('Failed to upload Teaching Licence: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setUploadingLicence(false);
     }
   };
 
@@ -500,6 +556,56 @@ export const TeacherApplicationPage = () => {
                       <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         {cvFileName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Upload Degree Certificate */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Upload Degree Certificate (PDF or Image)
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <label className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-700 border border-slate-300/80 transition-colors">
+                      <UploadCloud className="w-4 h-4 text-slate-500" />
+                      <span>{uploadingDegree ? 'Uploading...' : 'Choose Degree Certificate'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        onChange={handleDegreeUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {degreeFileName && (
+                      <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {degreeFileName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Upload Teaching Licence (Optional) */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Teaching Licence / QTS / PGCE (Optional, PDF or Image)
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <label className="cursor-pointer inline-flex items-center space-x-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-700 border border-slate-300/80 transition-colors">
+                      <UploadCloud className="w-4 h-4 text-slate-500" />
+                      <span>{uploadingLicence ? 'Uploading...' : 'Choose Licence (Optional)'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg"
+                        onChange={handleLicenceUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {licenceFileName && (
+                      <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {licenceFileName}
                       </span>
                     )}
                   </div>

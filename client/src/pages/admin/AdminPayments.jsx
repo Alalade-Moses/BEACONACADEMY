@@ -14,7 +14,8 @@ import {
   Check,
   X,
   AlertCircle,
-  DollarSign
+  DollarSign,
+  Mail
 } from 'lucide-react';
 
 export const AdminPayments = () => {
@@ -80,6 +81,18 @@ export const AdminPayments = () => {
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Action failed.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSendInvoice = async (paymentId) => {
+    try {
+      setActionLoading(true);
+      const res = await api.post(`/payments/${paymentId}/send-invoice`);
+      showToast(res.data.message || 'Invoice and credentials successfully sent to parent email.');
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Failed to dispatch invoice email.');
     } finally {
       setActionLoading(false);
     }
@@ -353,10 +366,20 @@ export const AdminPayments = () => {
                             <span>Reject</span>
                           </button>
                         </div>
+                      ) : payment.status === 'verified' ? (
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => handleSendInvoice(payment.id)}
+                            disabled={actionLoading}
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#050167] hover:text-[#40ffa7] border border-[#050167]/20 font-bold text-[11px] shadow-xs transition-all active:scale-95 cursor-pointer"
+                            title="Dispatch Official Invoice and Login Credentials to Parent Email"
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                            <span>Send Invoice & Credentials</span>
+                          </button>
+                        </div>
                       ) : (
-                        <span className="text-[11px] text-slate-400 font-medium">
-                          {payment.status === 'verified' ? 'Account Active' : 'Action Closed'}
-                        </span>
+                        <span className="text-[11px] text-slate-400 font-medium">Action Closed</span>
                       )}
                     </td>
                   </tr>

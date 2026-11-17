@@ -85,17 +85,16 @@ export const createConsultation = async (req, res) => {
       console.warn('Notification creation notice:', notifErr.message);
     }
 
-    // Dispatch emails to info@beaconbridgeacademics.co.uk and confirmation to parent
-    try {
-      await sendConsultationBookingNotifications(newConsultation);
-    } catch (mailErr) {
-      console.warn('Consultation email dispatch notice:', mailErr.message);
-    }
-
+    // Respond immediately to the user so submission never hangs
     res.status(201).json({
       success: true,
       message: 'Academic consultation booked successfully. Confirmation dispatched to your email and our academic advisory team.',
       data: newConsultation
+    });
+
+    // Background asynchronous email dispatch with timeout protection
+    sendConsultationBookingNotifications(newConsultation).catch(mailErr => {
+      console.warn('Consultation email dispatch notice:', mailErr.message);
     });
   } catch (err) {
     console.error('Error creating consultation:', err);

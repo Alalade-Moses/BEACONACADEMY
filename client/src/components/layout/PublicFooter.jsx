@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail, Phone, MapPin, Globe, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
+import { GraduationCap, Mail, Phone, MapPin, Globe, ShieldCheck, Heart, ArrowRight, Instagram, Facebook, Linkedin } from 'lucide-react';
 
 export const PublicFooter = () => {
   return (
@@ -46,6 +46,47 @@ export const PublicFooter = () => {
                 <span>beaconbridgeacademics.co.uk</span>
               </div>
             </div>
+
+            {/* Official Social Media Icons */}
+            <div className="pt-2">
+              <span className="text-[11px] font-bold text-[#f0faff]/50 uppercase tracking-wider block mb-2">Connect With Us:</span>
+              <div className="flex items-center space-x-2.5">
+                <a 
+                  href="#instagram" 
+                  aria-label="Beacon Bridge Instagram" 
+                  title="Instagram"
+                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
+                >
+                  <Instagram className="w-4 h-4" />
+                </a>
+                <a 
+                  href="#facebook" 
+                  aria-label="Beacon Bridge Facebook" 
+                  title="Facebook"
+                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
+                >
+                  <Facebook className="w-4 h-4" />
+                </a>
+                <a 
+                  href="#x" 
+                  aria-label="Beacon Bridge on X" 
+                  title="X (formerly Twitter)"
+                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                </a>
+                <a 
+                  href="#linkedin" 
+                  aria-label="Beacon Bridge LinkedIn" 
+                  title="LinkedIn"
+                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
+                >
+                  <Linkedin className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Students Column */}
@@ -82,9 +123,10 @@ export const PublicFooter = () => {
             <h4 className="text-white font-bold mb-4 tracking-wider uppercase text-xs">Other</h4>
             <ul className="space-y-2.5">
               <li><Link to="/about" className="hover:text-[#40ffa7] transition-colors">About Us</Link></li>
-              <li><Link to="/book-consultation" className="hover:text-[#40ffa7] transition-colors font-bold text-[#40ffa7]">Book a 1-on-1 Consultation</Link></li>
+              <li><Link to="/book-consultation" className="hover:text-[#40ffa7] transition-colors font-bold text-[#40ffa7]">Book a Free Consultation</Link></li>
               <li><Link to="/register" className="hover:text-[#40ffa7] transition-colors">Register with Us</Link></li>
               <li><Link to="/payment-proof" className="hover:text-[#40ffa7] transition-colors">Tuition & Wire Account</Link></li>
+              <li><Link to="/about#cancellation" className="hover:text-[#40ffa7] transition-colors">Lesson Cancellation Policy</Link></li>
               <li><Link to="/about#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</Link></li>
               <li><Link to="/about#promise" className="hover:text-[#40ffa7] transition-colors">Our Promise to Parents</Link></li>
             </ul>
@@ -95,9 +137,10 @@ export const PublicFooter = () => {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-[#050167]/60 flex flex-col sm:flex-row items-center justify-between text-xs text-[#f0faff]/60 gap-4">
           <p>&copy; {new Date().getFullYear()} Beacon Bridge Academics. All rights reserved.</p>
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-6 flex-wrap gap-y-2">
             <a href="/#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</a>
             <a href="/#safeguarding" className="hover:text-[#40ffa7] transition-colors">Parent Code of Conduct</a>
+            <Link to="/about#cancellation" className="hover:text-[#40ffa7] transition-colors">Cancellation Terms</Link>
             <span className="hover:text-[#40ffa7] cursor-pointer">Privacy Policy</span>
             <span className="hover:text-[#40ffa7] cursor-pointer">Terms of Service</span>
           </div>

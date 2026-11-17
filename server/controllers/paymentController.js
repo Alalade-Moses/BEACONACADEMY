@@ -128,8 +128,36 @@ export const verifyPayment = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Payment verified successfully! Both student and parent accounts are now fully active.',
+      message: 'Payment verified successfully! Official invoice and login credentials dispatched to parent email.',
       payment: verifiedPayment
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const sendPaymentInvoice = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const payments = await store.getPayments();
+    const payment = payments.find(p => p.id === id);
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment record not found.' });
+    }
+
+    const student = payment.student_id ? await store.getProfileById(payment.student_id) : null;
+    const parent = payment.parent_id ? await store.getProfileById(payment.parent_id) : null;
+
+    if (!parent && !student) {
+      return res.status(400).json({ success: false, message: 'No linked parent or student email found for this payment.' });
+    }
+
+    const recipientParent = parent || { full_name: student?.parent_name || 'Parent', email: student?.parent_email || student?.email };
+    await sendPaymentVerifiedReceipt({ payment, student, parent: recipientParent });
+
+    res.status(200).json({
+      success: true,
+      message: `Official invoice and login credentials dispatched to ${recipientParent.email}.`
     });
   } catch (err) {
     next(err);

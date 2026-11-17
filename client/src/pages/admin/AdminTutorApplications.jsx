@@ -543,6 +543,36 @@ export const AdminTutorApplications = () => {
                         </a>
                       </div>
                     )}
+
+                    {selectedApp.degree_certificate_url && (
+                      <div className="pt-1">
+                        <a
+                          href={selectedApp.degree_certificate_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>View Degree Certificate</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
+
+                    {selectedApp.teaching_licence_url && (
+                      <div className="pt-1">
+                        <a
+                          href={selectedApp.teaching_licence_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>View Teaching Licence / QTS</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
 

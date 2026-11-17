@@ -32,6 +32,9 @@ const createTransporter = () => {
       user,
       pass
     },
+    connectionTimeout: 6000,
+    greetingTimeout: 6000,
+    socketTimeout: 10000,
     tls: {
       rejectUnauthorized: false
     }
@@ -314,34 +317,150 @@ export const sendPaymentProofAdminAlert = async ({ payment, student, parent }) =
   });
 };
 
-// 4. Payment Verified & Full Enrollment Receipt
+// 4. Payment Verified & Full Enrollment Invoice with Parent & Student Login Credentials
 export const sendPaymentVerifiedReceipt = async ({ payment, student, parent }) => {
+  const loginUrl = `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/login`;
+  const invoiceNum = `INV-BBA-${new Date().getFullYear()}-${payment?.id ? payment.id.slice(-6).toUpperCase() : Math.floor(100000 + Math.random() * 900000)}`;
+  const issueDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
   const html = buildEmailTemplate({
-    headerTitle: 'Official Payment Receipt & Course Activation',
+    headerTitle: 'Official Payment Invoice & Portal Credentials',
     contentHtml: `
       <p>Dear <strong>${parent?.full_name || 'Parent/Guardian'}</strong>,</p>
-      <p>We are delighted to confirm that your monthly tuition payment of <strong>£${payment?.amount || '300.00'} GBP</strong> has been <span class="badge badge-green">Verified & Approved</span>.</p>
+      <p>Thank you for your payment. We are pleased to confirm that your tuition payment of <strong>£${payment?.amount || '300.00'} GBP</strong> has been <span class="badge badge-green">Verified & Confirmed</span> by Beacon Bridge Academics administration.</p>
       
-      <div class="card">
-        <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 15px;">Receipt Details</h3>
-        <p style="margin: 4px 0;"><strong>Receipt Number:</strong> RCP-${Date.now().toString().slice(-8)}</p>
-        <p style="margin: 4px 0;"><strong>Program:</strong> ${payment?.course_display_name || 'Course'}</p>
-        <p style="margin: 4px 0;"><strong>Tuition Period:</strong> Monthly Tuition (Active)</p>
-        <p style="margin: 4px 0;"><strong>Amount Paid:</strong> £${payment?.amount || '300.00'} GBP</p>
-        <p style="margin: 4px 0;"><strong>Student:</strong> ${student?.full_name || 'Student'}</p>
+      <!-- Official Invoice Card -->
+      <div class="card" style="border-left: 4px solid #050167; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <div style="border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between;">
+          <h3 style="margin: 0; color: #050167; font-size: 16px;">Institutional Tuition Invoice</h3>
+          <span style="font-weight: bold; color: #059669; font-size: 13px;">STATUS: PAID IN FULL</span>
+        </div>
+        
+        <table style="width: 100%; font-size: 13px; color: #334155; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 4px 0;"><strong>Invoice Reference:</strong></td>
+            <td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold;">${invoiceNum}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>Date of Issue:</strong></td>
+            <td style="padding: 4px 0; text-align: right;">${issueDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>Tuition Program:</strong></td>
+            <td style="padding: 4px 0; text-align: right; font-weight: bold;">${payment?.course_display_name || payment?.course_name || 'Enrolled Academic Course'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>Student Enrolled:</strong></td>
+            <td style="padding: 4px 0; text-align: right;">${student?.full_name || 'Enrolled Student'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>Parent / Guardian:</strong></td>
+            <td style="padding: 4px 0; text-align: right;">${parent?.full_name || 'Parent'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 0;"><strong>Payment Method:</strong></td>
+            <td style="padding: 4px 0; text-align: right;">Barclays Bank Wire Transfer (Verified)</td>
+          </tr>
+          <tr style="border-top: 1px solid #cbd5e1;">
+            <td style="padding: 8px 0; font-size: 15px;"><strong>Total Paid:</strong></td>
+            <td style="padding: 8px 0; text-align: right; font-size: 16px; font-weight: bold; color: #050167;">£${payment?.amount || '300.00'} GBP</td>
+          </tr>
+        </table>
       </div>
 
-      <p>The student's timetable and live virtual classroom access are now fully active.</p>
+      <!-- Credentials Box for Parent & Student -->
+      <div class="card" style="border-left: 4px solid #40ffa7; background: #f0faff; margin-top: 16px;">
+        <h3 style="margin: 0 0 10px 0; color: #001f3f; font-size: 15px;">🔑 Official Portal Access & Login Details</h3>
+        <p style="margin: 0 0 12px 0; font-size: 13px; color: #475569;">
+          Both parent and student accounts are fully active. Use the credentials below to sign in:
+        </p>
+
+        <!-- Student Login -->
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+          <span style="display: block; font-size: 11px; font-weight: bold; color: #050167; text-transform: uppercase; letter-spacing: 0.5px;">Student Portal Credentials</span>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Login Email:</strong> <span style="font-family: monospace; font-size: 13px; color: #001f3f;">${student?.email || 'N/A'}</span></p>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Role:</strong> Student (Live Classroom, Whiteboard & Assignments)</p>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Portal Link:</strong> <a href="${loginUrl}" style="color: #0284c7; font-weight: bold;">${loginUrl}</a></p>
+        </div>
+
+        <!-- Parent Login -->
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px;">
+          <span style="display: block; font-size: 11px; font-weight: bold; color: #050167; text-transform: uppercase; letter-spacing: 0.5px;">Parent / Guardian Portal Credentials</span>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Login Email:</strong> <span style="font-family: monospace; font-size: 13px; color: #001f3f;">${parent?.email || 'N/A'}</span></p>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Role:</strong> Parent / Guardian (Attendance, Timetable & Watched Classes)</p>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Portal Link:</strong> <a href="${loginUrl}" style="color: #0284c7; font-weight: bold;">${loginUrl}</a></p>
+        </div>
+
+        <p style="margin: 12px 0 0 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+          <strong>Security Note:</strong> Please use the password chosen during your initial registration. If you ever need to reset your password, simply click <em>"Forgot password?"</em> on the sign-in page to receive a secure 1-click password reset link.
+        </p>
+      </div>
+
+      <p style="margin-top: 16px;">The student's full timetable, homework calendar, and live virtual classroom access are now fully active.</p>
     `,
     callToAction: {
-      label: 'Access Live Classroom & Timetable',
-      url: `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/student/dashboard`
+      label: 'Sign In to Portal Now',
+      url: loginUrl
     }
   });
 
   return await sendEmail({
     to: parent?.email,
-    subject: `Official Receipt & Enrollment Confirmation — Beacon Bridge Academics`,
+    subject: `Official Invoice [${invoiceNum}] & Portal Login Credentials — Beacon Bridge Academics`,
+    html,
+    senderType: 'admin'
+  });
+};
+
+export const sendPaymentInvoiceAndCredentials = sendPaymentVerifiedReceipt;
+
+// 4b. Automated 1-Hour Class Reminder Email
+export const sendClassUpcomingReminderEmail = async ({ recipient, student, parent, tutor, classInfo, roomUrl }) => {
+  const targetEmail = recipient?.email || student?.email || parent?.email;
+  if (!targetEmail) return;
+
+  const recipientName = recipient?.full_name || student?.full_name || 'Student';
+  const tutorName = tutor?.full_name || classInfo?.tutor?.full_name || 'Your Assigned Tutor';
+  const classTitle = classInfo?.title || 'Scheduled Live Lecture';
+  const scheduledTime = new Date(classInfo?.scheduled_at || Date.now() + 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const scheduledDate = new Date(classInfo?.scheduled_at || Date.now() + 3600000).toLocaleDateString();
+  const directRoomUrl = roomUrl || `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/classroom/${classInfo?.id || 'ROOM-LIVE'}`;
+
+  const html = buildEmailTemplate({
+    headerTitle: 'Live Class Starting in 1 Hour',
+    contentHtml: `
+      <p>Dear <strong>${recipientName}</strong>,</p>
+      <p>This is an automated reminder that your scheduled live interactive class begins in <strong>approximately 1 hour</strong>:</p>
+      
+      <div class="card" style="border-left: 4px solid #40ffa7; background: #f8fafc;">
+        <h3 style="margin: 0 0 8px 0; color: #001f3f; font-size: 16px;">${classTitle}</h3>
+        <p style="margin: 4px 0;"><strong>Course:</strong> ${classInfo?.course?.title || 'Enrolled Course'}</p>
+        <p style="margin: 4px 0;"><strong>Tutor:</strong> ${tutorName}</p>
+        <p style="margin: 4px 0;"><strong>Date:</strong> ${scheduledDate}</p>
+        <p style="margin: 4px 0;"><strong>Start Time:</strong> ${scheduledTime} UK GMT (approx. 60 minutes from now)</p>
+        <p style="margin: 4px 0;"><strong>Duration:</strong> ${classInfo?.duration_minutes || 60} Minutes</p>
+      </div>
+
+      <div style="margin: 16px 0; padding: 12px; background: #ecfdf5; border-radius: 8px; border: 1px solid #a7f3d0; font-size: 13px; color: #065f46;">
+        <strong>Quick Checklist before joining:</strong>
+        <ul style="margin: 6px 0 0 16px; padding: 0;">
+          <li>A working microphone and camera are recommended.</li>
+          <li>Have your notebook or stylus ready for the interactive whiteboard.</li>
+          <li>Join 3–5 minutes early to test your audio connection.</li>
+        </ul>
+      </div>
+
+      <p>Click the button below to enter your private virtual classroom room directly:</p>
+    `,
+    callToAction: {
+      label: 'Enter Virtual Classroom Now',
+      url: directRoomUrl
+    }
+  });
+
+  return await sendEmail({
+    to: targetEmail,
+    subject: `⏰ Reminder: "${classTitle}" starts in 1 hour (${scheduledTime} UK GMT) — Beacon Bridge Academics`,
     html,
     senderType: 'admin'
   });

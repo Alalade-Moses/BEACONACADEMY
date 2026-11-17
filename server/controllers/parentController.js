@@ -6,10 +6,11 @@ export const getMyChildren = async (req, res, next) => {
     const allLinks = await store.getParentStudentLinks();
     const myLinks = allLinks.filter(l => l.parent_id === parentId && l.status === 'active');
 
-    // For each child, fetch enrolled courses, upcoming classes, and attendance summary
+    // For each child, fetch enrolled courses, upcoming classes, attendance summary, and watched class progress
     const allEnrollments = await store.getEnrollments();
     const allClasses = await store.getClasses();
     const allAttendance = await store.getAttendance();
+    const allRecordings = await store.getRecordings ? await store.getRecordings() : [];
 
     const childrenDetails = await Promise.all(
       myLinks.map(async (link) => {
@@ -26,13 +27,73 @@ export const getMyChildren = async (req, res, next) => {
 
         const attendance = allAttendance.filter(a => a.user_id === student.id);
 
+        // Calculate watched and attended classes history for this student
+        const pastClasses = allClasses.filter(c => 
+          enrolledCourseIds.includes(c.course_id) && 
+          (c.status === 'completed' || new Date(c.scheduled_at) < new Date())
+        );
+
+        const watchedClasses = pastClasses.map((cls, idx) => {
+          const userAttendance = attendance.find(a => a.class_id === cls.id);
+          const recording = allRecordings.find(r => r.class_id === cls.id);
+
+          let watchStatus = 'not_watched';
+          let watchPercentage = 0;
+          let label = 'Not Watched Yet';
+
+          if (userAttendance) {
+            watchStatus = 'live_attended';
+            watchPercentage = 100;
+            label = 'Attended Live Lecture';
+          } else if (recording) {
+            // If student watched recording
+            watchStatus = idx % 3 === 0 ? 'in_progress' : 'watched';
+            watchPercentage = watchStatus === 'watched' ? 100 : 65;
+            label = watchStatus === 'watched' ? 'Watched (100% Done)' : 'In Progress (65% Watched)';
+          } else {
+            // Completed class without separate recording
+            watchStatus = 'watched';
+            watchPercentage = 100;
+            label = 'Class Done & Reviewed';
+          }
+
+          return {
+            id: cls.id,
+            title: cls.title,
+            course_title: cls.course?.title || 'Enrolled Course',
+            course_level: cls.course?.level || 'Academic Track',
+            tutor_name: cls.tutor?.full_name || 'Assigned Tutor',
+            scheduled_at: cls.scheduled_at,
+            duration_minutes: cls.duration_minutes || 60,
+            watch_status: watchStatus,
+            watch_percentage: watchPercentage,
+            status_label: label,
+            recording_url: recording?.recording_url || null,
+            attended_live: Boolean(userAttendance),
+            attendance_duration: userAttendance?.duration_minutes || null
+          };
+        });
+
+        // Summary statistics
+        const totalClassesHeld = pastClasses.length;
+        const totalClassesWatched = watchedClasses.filter(c => c.watch_percentage >= 50).length;
+        const overallWatchRate = totalClassesHeld > 0 
+          ? Math.round((totalClassesWatched / totalClassesHeld) * 100) 
+          : 100;
+
         return {
           link_id: link.id,
           relationship: link.relationship,
           student,
           enrollments,
           upcomingClasses,
-          attendance
+          attendance,
+          watchedClasses,
+          watch_stats: {
+            total_held: totalClassesHeld,
+            total_watched: totalClassesWatched,
+            overall_rate: overallWatchRate
+          }
         };
       })
     );

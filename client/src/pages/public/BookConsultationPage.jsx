@@ -28,42 +28,51 @@ const ADVISOR = {
   bio: 'Specialist in diagnosing learning bottlenecks, exam board timing techniques (AQA, Edexcel, OCR), and structuring high-yield revision roadmaps for GCSE and A-Level students.'
 };
 
-// 3 Days per week with sample time slots for each day (UK London GMT)
+// 20-Minute Consultation Schedule: Tuesday to Saturday
+// Tuesday – Friday: 5:00 PM to 7:00 PM (6 slots of 20 mins)
+// Saturday: 10:00 AM to 3:00 PM (15 slots of 20 mins)
+const WEEKDAY_SLOTS = [
+  { id: 'wd-1', time: '05:00 PM – 05:20 PM (UK GMT)', label: 'Evening Slot 1' },
+  { id: 'wd-2', time: '05:20 PM – 05:40 PM (UK GMT)', label: 'Evening Slot 2' },
+  { id: 'wd-3', time: '05:40 PM – 06:00 PM (UK GMT)', label: 'Evening Slot 3' },
+  { id: 'wd-4', time: '06:00 PM – 06:20 PM (UK GMT)', label: 'Evening Slot 4' },
+  { id: 'wd-5', time: '06:20 PM – 06:40 PM (UK GMT)', label: 'Evening Slot 5' },
+  { id: 'wd-6', time: '06:40 PM – 07:00 PM (UK GMT)', label: 'Evening Slot 6' }
+];
+
+const SATURDAY_SLOTS = [
+  { id: 'sat-1', time: '10:00 AM – 10:20 AM (UK GMT)', label: 'Morning Slot 1' },
+  { id: 'sat-2', time: '10:20 AM – 10:40 AM (UK GMT)', label: 'Morning Slot 2' },
+  { id: 'sat-3', time: '10:40 AM – 11:00 AM (UK GMT)', label: 'Morning Slot 3' },
+  { id: 'sat-4', time: '11:00 AM – 11:20 AM (UK GMT)', label: 'Late Morning Slot 4' },
+  { id: 'sat-5', time: '11:20 AM – 11:40 AM (UK GMT)', label: 'Late Morning Slot 5' },
+  { id: 'sat-6', time: '11:40 AM – 12:00 PM (UK GMT)', label: 'Midday Slot 6' },
+  { id: 'sat-7', time: '12:00 PM – 12:20 PM (UK GMT)', label: 'Midday Slot 7' },
+  { id: 'sat-8', time: '12:20 PM – 12:40 PM (UK GMT)', label: 'Afternoon Slot 8' },
+  { id: 'sat-9', time: '12:40 PM – 01:00 PM (UK GMT)', label: 'Afternoon Slot 9' },
+  { id: 'sat-10', time: '01:00 PM – 01:20 PM (UK GMT)', label: 'Afternoon Slot 10' },
+  { id: 'sat-11', time: '01:20 PM – 01:40 PM (UK GMT)', label: 'Afternoon Slot 11' },
+  { id: 'sat-12', time: '01:40 PM – 02:00 PM (UK GMT)', label: 'Afternoon Slot 12' },
+  { id: 'sat-13', time: '02:00 PM – 02:20 PM (UK GMT)', label: 'Late Afternoon Slot 13' },
+  { id: 'sat-14', time: '02:20 PM – 02:40 PM (UK GMT)', label: 'Late Afternoon Slot 14' },
+  { id: 'sat-15', time: '02:40 PM – 03:00 PM (UK GMT)', label: 'Late Afternoon Slot 15' }
+];
+
 const CONSULTATION_SCHEDULE = [
-  {
-    day: 'Tuesday',
-    dateLabel: 'Every Tuesday',
-    slots: [
-      { id: 'tue-1', time: '10:00 AM – 10:45 AM (UK GMT)', label: 'Morning Session' },
-      { id: 'tue-2', time: '02:00 PM – 02:45 PM (UK GMT)', label: 'Afternoon Session' },
-      { id: 'tue-3', time: '05:00 PM – 05:45 PM (UK GMT)', label: 'Evening After-School' }
-    ]
-  },
-  {
-    day: 'Thursday',
-    dateLabel: 'Every Thursday',
-    slots: [
-      { id: 'thu-1', time: '10:00 AM – 10:45 AM (UK GMT)', label: 'Morning Session' },
-      { id: 'thu-2', time: '02:00 PM – 02:45 PM (UK GMT)', label: 'Afternoon Session' },
-      { id: 'thu-3', time: '05:00 PM – 05:45 PM (UK GMT)', label: 'Evening After-School' }
-    ]
-  },
-  {
-    day: 'Saturday',
-    dateLabel: 'Every Saturday (Weekend)',
-    slots: [
-      { id: 'sat-1', time: '10:00 AM – 10:45 AM (UK GMT)', label: 'Weekend Morning' },
-      { id: 'sat-2', time: '12:00 PM – 12:45 PM (UK GMT)', label: 'Weekend Midday' },
-      { id: 'sat-3', time: '03:00 PM – 03:45 PM (UK GMT)', label: 'Weekend Afternoon' }
-    ]
-  }
+  { day: 'Tuesday', dateLabel: 'Every Tuesday (5:00 PM – 7:00 PM)', slots: WEEKDAY_SLOTS },
+  { day: 'Wednesday', dateLabel: 'Every Wednesday (5:00 PM – 7:00 PM)', slots: WEEKDAY_SLOTS },
+  { day: 'Thursday', dateLabel: 'Every Thursday (5:00 PM – 7:00 PM)', slots: WEEKDAY_SLOTS },
+  { day: 'Friday', dateLabel: 'Every Friday (5:00 PM – 7:00 PM)', slots: WEEKDAY_SLOTS },
+  { day: 'Saturday', dateLabel: 'Every Saturday (10:00 AM – 3:00 PM)', slots: SATURDAY_SLOTS }
 ];
 
 const CURRICULUM_OPTIONS = [
+  'Key Stage 2 / KS2 (Years 3–6 / Primary)',
+  '11+ / 13+ Grammar & Independent School Entrance',
+  'Key Stage 3 (Years 7–9)',
   'GCSE / IGCSE (Years 10–11)',
   'A-Levels / Sixth Form (Years 12–13)',
-  'Key Stage 3 (Years 7–9)',
-  '11+ / 13+ Grammar & Independent School Entrance',
+  'IELTS Academic & General Training',
   'Canadian High School (OSSD Grade 12)',
   'US High School & AP Courses',
   'Software Development & Tech Coding Track',
@@ -71,30 +80,32 @@ const CURRICULUM_OPTIONS = [
 ];
 
 const EXAM_BOARDS = [
+  'A-Level (AQA / Edexcel / OCR / Cambridge CIE)',
   'AQA',
   'Edexcel (Pearson)',
   'OCR',
   'Cambridge International (CIE)',
   'Eduqas / WJEC',
   'Scottish Highers',
+  'Primary SATs (KS2)',
   'Not Applicable / International'
 ];
 
 export const BookConsultationPage = () => {
   const [selectedDay, setSelectedDay] = useState(CONSULTATION_SCHEDULE[0].day);
-  const [selectedSlot, setSelectedSlot] = useState(CONSULTATION_SCHEDULE[0].slots[2]); // default Tue evening
-  const [consultationMode, setConsultationMode] = useState('Live Interactive Video (Classroom / Google Meet)');
+  const [selectedSlot, setSelectedSlot] = useState(CONSULTATION_SCHEDULE[0].slots[0]);
+  const [consultationMode, setConsultationMode] = useState('WhatsApp Phone Call (+44)');
 
   const [formData, setFormData] = useState({
     parent_name: '',
     student_name: '',
     email: '',
     phone: '',
-    curriculum: 'GCSE / IGCSE (Years 10–11)',
-    subjects: 'Mathematics & Sciences',
-    exam_board: 'Edexcel (Pearson)',
-    current_grade: 'Grade 5 / Grade 6',
-    target_grade: 'Grade 8 / Grade 9 (A*)',
+    curriculum: 'Key Stage 2 / KS2 (Years 3–6 / Primary)',
+    subjects: 'Mathematics & English',
+    exam_board: 'A-Level (AQA / Edexcel / OCR / Cambridge CIE)',
+    current_grade: 'Working at Expected Standard',
+    target_grade: 'Greater Depth / Grade 8-9 (A*)',
     notes: ''
   });
 
@@ -141,7 +152,7 @@ export const BookConsultationPage = () => {
         current_grade: formData.current_grade,
         target_grade: formData.target_grade,
         consultation_day: selectedDay,
-        consultation_time: selectedSlot.time,
+        consultation_time: selectedSlot?.time || activeDaySchedule.slots[0]?.time || '05:00 PM – 05:20 PM (UK GMT)',
         consultation_date: activeDaySchedule.dateLabel,
         consultant_name: ADVISOR.name,
         mode: consultationMode,
@@ -291,7 +302,7 @@ export const BookConsultationPage = () => {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-bold text-slate-700">
             <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
               <Clock className="w-3.5 h-3.5 text-emerald-600" />
-              45-Minute Bespoke Assessment
+              20-Minute Bespoke Assessment
             </span>
             <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
               <Award className="w-3.5 h-3.5 text-emerald-600" />
@@ -342,19 +353,19 @@ export const BookConsultationPage = () => {
             </p>
           </div>
 
-          {/* Available 3 Days a Week Selector */}
+          {/* Available Days Selector (Tuesday to Saturday) */}
           <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/60 border border-slate-200">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-black text-[#001f3f] uppercase tracking-wider flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-emerald-600" />
-                Select Consultation Day (3 Days / Week)
+                Select Consultation Day (Tue – Sat)
               </h3>
             </div>
             <p className="text-xs text-slate-500 mb-4">
-              Consultations take place 3 days per week. Choose a day to view available 45-minute slots:
+              Tue–Fri: 5:00 PM – 7:00 PM &bull; Sat: 10:00 AM – 3:00 PM (20-min slots):
             </p>
 
-            <div className="grid grid-cols-3 gap-2 mb-5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 mb-5">
               {CONSULTATION_SCHEDULE.map((item) => {
                 const isSelected = selectedDay === item.day;
                 return (
@@ -362,15 +373,15 @@ export const BookConsultationPage = () => {
                     key={item.day}
                     type="button"
                     onClick={() => handleDaySelect(item.day)}
-                    className={`py-3 px-2 rounded-2xl text-center transition-all border ${
+                    className={`py-2.5 px-1.5 rounded-xl text-center transition-all border cursor-pointer ${
                       isSelected
                         ? 'bg-[#001f3f] text-white border-[#001f3f] shadow-md ring-2 ring-[#40ffa7]'
                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                     }`}
                   >
-                    <span className="block text-xs font-black">{item.day}</span>
+                    <span className="block text-xs font-black">{item.day.slice(0, 3)}</span>
                     <span className={`block text-[10px] mt-0.5 ${isSelected ? 'text-[#40ffa7]' : 'text-slate-400'}`}>
-                      3 Slots
+                      {item.slots.length} slots
                     </span>
                   </button>
                 );
@@ -378,19 +389,22 @@ export const BookConsultationPage = () => {
             </div>
 
             {/* Time Slots for the Selected Day */}
-            <h4 className="text-xs font-bold text-slate-700 mb-2.5 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-slate-500" />
-              Available Time Slots for {selectedDay}:
+            <h4 className="text-xs font-bold text-slate-700 mb-2.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                Available 20-Min Slots for {selectedDay}:
+              </span>
+              <span className="text-[11px] text-emerald-700 font-semibold">{activeDaySchedule.slots.length} Available</span>
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1 border border-slate-100 rounded-xl p-1 bg-slate-50/50">
               {activeDaySchedule.slots.map((slot) => {
-                const isSlotSelected = selectedSlot.id === slot.id;
+                const isSlotSelected = (selectedSlot?.id || activeDaySchedule.slots[0]?.id) === slot.id;
                 return (
                   <button
                     key={slot.id}
                     type="button"
                     onClick={() => setSelectedSlot(slot)}
-                    className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between ${
+                    className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
                       isSlotSelected
                         ? 'bg-emerald-50 border-emerald-400 text-emerald-950 ring-1 ring-emerald-400 shadow-sm'
                         : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
@@ -398,12 +412,12 @@ export const BookConsultationPage = () => {
                   >
                     <div>
                       <span className="text-xs font-extrabold block text-slate-900">{slot.time}</span>
-                      <span className="text-[11px] text-slate-500">{slot.label}</span>
+                      <span className="text-[10px] text-slate-500">{slot.label}</span>
                     </div>
                     {isSlotSelected ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     ) : (
-                      <div className="w-4 h-4 rounded-full border border-slate-300 shrink-0" />
+                      <div className="w-3.5 h-3.5 rounded-full border border-slate-300 shrink-0" />
                     )}
                   </button>
                 );
@@ -418,8 +432,20 @@ export const BookConsultationPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <button
                   type="button"
+                  onClick={() => setConsultationMode('WhatsApp Phone Call (+44)')}
+                  className={`p-2.5 rounded-xl border text-left flex items-center gap-2 cursor-pointer ${
+                    consultationMode.includes('WhatsApp')
+                      ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900'
+                      : 'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>WhatsApp Phone Call</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setConsultationMode('Live Interactive Video (Classroom / Google Meet)')}
-                  className={`p-2.5 rounded-xl border text-left flex items-center gap-2 ${
+                  className={`p-2.5 rounded-xl border text-left flex items-center gap-2 cursor-pointer ${
                     consultationMode.includes('Video')
                       ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900'
                       : 'bg-slate-50 border-slate-200 text-slate-600'
@@ -427,18 +453,6 @@ export const BookConsultationPage = () => {
                 >
                   <Video className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>Video Conference</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConsultationMode('Direct UK Phone Call (+44)')}
-                  className={`p-2.5 rounded-xl border text-left flex items-center gap-2 ${
-                    consultationMode.includes('Phone')
-                      ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-900'
-                      : 'bg-slate-50 border-slate-200 text-slate-600'
-                  }`}
-                >
-                  <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>UK Phone Call</span>
                 </button>
               </div>
             </div>
@@ -637,16 +651,24 @@ export const BookConsultationPage = () => {
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="text-[11px] text-slate-400 font-bold block uppercase tracking-wider">
-                    Selected Appointment Slot
+                    Selected Appointment Slot (20 Mins)
                   </span>
                   <span className="text-xs sm:text-sm font-extrabold text-[#001f3f]">
-                    {selectedDay} &bull; {selectedSlot.time}
+                    {selectedDay} &bull; {selectedSlot?.time || activeDaySchedule.slots[0]?.time}
                   </span>
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  FREE / No Fee
+                  FREE / 20 Mins
                 </span>
               </div>
+
+              {/* Inline Form Error Notification */}
+              {error && (
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
 
               {/* Submit CTA */}
               <button
@@ -655,18 +677,22 @@ export const BookConsultationPage = () => {
                 className="w-full py-3.5 px-6 rounded-2xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-sm sm:text-base shadow-lg shadow-[#40ffa7]/30 hover:shadow-xl transition-all transform active:scale-98 flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
               >
                 {loading ? (
-                  <span>Securing Your Consultation...</span>
+                  <span>Securing Your 20-Min Consultation...</span>
                 ) : (
                   <>
-                    <span>Confirm 1-on-1 Academic Consultation</span>
+                    <span>Confirm Free 20-Min Academic Consultation</span>
                     <ArrowRight className="w-5 h-5 text-[#001f3f]" />
                   </>
                 )}
               </button>
 
-              <p className="text-center text-[11px] text-slate-400 leading-relaxed">
-                By booking, you agree to our Educational Safeguarding & Parent Code of Conduct. Your details are securely encrypted and never shared with third parties.
-              </p>
+              {/* Tutorial & Consultation Cancellation Policy */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 space-y-1">
+                <span className="font-bold text-slate-700 block">📅 Cancellation & Rescheduling Policy:</span>
+                <p>
+                  All 1-on-1 consultations and tutorial lessons can be rescheduled free of charge up to 24 hours prior to your scheduled time. In cases of urgent illness or emergency, please WhatsApp or email <a href="mailto:info@beaconbridgeacademics.co.uk" className="text-emerald-700 font-semibold underline">info@beaconbridgeacademics.co.uk</a> to adjust your slot without penalty.
+                </p>
+              </div>
 
             </form>
           </div>
