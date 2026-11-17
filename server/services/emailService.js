@@ -49,16 +49,66 @@ export const createTransporter = (forcedConfig = null) => {
 };
 
 /**
- * Diagnostic helper to test Hostinger SMTP authentication directly across all standard ports & hosts
+ * Diagnostic helper to test Hostinger SMTP authentication directly across all standard ports & hosts,
+ * or verify Resend / Brevo HTTPS API connections.
  */
 export const testSmtpConnection = async () => {
+  const resendKey = process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.trim() : null;
+  const brevoKey = process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.trim() : null;
+
+  // 1. Test Resend HTTPS API if configured
+  if (resendKey) {
+    try {
+      const chk = await fetch('https://api.resend.com/api-keys', {
+        headers: { 'Authorization': `Bearer ${resendKey}` }
+      });
+      if (chk.ok) {
+        return {
+          connected: true,
+          provider: 'resend',
+          protocol: 'HTTPS (Port 443 - Cloud Firewall Proof)',
+          message: 'Resend API key verified successfully! Outbound emails are 100% active.'
+        };
+      } else {
+        const errData = await chk.json();
+        return {
+          connected: false,
+          provider: 'resend',
+          message: 'Resend API key check failed.',
+          error: errData.message || errData
+        };
+      }
+    } catch (e) {
+      return { connected: false, provider: 'resend', error: e.message };
+    }
+  }
+
+  // 2. Test Brevo HTTPS API if configured
+  if (brevoKey) {
+    try {
+      const chk = await fetch('https://api.brevo.com/v3/account', {
+        headers: { 'api-key': brevoKey }
+      });
+      if (chk.ok) {
+        return {
+          connected: true,
+          provider: 'brevo',
+          protocol: 'HTTPS (Port 443 - Cloud Firewall Proof)',
+          message: 'Brevo API key verified successfully! Outbound emails are 100% active.'
+        };
+      }
+    } catch (e) {
+      return { connected: false, provider: 'brevo', error: e.message };
+    }
+  }
+
   const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.trim() : null;
   const user = (process.env.SMTP_USER || DEFAULT_INFO_EMAIL).trim();
 
   if (!pass) {
     return {
       connected: false,
-      message: 'SMTP_PASS environment variable is missing in Railway.'
+      message: 'Neither RESEND_API_KEY nor SMTP_PASS is set in Railway environment variables.'
     };
   }
 
@@ -106,7 +156,7 @@ export const testSmtpConnection = async () => {
 
   return {
     connected: false,
-    message: 'All direct SMTP ports timed out. Railway blocks outbound SMTP (ports 25, 465, 587) on standard containers to prevent spam.',
+    message: 'All direct SMTP ports timed out. Railway blocks outbound SMTP (ports 25, 465, 587) on standard containers to prevent spam. Use RESEND_API_KEY via HTTPS (Port 443) or request SMTP unblock from Railway Support.',
     tested
   };
 };
@@ -179,6 +229,73 @@ export const sendEmail = async ({
     const from = customFrom || sender.fromHeader;
     const resolvedReplyTo = replyTo || sender.replyTo;
 
+    // 1. Resend HTTPS REST API (Port 443 - Immune to cloud SMTP port blocking)
+    const resendKey = process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.trim() : null;
+    if (resendKey) {
+      try {
+        const fromAddress = process.env.RESEND_FROM || `Beacon Bridge Academics <${process.env.SMTP_USER || 'info@beaconbridgeacademics.co.uk'}>`;
+        const resendRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: fromAddress,
+            to: Array.isArray(to) ? to : [to],
+            reply_to: resolvedReplyTo,
+            subject,
+            html,
+            text: text || ''
+          })
+        });
+        const resData = await resendRes.json();
+        if (resendRes.ok) {
+          console.log(`[Resend HTTP API Email Sent] ID: ${resData.id} | To: ${to}`);
+          return { success: true, messageId: resData.id, provider: 'resend' };
+        } else {
+          console.warn('[Resend API Warning]:', resData);
+        }
+      } catch (httpErr) {
+        console.warn('[Resend HTTP Dispatch Error]:', httpErr.message);
+      }
+    }
+
+    // 2. Brevo HTTPS REST API (Port 443)
+    const brevoKey = process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.trim() : null;
+    if (brevoKey) {
+      try {
+        const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: {
+              name: sender.displayName || 'Beacon Bridge Academics',
+              email: process.env.SMTP_USER || 'info@beaconbridgeacademics.co.uk'
+            },
+            to: [{ email: to }],
+            replyTo: { email: resolvedReplyTo },
+            subject,
+            htmlContent: html,
+            textContent: text || ''
+          })
+        });
+        const brevoData = await brevoRes.json();
+        if (brevoRes.ok) {
+          console.log(`[Brevo HTTP API Email Sent] ID: ${brevoData.messageId} | To: ${to}`);
+          return { success: true, messageId: brevoData.messageId, provider: 'brevo' };
+        } else {
+          console.warn('[Brevo API Warning]:', brevoData);
+        }
+      } catch (httpErr) {
+        console.warn('[Brevo HTTP Dispatch Error]:', httpErr.message);
+      }
+    }
+
+    // 3. Fallback to direct SMTP Transporter
     const transporter = createTransporter();
 
     if (!transporter) {
