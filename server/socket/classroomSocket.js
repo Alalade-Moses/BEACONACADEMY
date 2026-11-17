@@ -198,26 +198,56 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    // WebRTC Peer Signaling
-    socket.on('webrtc_offer', ({ to, offer }) => {
-      io.to(to).emit('webrtc_offer', {
-        from: socket.id,
+    // WebRTC Peer Signaling (Offer, Answer, ICE Candidates, Media State)
+    socket.on('webrtc_offer', ({ to, targetSocketId, offer, isScreen }) => {
+      const targetId = to || targetSocketId;
+      if (targetId) {
+        io.to(targetId).emit('webrtc_offer', {
+          from: socket.id,
+          senderSocketId: socket.id,
+          user: currentUser,
+          offer,
+          isScreen: Boolean(isScreen)
+        });
+      }
+    });
+
+    socket.on('webrtc_answer', ({ to, targetSocketId, answer }) => {
+      const targetId = to || targetSocketId;
+      if (targetId) {
+        io.to(targetId).emit('webrtc_answer', {
+          from: socket.id,
+          senderSocketId: socket.id,
+          user: currentUser,
+          answer
+        });
+      }
+    });
+
+    socket.on('ice_candidate', ({ to, targetSocketId, candidate }) => {
+      const targetId = to || targetSocketId;
+      if (targetId) {
+        io.to(targetId).emit('ice_candidate', {
+          from: socket.id,
+          senderSocketId: socket.id,
+          candidate
+        });
+      }
+    });
+
+    socket.on('media_state_change', ({ roomId, isVideoActive, isMicActive }) => {
+      const normRoomId = cleanRoomId(roomId || currentRoomId);
+      const room = rooms.get(normRoomId);
+      if (room && room.participants && room.participants.has(socket.id)) {
+        const participant = room.participants.get(socket.id);
+        participant.isVideoOff = !isVideoActive;
+        participant.isMuted = !isMicActive;
+      }
+      socket.to(normRoomId).emit('participant_media_state_changed', {
+        socketId: socket.id,
         user: currentUser,
-        offer
-      });
-    });
-
-    socket.on('webrtc_answer', ({ to, answer }) => {
-      io.to(to).emit('webrtc_answer', {
-        from: socket.id,
-        answer
-      });
-    });
-
-    socket.on('ice_candidate', ({ to, candidate }) => {
-      io.to(to).emit('ice_candidate', {
-        from: socket.id,
-        candidate
+        isVideoActive,
+        isMicActive
       });
     });
 

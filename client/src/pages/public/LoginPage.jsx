@@ -188,7 +188,7 @@ export const LoginPage = () => {
           <p>
             Don't have an enrolled account?{' '}
             <Link to="/register" className="font-bold text-[#050167] hover:underline">
-              Book a Consultation or Register
+              Register with Us
             </Link>
           </p>
           <p>

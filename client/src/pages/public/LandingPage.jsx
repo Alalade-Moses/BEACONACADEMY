@@ -267,42 +267,47 @@ export const LandingPage = () => {
     }
   };
 
-  // 1. Signs Carousel Data
+  // 1. Signs Carousel Data with authentic study photography
   const signs = [
     {
       id: 1,
       badge: "Pattern 1",
       title: "Grades drop in one subject while the others stay steady.",
       description: "When a student does well in English and History but suddenly slips in Maths, it is almost never about work ethic. It is usually a foundational concept that was missed months ago and never re-taught.",
-      advice: "Target the specific curriculum bottleneck before it cascades into future exam topics."
+      advice: "Target the specific curriculum bottleneck before it cascades into future exam topics.",
+      image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80"
     },
     {
       id: 2,
       badge: "Pattern 2",
       title: "Homework takes much longer than it used to, or ends in tears.",
       description: "Hours spent staring at a workbook is not 'practising hard' — it is a symptom of cognitive overload and anxiety. Homework should reinforce what was understood, not become an evening battle.",
-      advice: "A calm 1-to-1 session breaks problems into bite-sized steps so homework becomes manageable again."
+      advice: "A calm 1-to-1 session breaks problems into bite-sized steps so homework becomes manageable again.",
+      image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80"
     },
     {
       id: 3,
       badge: "Pattern 3",
       title: "They say things like 'I'm just bad at maths' or 'I'll never get English'.",
       description: "This is fixed mindset in action. Children internalise difficulty as identity. Once a child believes they lack ability, they stop trying to protect their self-esteem.",
-      advice: "We replace 'I cannot do this' with 'I haven't been shown the method that makes sense to me yet'."
+      advice: "We replace 'I cannot do this' with 'I haven't been shown the method that makes sense to me yet'.",
+      image: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80"
     },
     {
       id: 4,
       badge: "Pattern 4",
       title: "They avoid a subject, or feel unwell before it.",
       description: "Sunday evening stomach aches and subject avoidance are physical responses to academic stress and the fear of feeling exposed in class.",
-      advice: "Learning in a safe, judgment-free virtual room allows students to make mistakes comfortably."
+      advice: "Learning in a safe, judgment-free virtual room allows students to make mistakes comfortably.",
+      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80"
     },
     {
       id: 5,
       badge: "Pattern 5",
       title: "They understand things in class but struggle in tests and mocks.",
       description: "This is a classic exam technique disconnect. The student understands the topic, but loses marks to timing, command words, mark-scheme phrasing, or exam pressure.",
-      advice: "Direct coaching on past-paper mark schemes bridges the gap between knowledge and exam marks."
+      advice: "Direct coaching on past-paper mark schemes bridges the gap between knowledge and exam marks.",
+      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80"
     }
   ];
 
@@ -418,12 +423,12 @@ export const LandingPage = () => {
             {/* Left Column: Headline, Copy, Actions & Trust Chips */}
             <div className="lg:col-span-7 space-y-6 text-left bg-[#001f3f]/65 lg:backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-white/15 shadow-2xl">
               
-              {/* Official Brand Logo Rectangle */}
-              <div className="inline-block bg-white px-4 py-2 rounded-2xl shadow-xl border border-white/30">
+              {/* Official Brand Logo Rectangle (Prominent & High-Fidelity) */}
+              <div className="inline-block bg-white px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-white/40">
                 <img 
                   src="/logo.png" 
                   alt="Beacon Bridge Academics" 
-                  className="h-12 sm:h-14 w-auto object-contain" 
+                  className="h-16 sm:h-20 lg:h-24 w-auto object-contain transition-transform hover:scale-105" 
                 />
               </div>
 
@@ -818,31 +823,53 @@ export const LandingPage = () => {
               </div>
             </div>
 
-            {/* Slide Content */}
-            <div className="min-h-[160px] flex flex-col justify-center space-y-4">
-              <div className="flex items-center gap-2 text-amber-500 font-bold text-xs uppercase tracking-wider">
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <span>Observed Pattern</span>
-              </div>
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#050167] leading-snug">
-                "{signs[signsSlide].title}"
-              </h3>
-              <p className="text-base sm:text-lg text-[#001f3f]/80 leading-relaxed">
-                {signs[signsSlide].description}
-              </p>
-              
-              {/* How We Help Focus Card */}
-              <div className="mt-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-[#f0faff] via-white to-[#40ffa7]/15 border-2 border-[#40ffa7]/40 flex items-start gap-4 text-sm sm:text-base text-[#001f3f] shadow-md">
-                <div className="p-2.5 rounded-xl bg-[#050167] text-[#40ffa7] shrink-0 mt-0.5 shadow-sm">
-                  <Lightbulb className="w-5 h-5" />
+            {/* Visual & Contextual 2-Column Showcase */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              {/* Left Column: Authentic Student Study Image */}
+              <div className="lg:col-span-5 relative">
+                <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/40 aspect-4/3 relative group">
+                  <img
+                    src={signs[signsSlide].image}
+                    alt={signs[signsSlide].title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/30 to-transparent flex flex-col justify-end p-5 text-white">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#40ffa7] bg-[#050167]/80 px-2.5 py-1 rounded-full self-start mb-2 backdrop-blur-xs border border-[#40ffa7]/30">
+                      National Curriculum Diagnostic
+                    </span>
+                    <h4 className="text-sm font-bold leading-snug line-clamp-2">
+                      {signs[signsSlide].title}
+                    </h4>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-bold text-[#050167] block text-xs uppercase tracking-wider mb-1">
-                    How Beacon Bridge Academics Helps:
-                  </span>
-                  <span className="font-semibold text-slate-800 leading-relaxed">
-                    {signs[signsSlide].advice}
-                  </span>
+              </div>
+
+              {/* Right Column: Observed Pattern & Strategic Solution */}
+              <div className="lg:col-span-7 flex flex-col justify-center space-y-4">
+                <div className="flex items-center gap-2 text-amber-500 font-bold text-xs uppercase tracking-wider">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  <span>Observed Pattern</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#050167] leading-snug">
+                  "{signs[signsSlide].title}"
+                </h3>
+                <p className="text-sm sm:text-base text-[#001f3f]/80 leading-relaxed">
+                  {signs[signsSlide].description}
+                </p>
+                
+                {/* How We Help Focus Card */}
+                <div className="mt-2 p-5 rounded-2xl bg-gradient-to-r from-[#f0faff] via-white to-[#40ffa7]/15 border-2 border-[#40ffa7]/40 flex items-start gap-3.5 text-sm text-[#001f3f] shadow-md">
+                  <div className="p-2.5 rounded-xl bg-[#050167] text-[#40ffa7] shrink-0 mt-0.5 shadow-sm">
+                    <Lightbulb className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-[#050167] block text-xs uppercase tracking-wider mb-1">
+                      How Beacon Bridge Academics Helps:
+                    </span>
+                    <span className="font-semibold text-slate-800 leading-relaxed text-xs sm:text-sm">
+                      {signs[signsSlide].advice}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -900,16 +927,30 @@ export const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Pillar 1 */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-b from-[#f0faff] to-white border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden">
-              <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#050167] text-[#40ffa7] font-bold text-[10px] uppercase tracking-wider rounded-bl-2xl">
+            <div className="group relative p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#f0faff] to-white border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden">
+              <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#050167] text-[#40ffa7] font-bold text-[10px] uppercase tracking-wider rounded-bl-2xl z-10">
                 Pillar 01
               </div>
               <div>
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#050167] to-[#001f3f] text-[#40ffa7] flex items-center justify-center font-bold mb-6 shadow-xl shadow-[#050167]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
-                  <GraduationCap className="w-8 h-8" />
+                {/* Photographic Visual Header */}
+                <div className="w-full h-44 rounded-2xl overflow-hidden mb-6 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1544717302-de2939b7ef71?auto=format&fit=crop&w=600&q=80"
+                    alt="Qualified UK Teacher"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/20 to-transparent flex items-end p-3">
+                    <span className="text-[10px] font-black text-[#40ffa7] bg-[#050167]/90 px-2.5 py-1 rounded-full border border-[#40ffa7]/30 backdrop-blur-xs">
+                      Degree & QTS Certified
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#050167] to-[#001f3f] text-[#40ffa7] flex items-center justify-center font-bold mb-4 shadow-xl shadow-[#050167]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
+                  <GraduationCap className="w-6 h-6" />
                 </div>
                 <h3 className="text-2xl font-bold text-[#050167] mb-3">The right teacher</h3>
-                <p className="text-[#001f3f]/80 text-sm sm:text-base leading-relaxed mb-6">
+                <p className="text-[#001f3f]/80 text-sm leading-relaxed mb-6">
                   Every teacher is trained in the curriculum your child is studying, so lessons target what the exam actually asks.
                 </p>
 
@@ -927,23 +968,37 @@ export const LandingPage = () => {
                   </p>
                 </div>
               </div>
-              <div className="mt-8 pt-4 border-t border-[#050167]/10 text-xs font-bold text-[#050167] flex items-center justify-between">
+              <div className="mt-6 pt-4 border-t border-[#050167]/10 text-xs font-bold text-[#050167] flex items-center justify-between">
                 <span>Syllabus & Mark Scheme Mastery</span>
                 <ArrowRight className="w-4 h-4 text-[#40ffa7] group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
 
             {/* Pillar 2 */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-b from-[#f0faff] to-white border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden">
-              <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#001f3f] text-[#40ffa7] font-bold text-[10px] uppercase tracking-wider rounded-bl-2xl">
+            <div className="group relative p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#f0faff] to-white border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden">
+              <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#001f3f] text-[#40ffa7] font-bold text-[10px] uppercase tracking-wider rounded-bl-2xl z-10">
                 Pillar 02
               </div>
               <div>
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#001f3f] to-[#050167] text-[#40ffa7] flex items-center justify-center font-bold mb-6 shadow-xl shadow-[#001f3f]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
-                  <Video className="w-8 h-8" />
+                {/* Photographic Visual Header */}
+                <div className="w-full h-44 rounded-2xl overflow-hidden mb-6 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80"
+                    alt="Interactive Virtual Classroom"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/20 to-transparent flex items-end p-3">
+                    <span className="text-[10px] font-black text-[#40ffa7] bg-[#050167]/90 px-2.5 py-1 rounded-full border border-[#40ffa7]/30 backdrop-blur-xs">
+                      Live WebRTC Interactive Stage
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#001f3f] to-[#050167] text-[#40ffa7] flex items-center justify-center font-bold mb-4 shadow-xl shadow-[#001f3f]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
+                  <Video className="w-6 h-6" />
                 </div>
                 <h3 className="text-2xl font-bold text-[#050167] mb-3">The right tools</h3>
-                <p className="text-[#001f3f]/80 text-sm sm:text-base leading-relaxed mb-6">
+                <p className="text-[#001f3f]/80 text-sm leading-relaxed mb-6">
                   Lessons take place in our own live virtual classroom, with a digital whiteboard, screen sharing, and real-time annotation of slides and PDFs.
                 </p>
 
@@ -961,23 +1016,37 @@ export const LandingPage = () => {
                   </p>
                 </div>
               </div>
-              <div className="mt-8 pt-4 border-t border-[#050167]/10 text-xs font-bold text-[#001f3f] flex items-center justify-between">
+              <div className="mt-6 pt-4 border-t border-[#050167]/10 text-xs font-bold text-[#001f3f] flex items-center justify-between">
                 <span>Synchronized Educational Technology</span>
                 <ArrowRight className="w-4 h-4 text-[#40ffa7] group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
 
             {/* Pillar 3 */}
-            <div className="group relative p-8 rounded-3xl bg-gradient-to-b from-[#f0faff] to-white border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden">
-              <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#050167] text-[#40ffa7] font-bold text-[10px] uppercase tracking-wider rounded-bl-2xl">
+            <div className="group relative p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#f0faff] to-white border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden">
+              <div className="absolute top-0 right-0 px-4 py-1.5 bg-[#050167] text-[#40ffa7] font-bold text-[10px] uppercase tracking-wider rounded-bl-2xl z-10">
                 Pillar 03
               </div>
               <div>
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#050167] to-[#001f3f] text-[#40ffa7] flex items-center justify-center font-bold mb-6 shadow-xl shadow-[#050167]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
-                  <Users className="w-8 h-8" />
+                {/* Photographic Visual Header */}
+                <div className="w-full h-44 rounded-2xl overflow-hidden mb-6 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80"
+                    alt="Parent Progress Visibility"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/20 to-transparent flex items-end p-3">
+                    <span className="text-[10px] font-black text-[#40ffa7] bg-[#050167]/90 px-2.5 py-1 rounded-full border border-[#40ffa7]/30 backdrop-blur-xs">
+                      Live Family Notification
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#050167] to-[#001f3f] text-[#40ffa7] flex items-center justify-center font-bold mb-4 shadow-xl shadow-[#050167]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
+                  <Users className="w-6 h-6" />
                 </div>
                 <h3 className="text-2xl font-bold text-[#050167] mb-3">The right visibility</h3>
-                <p className="text-[#001f3f]/80 text-sm sm:text-base leading-relaxed mb-6">
+                <p className="text-[#001f3f]/80 text-sm leading-relaxed mb-6">
                   Your parent account shows progress, attendance and announcements, and you receive an email whenever homework is set or completed.
                 </p>
 
@@ -995,7 +1064,7 @@ export const LandingPage = () => {
                   </p>
                 </div>
               </div>
-              <div className="mt-8 pt-4 border-t border-[#050167]/10 text-xs font-bold text-[#050167] flex items-center justify-between">
+              <div className="mt-6 pt-4 border-t border-[#050167]/10 text-xs font-bold text-[#050167] flex items-center justify-between">
                 <span>Transparent Family Dashboard</span>
                 <ArrowRight className="w-4 h-4 text-[#40ffa7] group-hover:translate-x-1 transition-transform" />
               </div>
@@ -1028,17 +1097,31 @@ export const LandingPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             
             {/* Card 1: Curriculum & Exam Boards */}
-            <div className="group bg-white rounded-3xl p-8 border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
+            <div className="group bg-white rounded-3xl p-6 sm:p-8 border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none" />
               <div>
-                <div className="w-14 h-14 rounded-2xl bg-[#050167] text-[#40ffa7] flex items-center justify-center font-bold mb-6 shadow-lg shadow-[#050167]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
-                  <Compass className="w-7 h-7" />
+                {/* Photographic Header */}
+                <div className="w-full h-38 rounded-2xl overflow-hidden mb-5 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80"
+                    alt="Curriculum & Exam Boards"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/20 to-transparent flex items-end p-3">
+                    <span className="text-[10px] font-black text-[#40ffa7] bg-[#050167]/90 px-2 py-0.5 rounded-full border border-[#40ffa7]/30 backdrop-blur-xs">
+                      AQA • Edexcel • OCR • WJEC
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#050167] bg-[#f0faff] px-2.5 py-1 rounded-md inline-block mb-3">
+
+                <div className="w-12 h-12 rounded-2xl bg-[#050167] text-[#40ffa7] flex items-center justify-center font-bold mb-4 shadow-lg shadow-[#050167]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
+                  <Compass className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#050167] bg-[#f0faff] px-2.5 py-1 rounded-md inline-block mb-2.5">
                   KS3 • GCSE • A-Level
                 </span>
-                <h3 className="text-2xl font-bold text-[#050167] mb-2.5">Curriculum & Exam Boards</h3>
-                <p className="text-sm text-[#001f3f]/80 leading-relaxed mb-6">
+                <h3 className="text-xl font-bold text-[#050167] mb-2">Curriculum & Exam Boards</h3>
+                <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed mb-6">
                   Targeted specification preparation for AQA, Edexcel, OCR and WJEC. Tailored pathways for school-age students, homeschoolers, and relocating families.
                 </p>
               </div>
@@ -1052,17 +1135,31 @@ export const LandingPage = () => {
             </div>
 
             {/* Card 2: How It Works */}
-            <div className="group bg-white rounded-3xl p-8 border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
+            <div className="group bg-white rounded-3xl p-6 sm:p-8 border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none" />
               <div>
-                <div className="w-14 h-14 rounded-2xl bg-[#001f3f] text-[#40ffa7] flex items-center justify-center font-bold mb-6 shadow-lg shadow-[#001f3f]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
-                  <Zap className="w-7 h-7" />
+                {/* Photographic Header */}
+                <div className="w-full h-38 rounded-2xl overflow-hidden mb-5 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=600&q=80"
+                    alt="Virtual Classroom"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/20 to-transparent flex items-end p-3">
+                    <span className="text-[10px] font-black text-[#40ffa7] bg-[#050167]/90 px-2 py-0.5 rounded-full border border-[#40ffa7]/30 backdrop-blur-xs">
+                      Interactive Whiteboard & Audio
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#050167] bg-[#f0faff] px-2.5 py-1 rounded-md inline-block mb-3">
+
+                <div className="w-12 h-12 rounded-2xl bg-[#001f3f] text-[#40ffa7] flex items-center justify-center font-bold mb-4 shadow-lg shadow-[#001f3f]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#050167] bg-[#f0faff] px-2.5 py-1 rounded-md inline-block mb-2.5">
                   4 Steps • 30-Day Plan • Live Room
                 </span>
-                <h3 className="text-2xl font-bold text-[#050167] mb-2.5">How It Works & Virtual Classroom</h3>
-                <p className="text-sm text-[#001f3f]/80 leading-relaxed mb-6">
+                <h3 className="text-xl font-bold text-[#050167] mb-2">How It Works & Classroom</h3>
+                <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed mb-6">
                   Experience our 4-step onboarding, 30-day timeline, and purpose-built virtual classroom with live whiteboard, PDF annotation, and automated attendance tracking.
                 </p>
               </div>
@@ -1076,17 +1173,31 @@ export const LandingPage = () => {
             </div>
 
             {/* Card 3: About Us */}
-            <div className="group bg-white rounded-3xl p-8 border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
+            <div className="group bg-white rounded-3xl p-6 sm:p-8 border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none" />
               <div>
-                <div className="w-14 h-14 rounded-2xl bg-[#050167] text-[#40ffa7] flex items-center justify-center font-bold mb-6 shadow-lg shadow-[#050167]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
-                  <ShieldCheck className="w-7 h-7" />
+                {/* Photographic Header */}
+                <div className="w-full h-38 rounded-2xl overflow-hidden mb-5 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80"
+                    alt="Teaching Faculty"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/20 to-transparent flex items-end p-3">
+                    <span className="text-[10px] font-black text-[#40ffa7] bg-[#050167]/90 px-2 py-0.5 rounded-full border border-[#40ffa7]/30 backdrop-blur-xs">
+                      Licensed UK Educators
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#050167] bg-[#f0faff] px-2.5 py-1 rounded-md inline-block mb-3">
+
+                <div className="w-12 h-12 rounded-2xl bg-[#050167] text-[#40ffa7] flex items-center justify-center font-bold mb-4 shadow-lg shadow-[#050167]/20 border border-[#40ffa7]/30 group-hover:scale-105 transition-transform">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#050167] bg-[#f0faff] px-2.5 py-1 rounded-md inline-block mb-2.5">
                   Licensed Educators • 100% DBS
                 </span>
-                <h3 className="text-2xl font-bold text-[#050167] mb-2.5">About Us & Safeguarding</h3>
-                <p className="text-sm text-[#001f3f]/80 leading-relaxed mb-6">
+                <h3 className="text-xl font-bold text-[#050167] mb-2">About Us & Safeguarding</h3>
+                <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed mb-6">
                   Led by experienced educators with international licences. Read our rigorous safeguarding standards, parent promise, and authentic educational integrity policy.
                 </p>
               </div>
@@ -1129,50 +1240,105 @@ export const LandingPage = () => {
             </p>
           </div>
 
-          {/* Carousel Viewport Card */}
+          {/* Carousel Viewport Card with Distinct Styles & Centered Large Student Photo */}
           <div className="relative max-w-4xl mx-auto">
             {testimonials.map((item, index) => {
               if (index !== testimonialSlide) return null;
+
+              // Distinct Dynamic Visual Styles per Category
+              const isOxbridgeOrMedical = item.tag.includes('Oxbridge') || item.tag.includes('Medical');
+              const isPrimaryOrHome = item.tag.includes('Primary') || item.tag.includes('Home');
+              const isIELTSOrTech = item.tag.includes('IELTS') || item.tag.includes('Professional');
+
+              const cardTheme = isOxbridgeOrMedical
+                ? 'border-indigo-400/60 bg-gradient-to-b from-indigo-50/80 via-white to-white shadow-indigo-900/10'
+                : isPrimaryOrHome
+                  ? 'border-amber-400/60 bg-gradient-to-b from-amber-50/70 via-white to-white shadow-amber-900/10'
+                  : isIELTSOrTech
+                    ? 'border-cyan-400/60 bg-gradient-to-b from-cyan-50/70 via-white to-white shadow-cyan-900/10'
+                    : 'border-[#40ffa7]/60 bg-gradient-to-b from-emerald-50/70 via-white to-white shadow-emerald-900/10';
+
+              const photoRing = isOxbridgeOrMedical
+                ? 'ring-indigo-400 border-indigo-600'
+                : isPrimaryOrHome
+                  ? 'ring-amber-400 border-amber-600'
+                  : isIELTSOrTech
+                    ? 'ring-cyan-400 border-cyan-600'
+                    : 'ring-[#40ffa7] border-[#050167]';
+
+              const badgeBg = isOxbridgeOrMedical
+                ? 'bg-indigo-950 text-indigo-200 border-indigo-400/40'
+                : isPrimaryOrHome
+                  ? 'bg-amber-950 text-amber-200 border-amber-400/40'
+                  : isIELTSOrTech
+                    ? 'bg-slate-900 text-cyan-300 border-cyan-400/40'
+                    : 'bg-[#050167] text-[#40ffa7] border-[#40ffa7]/40';
+
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-3xl border-2 border-[#40ffa7]/40 p-6 sm:p-12 shadow-2xl shadow-[#050167]/10 relative transition-all duration-300 animate-in fade-in-50 zoom-in-95"
+                  className={`rounded-3xl border-2 p-6 sm:p-12 shadow-2xl relative transition-all duration-300 animate-in fade-in-50 zoom-in-95 text-center ${cardTheme}`}
                 >
-                  {/* Top Header Row of Card */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-[#050167] text-[#40ffa7]">
+                  {/* Top Tag & Rating Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-200/60">
+                    <div className="flex items-center gap-2 mx-auto sm:mx-0">
+                      <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border shadow-xs ${badgeBg}`}>
                         {item.tag}
                       </span>
-                      <span className="text-xs text-slate-500 font-medium">
-                        Verified Family Experience
+                      <span className="text-xs text-slate-500 font-semibold hidden sm:inline">
+                        Verified Family Milestone
                       </span>
                     </div>
 
                     {/* 5-Star Rating */}
-                    <div className="flex items-center space-x-1 text-amber-400">
+                    <div className="flex items-center space-x-1 text-amber-400 mx-auto sm:mx-0">
                       {[...Array(item.rating)].map((_, i) => (
                         <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                       ))}
-                      <span className="text-xs font-bold text-slate-700 ml-1.5">5.0 / 5.0</span>
+                      <span className="text-xs font-black text-slate-700 ml-1.5">5.0 / 5.0</span>
                     </div>
                   </div>
 
-                  {/* Main Quote */}
-                  <div className="my-8 relative">
-                    <Quote className="w-10 h-10 text-[#40ffa7]/60 absolute -top-4 -left-2 -z-0 opacity-40" />
-                    <p className="text-lg sm:text-2xl text-[#001f3f] font-semibold leading-relaxed relative z-10 pl-6 sm:pl-8 italic">
+                  {/* CENTERED LARGE STUDENT PHOTO AT THE TOP OF CONTAINER */}
+                  <div className="mt-8 mb-6 flex flex-col items-center">
+                    <div className="relative inline-block">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className={`w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover shadow-2xl ring-4 ring-offset-4 ring-offset-white border-4 mx-auto transition-transform hover:scale-105 duration-300 ${photoRing}`}
+                      />
+                      <div className="absolute bottom-1 right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg border-2 border-white">
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-3" />
+                      </div>
+                    </div>
+
+                    {/* Centered Student Details directly below photo */}
+                    <h3 className="text-xl sm:text-2xl font-black text-[#001f3f] mt-4 tracking-tight">
+                      {item.name}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 font-semibold mt-0.5">
+                      {item.role} &bull; <span className="text-[#050167] font-bold">{item.location}</span>
+                    </p>
+                    <span className="inline-block mt-1.5 px-3.5 py-1 rounded-full bg-white text-[#050167] text-xs font-extrabold border border-[#050167]/15 shadow-xs">
+                      {item.subject}
+                    </span>
+                  </div>
+
+                  {/* Main Quote with Floating Quotation Styling */}
+                  <div className="my-6 relative max-w-2xl mx-auto px-4">
+                    <Quote className="w-12 h-12 text-[#40ffa7]/40 absolute -top-4 left-0 -z-0 opacity-40" />
+                    <p className="text-base sm:text-xl text-[#001f3f] font-semibold leading-relaxed relative z-10 italic">
                       "{item.quote}"
                     </p>
                   </div>
 
-                  {/* Outcome Achievement Banner */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#f0faff] via-white to-[#40ffa7]/20 border border-[#40ffa7]/50 flex items-center justify-between gap-4 mb-8 shadow-sm">
+                  {/* Verified Outcome Achievement Banner */}
+                  <div className="max-w-xl mx-auto p-4 sm:p-5 rounded-2xl bg-white/95 border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center shrink-0 shadow-md">
                         <Award className="w-5 h-5" />
                       </div>
-                      <div>
+                      <div className="text-center sm:text-left">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
                           Verified Grade & Goal Transformation
                         </span>
@@ -1181,56 +1347,32 @@ export const LandingPage = () => {
                         </span>
                       </div>
                     </div>
-                    <span className="hidden sm:inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
                       Official Milestone
                     </span>
                   </div>
 
-                  {/* Student & Parent Profile Footer */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 border-t border-slate-100">
-                    <div className="flex items-center space-x-4">
-                      <div className="relative">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border-2 border-[#40ffa7] shadow-md"
-                        />
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
-                          <Check className="w-3 h-3 stroke-3" />
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-base sm:text-lg font-black text-[#001f3f]">
-                          {item.name}
-                        </h4>
-                        <p className="text-xs text-slate-500 font-medium">
-                          {item.role} &bull; <span className="text-slate-700">{item.location}</span>
-                        </p>
-                        <p className="text-xs font-bold text-[#050167] mt-0.5">
-                          {item.subject}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Navigation Arrows for Active Slide */}
-                    <div className="flex items-center space-x-2 self-end sm:self-center">
-                      <button
-                        type="button"
-                        onClick={() => setTestimonialSlide(prev => (prev === 0 ? testimonials.length - 1 : prev - 1))}
-                        className="w-11 h-11 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] flex items-center justify-center border border-[#050167]/15 transition-all shadow-xs cursor-pointer active:scale-95"
-                        aria-label="Previous Testimonial"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTestimonialSlide(prev => (prev + 1) % testimonials.length)}
-                        className="w-11 h-11 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] flex items-center justify-center border border-[#050167]/15 transition-all shadow-xs cursor-pointer active:scale-95"
-                        aria-label="Next Testimonial"
-                      >
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
-                    </div>
+                  {/* Navigation Controls on Card */}
+                  <div className="flex items-center justify-center space-x-3 pt-4 border-t border-slate-200/60">
+                    <button
+                      type="button"
+                      onClick={() => setTestimonialSlide(prev => (prev === 0 ? testimonials.length - 1 : prev - 1))}
+                      className="w-11 h-11 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] flex items-center justify-center border border-[#050167]/15 transition-all shadow-xs cursor-pointer active:scale-95"
+                      aria-label="Previous Testimonial"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="text-xs font-extrabold text-slate-500 px-2 font-mono">
+                      {testimonialSlide + 1} / {testimonials.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setTestimonialSlide(prev => (prev + 1) % testimonials.length)}
+                      className="w-11 h-11 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] flex items-center justify-center border border-[#050167]/15 transition-all shadow-xs cursor-pointer active:scale-95"
+                      aria-label="Next Testimonial"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
                   </div>
 
                 </div>
