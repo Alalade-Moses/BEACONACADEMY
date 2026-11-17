@@ -13,14 +13,15 @@ const DEFAULT_ADMISSIONS_EMAIL = process.env.ADMISSIONS_EMAIL || `admissions@${E
 // Host: smtp.hostinger.com (or smtp.titan.email)
 // Port: 465 (SSL) or 587 (TLS)
 // Auth: User & Password created in Hostinger hPanel
-const createTransporter = () => {
-  const host = process.env.SMTP_HOST || 'smtp.hostinger.com';
+export const createTransporter = () => {
+  const host = (process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
   const port = parseInt(process.env.SMTP_PORT, 10) || 465;
-  const user = process.env.SMTP_USER || DEFAULT_INFO_EMAIL;
-  const pass = process.env.SMTP_PASS;
+  const user = (process.env.SMTP_USER || DEFAULT_INFO_EMAIL).trim();
+  const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.trim() : null;
 
   if (!pass) {
     // Development / safe preview mode when SMTP password is not yet configured
+    console.warn('[EmailService] SMTP_PASS not set. Emails logged in console preview mode.');
     return null;
   }
 
@@ -32,9 +33,9 @@ const createTransporter = () => {
       user,
       pass
     },
-    connectionTimeout: 6000,
-    greetingTimeout: 6000,
-    socketTimeout: 10000,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
     tls: {
       rejectUnauthorized: false
     }
@@ -42,68 +43,80 @@ const createTransporter = () => {
 };
 
 /**
+ * Diagnostic helper to test Hostinger SMTP authentication directly
+ */
+export const testSmtpConnection = async () => {
+  const transporter = createTransporter();
+  if (!transporter) {
+    return {
+      connected: false,
+      message: 'SMTP_PASS environment variable is missing in server environment.'
+    };
+  }
+
+  try {
+    await transporter.verify();
+    return {
+      connected: true,
+      message: `Hostinger SMTP connection verified successfully for ${process.env.SMTP_USER || DEFAULT_INFO_EMAIL}`
+    };
+  } catch (err) {
+    console.error('[SMTP Verification Error]:', err.message);
+    return {
+      connected: false,
+      error: err.message,
+      code: err.code || null,
+      response: err.response || null
+    };
+  }
+};
+
+/**
  * Format dynamic sender identity based on sender role and tutor identity.
  * Rule:
- *  - If tutor: tutor.{name}@beaconbridgeacademics.co.uk (e.g. tutor.sarah@...)
- *  - If admin: admin@beaconbridgeacademics.co.uk
- *  - If info / billing: info@beaconbridgeacademics.co.uk
+ *  - For Hostinger SMTP compliance, the From address in <...> MUST match the authenticated mailbox (SMTP_USER).
+ *  - The Display Name customizes the role (Admissions, Administration, Faculty Tutor).
  */
 export const resolveSenderIdentity = (senderType = 'admin', tutor = null) => {
   const domain = EMAIL_DOMAIN;
-  const primaryAuthUser = process.env.SMTP_USER || `info@${domain}`;
+  const primaryAuthUser = (process.env.SMTP_USER || `info@${domain}`).trim();
 
   if (senderType === 'tutor' && tutor) {
-    const rawName = tutor.full_name || tutor.name || 'tutor';
-    // Clean name: remove Dr./Prof., keep letters/numbers, lowercase
-    const cleanName = rawName
-      .toLowerCase()
-      .replace(/^(dr|prof|mr|mrs|ms)\.?\s+/i, '')
-      .trim()
-      .split(/\s+/)[0] // First name e.g. 'sarah'
-      .replace(/[^a-z0-9]/g, '');
-
-    const tutorSenderAddress = `tutor.${cleanName || 'academic'}@${domain}`;
     const displayName = `${tutor.full_name || 'Tutor'} | Beacon Bridge Academics`;
-
     return {
-      address: tutorSenderAddress,
+      address: primaryAuthUser,
       displayName,
-      // For SMTP relay integrity on Hostinger, the From header uses the formatted alias
-      // while replyTo guarantees student/parent replies go straight to tutor
-      fromHeader: `"${displayName}" <${tutorSenderAddress}>`,
-      replyTo: tutor.email || tutorSenderAddress
+      fromHeader: `"${displayName}" <${primaryAuthUser}>`,
+      replyTo: tutor.email || primaryAuthUser
     };
   }
 
   if (senderType === 'admin') {
-    const adminAddress = `admin@${domain}`;
     const displayName = 'Beacon Bridge Administration';
     return {
-      address: adminAddress,
+      address: primaryAuthUser,
       displayName,
-      fromHeader: `"${displayName}" <${adminAddress}>`,
+      fromHeader: `"${displayName}" <${primaryAuthUser}>`,
       replyTo: primaryAuthUser
     };
   }
 
   if (senderType === 'admissions') {
-    const admissionsAddress = `admissions@${domain}`;
     const displayName = 'Beacon Bridge Admissions & Student Services';
     return {
-      address: admissionsAddress,
+      address: primaryAuthUser,
       displayName,
-      fromHeader: `"${displayName}" <${admissionsAddress}>`,
+      fromHeader: `"${displayName}" <${primaryAuthUser}>`,
       replyTo: primaryAuthUser
     };
   }
 
   // Default: Info / Support
-  const infoAddress = `info@${domain}`;
   const displayName = 'Beacon Bridge Academics';
   return {
-    address: infoAddress,
+    address: primaryAuthUser,
     displayName,
-    fromHeader: `"${displayName}" <${infoAddress}>`,
+    fromHeader: `"${displayName}" <${primaryAuthUser}>`,
     replyTo: primaryAuthUser
   };
 };
