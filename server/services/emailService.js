@@ -8,14 +8,18 @@ const DEFAULT_INFO_EMAIL = process.env.SUPPORT_EMAIL || `info@${EMAIL_DOMAIN}`;
 const DEFAULT_ADMIN_EMAIL = process.env.ADMIN_EMAIL || `admin@${EMAIL_DOMAIN}`;
 const DEFAULT_ADMISSIONS_EMAIL = process.env.ADMISSIONS_EMAIL || `admissions@${EMAIL_DOMAIN}`;
 
+let cachedSmtpConfig = null;
+
 // Configure Hostinger SMTP Transporter
-// Hostinger standard SMTP settings:
-// Host: smtp.hostinger.com (or smtp.titan.email)
-// Port: 465 (SSL) or 587 (TLS)
-// Auth: User & Password created in Hostinger hPanel
-export const createTransporter = () => {
-  const host = (process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
-  const port = parseInt(process.env.SMTP_PORT, 10) || 465;
+// Hostinger supports:
+// 1. Port 587 (STARTTLS) - Best for cloud environments like Railway
+// 2. Port 465 (SSL)
+// 3. smtp.titan.email (for Hostinger Business Email plans)
+// 4. Port 2525 (Alternative submission port)
+export const createTransporter = (forcedConfig = null) => {
+  const cfg = forcedConfig || cachedSmtpConfig;
+  const host = cfg ? cfg.host : (process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
+  const port = cfg ? cfg.port : (parseInt(process.env.SMTP_PORT, 10) || 587); // Default to 587 (STARTTLS) to prevent 465 timeouts on cloud servers
   const user = (process.env.SMTP_USER || DEFAULT_INFO_EMAIL).trim();
   const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.trim() : null;
 
@@ -25,17 +29,19 @@ export const createTransporter = () => {
     return null;
   }
 
+  const isSecure = cfg ? cfg.secure : port === 465;
+
   return nodemailer.createTransport({
     host,
     port,
-    secure: port === 465, // true for port 465, false for 587
+    secure: isSecure,
     auth: {
       user,
       pass
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 6000,
+    greetingTimeout: 6000,
+    socketTimeout: 10000,
     tls: {
       rejectUnauthorized: false
     }
@@ -43,32 +49,66 @@ export const createTransporter = () => {
 };
 
 /**
- * Diagnostic helper to test Hostinger SMTP authentication directly
+ * Diagnostic helper to test Hostinger SMTP authentication directly across all standard ports & hosts
  */
 export const testSmtpConnection = async () => {
-  const transporter = createTransporter();
-  if (!transporter) {
+  const pass = process.env.SMTP_PASS ? process.env.SMTP_PASS.trim() : null;
+  const user = (process.env.SMTP_USER || DEFAULT_INFO_EMAIL).trim();
+
+  if (!pass) {
     return {
       connected: false,
-      message: 'SMTP_PASS environment variable is missing in server environment.'
+      message: 'SMTP_PASS environment variable is missing in Railway.'
     };
   }
 
-  try {
-    await transporter.verify();
+  const candidates = [
+    { host: 'smtp.hostinger.com', port: 587, secure: false, label: 'Hostinger 587 (STARTTLS)' },
+    { host: 'smtp.titan.email', port: 587, secure: false, label: 'Hostinger Titan 587 (STARTTLS)' },
+    { host: 'smtp.hostinger.com', port: 465, secure: true, label: 'Hostinger 465 (SSL)' },
+    { host: 'smtp.titan.email', port: 465, secure: true, label: 'Hostinger Titan 465 (SSL)' },
+    { host: 'smtp.hostinger.com', port: 2525, secure: false, label: 'Hostinger 2525 (Alternative)' }
+  ];
+
+  const tested = [];
+  let workingCandidate = null;
+
+  for (const c of candidates) {
+    try {
+      const tp = nodemailer.createTransport({
+        host: c.host,
+        port: c.port,
+        secure: c.secure,
+        auth: { user, pass },
+        connectionTimeout: 4500,
+        greetingTimeout: 4500,
+        socketTimeout: 6000,
+        tls: { rejectUnauthorized: false }
+      });
+      await tp.verify();
+      workingCandidate = c;
+      cachedSmtpConfig = c;
+      tested.push({ label: c.label, status: 'CONNECTED_SUCCESS' });
+      break;
+    } catch (err) {
+      tested.push({ label: c.label, status: 'FAILED', error: err.message, code: err.code || null });
+    }
+  }
+
+  if (workingCandidate) {
     return {
       connected: true,
-      message: `Hostinger SMTP connection verified successfully for ${process.env.SMTP_USER || DEFAULT_INFO_EMAIL}`
-    };
-  } catch (err) {
-    console.error('[SMTP Verification Error]:', err.message);
-    return {
-      connected: false,
-      error: err.message,
-      code: err.code || null,
-      response: err.response || null
+      workingConfig: workingCandidate,
+      message: `Successfully connected using ${workingCandidate.label} for ${user}!`,
+      tested
     };
   }
+
+  return {
+    connected: false,
+    message: 'All direct SMTP ports timed out. Railway blocks outbound SMTP (ports 25, 465, 587) on standard containers to prevent spam.',
+    tested
+  };
 };
 
 /**
