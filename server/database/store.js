@@ -1385,11 +1385,28 @@ export const store = {
 
   // Joint Registration (Parent + Student together)
   registerJoint: async ({ student, parent, course_id, course_track, selected_subjects, payment_proof_url, bank_reference, amount }) => {
-    // 1. Verify email uniqueness
+    // 1. Verify email uniqueness & handle idempotent re-submission (e.g. on network timeout)
     const existingStudent = await store.getProfileByEmail(student.email);
-    if (existingStudent) throw new Error(`Student email '${student.email}' is already registered.`);
-
     const existingParent = await store.getProfileByEmail(parent.email);
+
+    // If both accounts already exist and both are pending verification, update the payment proof idempotently
+    if (existingStudent && existingParent && existingStudent.status === 'pending_verification' && existingParent.status === 'pending_verification') {
+      const existingPayment = memoryData.payments.find(p => p.student_id === existingStudent.id || p.parent_id === existingParent.id);
+      if (existingPayment) {
+        if (payment_proof_url) existingPayment.proof_url = payment_proof_url;
+        if (bank_reference) existingPayment.bank_reference = bank_reference;
+        if (amount) existingPayment.amount = parseFloat(amount);
+        existingPayment.admin_notes = `Payment proof updated. Bank Ref: ${bank_reference || existingPayment.bank_reference}. Awaiting bursar confirmation.`;
+      }
+      return {
+        student: existingStudent,
+        parent: existingParent,
+        payment: existingPayment || null,
+        idempotent: true
+      };
+    }
+
+    if (existingStudent) throw new Error(`Student email '${student.email}' is already registered.`);
     if (existingParent) throw new Error(`Parent email '${parent.email}' is already registered.`);
 
     // 2. Hash passwords

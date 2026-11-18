@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import { showError, showSuccess, showWarning, showNetworkError } from '../../utils/swal';
 import {
   Building2,
   Copy,
@@ -66,7 +67,16 @@ export const PaymentProofPage = () => {
         }));
       }
     } catch (err) {
-      alert('Failed to upload proof slip: ' + (err.response?.data?.message || err.message));
+      const isNetErr = err.message === 'Network Error' || err.code === 'ERR_NETWORK' || !err.response;
+      if (isNetErr) {
+        showNetworkError({
+          title: 'Proof Upload Failed',
+          text: 'Network connection was interrupted while uploading your proof slip. Tap retry to try again.',
+          onRetry: () => proofFileInputRef.current?.click()
+        });
+      } else {
+        showError('Upload Failed', err.response?.data?.message || err.message || 'Failed to upload proof slip.');
+      }
     } finally {
       setUploadingProof(false);
     }

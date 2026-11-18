@@ -185,7 +185,7 @@ export const DashboardLayout = () => {
 
       {/* Sidebar Navigation */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-72 h-full bg-white border-r border-slate-200 flex flex-col shrink-0 transition-transform duration-200 ease-in-out
+        fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-72 h-full bg-white border-r border-slate-200/90 flex flex-col shrink-0 transition-transform duration-200 ease-in-out shadow-sm
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Brand Header */}
@@ -205,20 +205,22 @@ export const DashboardLayout = () => {
           </button>
         </div>
 
-        {/* Current Active Role Badge */}
-        <div className="px-5 py-2 border-b border-slate-100 bg-slate-50/70 shrink-0">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate-500">Current Role</span>
-            <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold border ${roleBadge.bg}`}>
+        {/* User Identity Chip */}
+        <div className="px-4 pt-3 pb-1 shrink-0">
+          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50/80 border border-slate-100">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="text-[11px] font-bold text-slate-700 truncate">{user?.full_name?.split(' ')[0] || 'User'}</span>
+            </div>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border shrink-0 ${roleBadge.bg}`}>
               {roleBadge.label}
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5 truncate">{user?.email}</p>
         </div>
 
         {/* Administrator Delegated Portal Mode Banner */}
         {user?.role === 'superadmin' && portalInfo.role !== 'superadmin' && (
-          <div className="p-2.5 mx-3 mt-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-950 text-xs shadow-sm shrink-0">
+          <div className="p-2.5 mx-3 mt-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-950 text-xs shadow-xs shrink-0">
             <div className="flex items-center justify-between mb-1">
               <span className="font-bold text-indigo-900 flex items-center gap-1 text-[11px]">
                 <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
@@ -233,15 +235,15 @@ export const DashboardLayout = () => {
             </p>
             <Link
               to="/admin/dashboard"
-              className="w-full py-1 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center justify-center space-x-1.5 transition-colors shadow-sm"
+              className="w-full py-1 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
             >
               <span>&larr; Return to Admin Hub</span>
             </Link>
           </div>
         )}
 
-        {/* Nav Links (Sleek, No-Scroll Proportions) */}
-        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto no-scrollbar scrollbar-none">
+        {/* Nav Links (Sleek, Modern SaaS Styling) */}
+        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto no-scrollbar scrollbar-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path || (item.path !== `/${user?.role}/dashboard` && location.pathname.startsWith(item.path));
@@ -251,39 +253,47 @@ export const DashboardLayout = () => {
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
                 className={`
-                  flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all
+                  flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs transition-all group
                   ${isActive 
-                    ? 'bg-brand-50 text-brand-700 font-bold shadow-sm' 
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
+                    ? 'bg-[#050167] text-[#f0faff] font-bold shadow-md shadow-[#050167]/20' 
+                    : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 font-semibold'}
                 `}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-brand-600' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#40ffa7]' : 'text-slate-400 group-hover:text-slate-700'}`} />
                 <span className="truncate">{item.name}</span>
+                {isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#40ffa7] ml-auto shrink-0" />
+                )}
               </Link>
             );
           })}
         </nav>
 
         {/* User Signout footer */}
-        <div className="p-3 px-4 border-t border-slate-100 flex items-center justify-between shrink-0 bg-white">
-          <div className="flex items-center space-x-2.5 overflow-hidden">
-            <img
-              src={user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'U')}`}
-              alt={user?.full_name}
-              className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
-            />
-            <div className="overflow-hidden">
-              <p className="text-xs font-bold text-slate-800 truncate">{user?.full_name}</p>
-              <p className="text-[10px] text-slate-400 capitalize truncate">{user?.role}</p>
+        <div className="p-3 border-t border-slate-100 shrink-0 bg-white">
+          <div className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
+            <div className="flex items-center space-x-2.5 overflow-hidden min-w-0">
+              <div className="relative shrink-0">
+                <img
+                  src={user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'U')}`}
+                  alt={user?.full_name}
+                  className="w-8 h-8 rounded-xl object-cover border border-slate-200"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-white" />
+              </div>
+              <div className="overflow-hidden min-w-0">
+                <p className="text-xs font-bold text-slate-800 truncate">{user?.full_name}</p>
+                <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+              </div>
             </div>
+            <button
+              onClick={logout}
+              title="Sign Out"
+              className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors shrink-0 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            onClick={logout}
-            title="Sign Out"
-            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </aside>
 

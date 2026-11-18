@@ -70,7 +70,12 @@ if (!fs.existsSync(decksDir)) {
   fs.mkdirSync(decksDir, { recursive: true });
 }
 
-app.use('/uploads', express.static(uploadDir));
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(uploadDir));
 app.use('/slides', express.static(path.join(__dirname, 'public/slides')));
 
 // API Health Check

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
@@ -12,7 +12,14 @@ import {
   Calendar,
   Sparkles,
   ArrowRight,
-  TrendingUp
+  TrendingUp,
+  Camera,
+  Mic,
+  MicOff,
+  VideoOff,
+  X,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 
 export const StudentDashboard = () => {
@@ -21,6 +28,14 @@ export const StudentDashboard = () => {
   const [classes, setClasses] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cameraTestOpen, setCameraTestOpen] = useState(false);
+
+  // Device Test State
+  const [testStream, setTestStream] = useState(null);
+  const [testVideoActive, setTestVideoActive] = useState(true);
+  const [testMicActive, setTestMicActive] = useState(true);
+  const [testCameraError, setTestCameraError] = useState(null);
+  const testVideoRef = useRef(null);
 
   useEffect(() => {
     const fetchStudentData = async () => {
@@ -43,6 +58,80 @@ export const StudentDashboard = () => {
 
     if (user?.id) fetchStudentData();
   }, [user?.id]);
+
+  // Start / Stop Hardware Test Media Stream
+  useEffect(() => {
+    let active = true;
+    const startTestMedia = async () => {
+      if (!cameraTestOpen) return;
+      setTestCameraError(null);
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: true
+        });
+        if (active) {
+          setTestStream(s);
+          if (testVideoRef.current) {
+            testVideoRef.current.srcObject = s;
+            testVideoRef.current.play().catch(() => {});
+          }
+        } else {
+          s.getTracks().forEach(t => t.stop());
+        }
+      } catch (err) {
+        console.warn('[Dashboard Device Test Error]', err);
+        try {
+          const s = await navigator.mediaDevices.getUserMedia({ video: true });
+          if (active) {
+            setTestStream(s);
+            if (testVideoRef.current) {
+              testVideoRef.current.srcObject = s;
+              testVideoRef.current.play().catch(() => {});
+            }
+          }
+        } catch (e2) {
+          setTestCameraError(err.message || 'Camera or microphone unavailable. Please ensure permissions are granted.');
+        }
+      }
+    };
+
+    if (cameraTestOpen) {
+      startTestMedia();
+    } else {
+      if (testStream) {
+        testStream.getTracks().forEach(t => t.stop());
+        setTestStream(null);
+      }
+    }
+
+    return () => {
+      active = false;
+      if (testStream) {
+        testStream.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [cameraTestOpen]);
+
+  const toggleTestVideo = () => {
+    if (testStream) {
+      const vTrack = testStream.getVideoTracks()[0];
+      if (vTrack) {
+        vTrack.enabled = !vTrack.enabled;
+        setTestVideoActive(vTrack.enabled);
+      }
+    }
+  };
+
+  const toggleTestMic = () => {
+    if (testStream) {
+      const aTrack = testStream.getAudioTracks()[0];
+      if (aTrack) {
+        aTrack.enabled = !aTrack.enabled;
+        setTestMicActive(aTrack.enabled);
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -69,6 +158,18 @@ export const StudentDashboard = () => {
           <p className="mt-2 text-slate-300 text-sm leading-relaxed">
             Stay on track with your upcoming live classes, lecture presentations, and course modules.
           </p>
+
+          {/* Quick Hardware & Camera Test Trigger */}
+          <div className="flex flex-wrap items-center gap-2 mt-4">
+            <button
+              type="button"
+              onClick={() => setCameraTestOpen(true)}
+              className="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/20 transition-all flex items-center gap-2 cursor-pointer backdrop-blur-sm shadow-sm"
+            >
+              <Camera className="w-3.5 h-3.5 text-[#40ffa7]" />
+              <span>Test Camera & Microphone</span>
+            </button>
+          </div>
         </div>
 
         {/* Live Class Immediate Entry Card */}
@@ -120,17 +221,25 @@ export const StudentDashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        {/* Clickable Upcoming Sessions -> links directly to Live Classes */}
+        <Link 
+          to="/student/classes"
+          className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:border-brand-500 hover:shadow-md transition-all cursor-pointer block group"
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upcoming Sessions</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider group-hover:text-brand-600 transition-colors">Upcoming Sessions</p>
               <h3 className="text-2xl font-black text-slate-900 mt-1">{upcomingClasses.length}</h3>
+              <p className="text-[11px] text-brand-600 font-semibold mt-1 flex items-center gap-1">
+                <span>View Timetable & Join</span>
+                <ArrowRight className="w-3 h-3" />
+              </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-all">
               <Video className="w-6 h-6" />
             </div>
           </div>
-        </div>
+        </Link>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
           <div className="flex items-center justify-between">
@@ -216,6 +325,111 @@ export const StudentDashboard = () => {
         </div>
 
       </div>
+
+      {/* Device Hardware Pre-Flight Check Modal (Desktop & Mobile) */}
+      {cameraTestOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center">
+                  <Camera className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Camera & Microphone Check</h3>
+                  <p className="text-[11px] text-slate-500">Live preview for desktop and mobile</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCameraTestOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {testCameraError ? (
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>Camera Access Denied or Blocked</span>
+                </div>
+                <p className="leading-relaxed">{testCameraError}</p>
+                <p className="text-[11px] text-rose-600">
+                  Tip: Look at the top address bar in your browser, tap the lock/camera icon, and select <strong>Allow</strong> for Camera and Microphone.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Live Video Preview Tile */}
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-inner flex items-center justify-center">
+                  <video
+                    ref={testVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={`w-full h-full object-cover scale-x-[-1] ${testVideoActive ? 'block' : 'hidden'}`}
+                  />
+                  {!testVideoActive && (
+                    <div className="flex flex-col items-center justify-center text-slate-400 p-4">
+                      <VideoOff className="w-8 h-8 mb-2 text-slate-600" />
+                      <span className="text-xs font-semibold">Camera is Turned Off</span>
+                    </div>
+                  )}
+
+                  {/* Status Overlay */}
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-full bg-black/70 backdrop-blur text-[10px] font-bold text-[#40ffa7] flex items-center gap-1.5 border border-white/10">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#40ffa7] animate-pulse" />
+                      Camera Connected
+                    </span>
+                  </div>
+                </div>
+
+                {/* Control Action Buttons */}
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      type="button"
+                      onClick={toggleTestVideo}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                        testVideoActive
+                          ? 'bg-slate-100 text-slate-800 hover:bg-slate-200'
+                          : 'bg-rose-600 text-white hover:bg-rose-700'
+                      }`}
+                    >
+                      {testVideoActive ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5" />}
+                      <span>{testVideoActive ? 'Mute Camera' : 'Turn On'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={toggleTestMic}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                        testMicActive
+                          ? 'bg-slate-100 text-slate-800 hover:bg-slate-200'
+                          : 'bg-rose-600 text-white hover:bg-rose-700'
+                      }`}
+                    >
+                      {testMicActive ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                      <span>{testMicActive ? 'Mute Mic' : 'Unmute Mic'}</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCameraTestOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-[#050167] text-white hover:bg-[#001f3f] text-xs font-bold shadow-md transition-all"
+                  >
+                    All Looks Good!
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -68,6 +68,8 @@ const RemoteParticipantAudio = ({ stream, onAudioBlocked }) => {
   useEffect(() => {
     if (audioRef.current && stream) {
       audioRef.current.srcObject = stream;
+      audioRef.current.muted = false;
+      audioRef.current.volume = 1.0;
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
@@ -78,7 +80,7 @@ const RemoteParticipantAudio = ({ stream, onAudioBlocked }) => {
     }
   }, [stream, onAudioBlocked]);
 
-  return <audio ref={audioRef} autoPlay playsInline className="hidden" />;
+  return <audio ref={audioRef} autoPlay playsInline style={{ position: 'fixed', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }} />;
 };
 
 const RemoteParticipantVideo = ({ stream, className, mirror = false }) => {
@@ -95,6 +97,36 @@ const RemoteParticipantVideo = ({ stream, className, mirror = false }) => {
       }
     }
   }, [stream]);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted
+      className={`${className} ${mirror ? 'scale-x-[-1]' : ''}`}
+    />
+  );
+};
+
+// Independent Local Video Component - Avoids Shared Ref Collisions
+const LocalParticipantVideo = ({ stream, isVideoActive, className, mirror = true }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      if (stream && isVideoActive) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch((err) => {
+          console.warn('[LocalVideo] play warning:', err);
+        });
+      } else {
+        videoRef.current.srcObject = null;
+      }
+    }
+  }, [stream, isVideoActive]);
+
+  if (!stream || !isVideoActive) return null;
 
   return (
     <video
@@ -385,9 +417,20 @@ export const ClassroomPage = () => {
         let needsRenegotiation = false;
 
         if (audioTrack) {
+          try {
+            const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
+            const audioTransceiver = transceivers.find(t => t.receiver?.track?.kind === 'audio' || t.sender?.track?.kind === 'audio');
+            if (audioTransceiver && audioTransceiver.direction !== 'sendrecv') {
+              audioTransceiver.direction = 'sendrecv';
+              needsRenegotiation = true;
+            }
+          } catch (e) {}
+
           const audioSender = senders.find(s => (s.track && s.track.kind === 'audio') || (!s.track && s.kind === 'audio'));
           if (audioSender) {
+            const hadLiveTrack = Boolean(audioSender.track && audioSender.track.readyState === 'live');
             audioSender.replaceTrack(audioTrack);
+            if (!hadLiveTrack) needsRenegotiation = true;
           } else {
             pc.addTrack(audioTrack, stream);
             needsRenegotiation = true;
@@ -395,9 +438,20 @@ export const ClassroomPage = () => {
         }
 
         if (videoTrack && !localScreenStreamRef.current) {
+          try {
+            const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
+            const videoTransceiver = transceivers.find(t => t.receiver?.track?.kind === 'video' || t.sender?.track?.kind === 'video');
+            if (videoTransceiver && videoTransceiver.direction !== 'sendrecv') {
+              videoTransceiver.direction = 'sendrecv';
+              needsRenegotiation = true;
+            }
+          } catch (e) {}
+
           const videoSender = senders.find(s => (s.track && s.track.kind === 'video') || (!s.track && s.kind === 'video'));
           if (videoSender) {
+            const hadLiveTrack = Boolean(videoSender.track && videoSender.track.readyState === 'live');
             videoSender.replaceTrack(videoTrack);
+            if (!hadLiveTrack) needsRenegotiation = true;
           } else {
             pc.addTrack(videoTrack, stream);
             needsRenegotiation = true;
@@ -2443,12 +2497,10 @@ export const ClassroomPage = () => {
           <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between">
             <div className="flex items-center space-x-3 text-left">
               <div className="w-16 h-12 bg-black rounded-lg overflow-hidden border border-slate-700">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className={`w-full h-full object-cover mirror ${videoActive && localStream ? 'block' : 'hidden'}`}
+                <LocalParticipantVideo
+                  stream={localStream}
+                  isVideoActive={videoActive}
+                  className="w-full h-full object-cover"
                 />
                 {(!videoActive || !localStream) && (
                   <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-500">
@@ -3025,12 +3077,10 @@ export const ClassroomPage = () => {
                       </button>
                     ) : (
                       <>
-                        <video
-                          ref={localVideoRef}
-                          autoPlay
-                          muted
-                          playsInline
-                          className={`w-full h-full object-cover mirror ${videoActive && localStream ? 'block' : 'hidden'}`}
+                        <LocalParticipantVideo
+                          stream={localStream}
+                          isVideoActive={videoActive}
+                          className="w-full h-full object-cover"
                         />
 
                         {(!videoActive || !localStream) && (
@@ -3228,12 +3278,10 @@ export const ClassroomPage = () => {
 
                   {/* Bottom-Right: Student Self-View PIP Tile (Positioned safely above bottom slide bar on mobile) */}
                   <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 w-28 sm:w-36 h-20 sm:h-24 rounded-xl overflow-hidden shadow-xl border border-slate-700 bg-slate-900 group">
-                    <video
-                      ref={localVideoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className={`w-full h-full object-cover scale-x-[-1] ${videoActive && localStream ? 'block' : 'hidden'}`}
+                    <LocalParticipantVideo
+                      stream={localStream}
+                      isVideoActive={videoActive}
+                      className="w-full h-full object-cover"
                     />
                     {(!videoActive || !localStream) && (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500 p-1 text-center select-none">

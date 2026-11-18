@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
+import { showError, showSuccess, showWarning, showNetworkError } from '../../utils/swal';
 import {
   GraduationCap,
   Mail,
@@ -262,7 +263,16 @@ export const RegisterPage = () => {
         }));
       }
     } catch (err) {
-      alert('Failed to upload payment proof slip: ' + (err.response?.data?.message || err.message));
+      const isNetErr = err.message === 'Network Error' || err.code === 'ERR_NETWORK' || !err.response;
+      if (isNetErr) {
+        showNetworkError({
+          title: 'Payment Slip Upload Failed',
+          text: 'Network connection was interrupted while uploading your proof slip. Please check your internet connection and tap retry.',
+          onRetry: () => proofFileInputRef.current?.click()
+        });
+      } else {
+        showError('Upload Failed', err.response?.data?.message || err.message || 'Could not upload payment proof slip.');
+      }
     } finally {
       setUploadingProof(false);
     }
@@ -449,23 +459,41 @@ export const RegisterPage = () => {
       return;
     }
 
+    if (uploadingProof) {
+      showWarning('Upload in Progress', 'Please wait for your payment receipt slip to finish uploading before submitting.');
+      return;
+    }
+
+    if (!formData.payment_proof_url) {
+      showWarning('Payment Proof Slip Required', 'Please attach your bank transfer receipt or payment confirmation slip (Image or PDF) to complete registration.');
+      return;
+    }
+
     if (formData.student_password.length < 6 || formData.parent_password.length < 6) {
-      setError('Passwords must be at least 6 characters in length.');
+      const msg = 'Passwords must be at least 6 characters in length.';
+      setError(msg);
+      showWarning('Password Too Short', msg);
       return;
     }
 
     if (isAlevelCourse && selectedSubjects.length !== 3) {
-      setError(`Please select exactly 3 A-Level subjects for this program (currently selected: ${selectedSubjects.length}).`);
+      const msg = `Please select exactly 3 A-Level subjects for this program (currently selected: ${selectedSubjects.length}).`;
+      setError(msg);
+      showWarning('Subject Selection', msg);
       return;
     }
 
     if (selectedSubjects.length === 0) {
-      setError('Please select at least one subject for enrollment.');
+      const msg = 'Please select at least one subject for enrollment.';
+      setError(msg);
+      showWarning('Subject Selection', msg);
       return;
     }
 
     if (!formData.bank_reference.trim()) {
-      setError('Please enter your Bank Wire / Transfer Reference Number or Transaction ID.');
+      const msg = 'Please enter your Bank Wire / Transfer Reference Number or Transaction ID.';
+      setError(msg);
+      showWarning('Bank Reference Missing', msg);
       return;
     }
 
@@ -501,7 +529,18 @@ export const RegisterPage = () => {
       const res = await registerJoint(payload);
       setSuccessData(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Joint registration failed. Please try again.');
+      const isNetErr = err.message === 'Network Error' || err.code === 'ERR_NETWORK' || !err.response;
+      if (isNetErr) {
+        showNetworkError({
+          title: 'Connection Timed Out',
+          text: 'We detected an intermittent internet connection. Your data is preserved safely. Tap Retry Now to submit again.',
+          onRetry: () => handleSubmit(e)
+        });
+      } else {
+        const errorText = err.response?.data?.message || err.message || 'Joint registration failed. Please try again.';
+        setError(errorText);
+        showError('Registration Error', errorText);
+      }
     } finally {
       setLoading(false);
     }

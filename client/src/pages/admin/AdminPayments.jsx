@@ -453,22 +453,45 @@ export const AdminPayments = () => {
               {/* Receipt Preview — click to open full size, PDF support */}
               <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-100 text-center">
                 {activeModalPayment.proof_url?.toLowerCase().endsWith('.pdf') ? (
-                  <div className="p-6 flex flex-col items-center gap-3">
-                    <div className="text-4xl">📄</div>
-                    <p className="text-sm font-semibold text-slate-700">PDF Payment Proof</p>
-                    <a
-                      href={activeModalPayment.proof_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 flex items-center gap-1.5"
+                  <div className="p-4 flex flex-col items-center gap-3">
+                    <div className="w-full flex items-center justify-between pb-2 border-b border-slate-200">
+                      <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <span className="text-xl">📄</span> Official PDF Payment Proof
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={activeModalPayment.proof_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-lg bg-[#050167] hover:bg-[#001f3f] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" /> Open Fullscreen
+                        </a>
+                        <a
+                          href={activeModalPayment.proof_url}
+                          download
+                          className="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold flex items-center gap-1 transition-all"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                    
+                    <object
+                      data={activeModalPayment.proof_url}
+                      type="application/pdf"
+                      className="w-full h-80 rounded-xl border border-slate-200 bg-white"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" /> Open / Download PDF
-                    </a>
-                    <iframe
-                      src={activeModalPayment.proof_url}
-                      title="Payment Proof PDF"
-                      className="w-full h-64 rounded-xl border border-slate-200 mt-2"
-                    />
+                      <iframe
+                        src={`https://docs.google.com/viewer?url=${encodeURIComponent(
+                          activeModalPayment.proof_url.startsWith('http')
+                            ? activeModalPayment.proof_url
+                            : `https://beaconbridgeacademics.co.uk${activeModalPayment.proof_url}`
+                        )}&embedded=true`}
+                        title="Payment Proof PDF Preview"
+                        className="w-full h-80 rounded-xl border border-slate-200"
+                      />
+                    </object>
                   </div>
                 ) : (
                   <img
