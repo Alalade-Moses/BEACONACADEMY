@@ -49,7 +49,7 @@ import {
   Power,
   Loader2
 } from 'lucide-react';
-import { showError, showWarning, showSuccess, showToast } from '../../utils/swal';
+import { showError, showWarning, showSuccess, showToast, showPermissionBlockedAlert } from '../../utils/swal';
 
 const ICE_CONFIG = {
   iceServers: [
@@ -569,8 +569,8 @@ export const ClassroomPage = () => {
           socketId: targetSocketId,
           user: targetUser || existing?.user,
           stream: freshStream,
-          isVideoActive: (existing?.isVideoActive !== undefined) ? existing.isVideoActive : hasLiveVideo,
-          isMicActive: (existing?.isMicActive !== undefined) ? existing.isMicActive : hasLiveAudio
+          isVideoActive: hasLiveVideo || (existing?.isVideoActive ?? false),
+          isMicActive: hasLiveAudio || (existing?.isMicActive ?? false)
         });
         return next;
       });
@@ -708,8 +708,16 @@ export const ClassroomPage = () => {
       console.warn('acquireMedia error:', err.name, err.message);
       let userMsg = 'Unable to access camera or microphone.';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        userMsg = 'Camera or microphone access is blocked by your browser. Please tap the lock icon (🔒) in your browser address bar at the top, select Permissions, set Camera/Microphone to Allow, and tap Retry.';
-        showWarning('Device Permission Blocked', userMsg);
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        showPermissionBlockedAlert({
+          isMobile,
+          onRetry: () => {
+            acquireMedia(true, true);
+          }
+        });
+        userMsg = isMobile 
+          ? 'Camera access is blocked in mobile Chrome settings.'
+          : 'Camera access is blocked by your browser.';
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
         userMsg = 'No camera or microphone was detected on this device.';
         showError('Device Not Found', userMsg);
@@ -729,7 +737,7 @@ export const ClassroomPage = () => {
     }
   }, [updatePeerConnectionsWithStream]);
 
-  // Safe mount initialization: only auto-stream if already granted; do NOT trigger auto-dismissal
+  // Initial auto-stream on classroom entrance: displays video and audio straight away if permitted
   const startMedia = useCallback(async () => {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setCameraError('Media access not supported in this browser.');
@@ -739,23 +747,10 @@ export const ClassroomPage = () => {
     }
 
     try {
-      if (navigator.permissions && navigator.permissions.query) {
-        const camPerm = await navigator.permissions.query({ name: 'camera' }).catch(() => null);
-        const micPerm = await navigator.permissions.query({ name: 'microphone' }).catch(() => null);
-
-        // Only auto-acquire if user already previously granted permissions!
-        if (camPerm?.state === 'granted' || micPerm?.state === 'granted') {
-          await acquireMedia(camPerm?.state === 'granted', micPerm?.state === 'granted');
-          return;
-        }
-      }
+      await acquireMedia(true, true);
     } catch (e) {
-      // Permission API not available
+      console.warn('Initial media acquire warning:', e);
     }
-
-    // Otherwise, start muted/off so the browser does not dismiss the prompt on page load
-    setVideoActive(false);
-    setMicActive(false);
   }, [acquireMedia]);
 
   useEffect(() => {
@@ -858,6 +853,10 @@ export const ClassroomPage = () => {
 
       // Initialize Timing & Status from Room State
       if (state.durationMinutes) setTotalDurationMinutes(state.durationMinutes);
+      if (state.screenSharerId) {
+        setScreenSharerInfo({ socketId: state.screenSharerId, isSharing: true });
+        setScreenStageMode('screen');
+      }
       if (state.status === 'live') {
         setIsSessionActive(true);
         setIsSessionEnded(false);
@@ -1664,8 +1663,9 @@ export const ClassroomPage = () => {
     setIsScreenSharing(false);
     setScreenStageMode('whiteboard');
 
-    // Restore user webcam track to all peer connections
+    // Restore user webcam track & mic track to all peer connections
     const camTrack = localStreamRef.current?.getVideoTracks().find(t => t.readyState === 'live') || null;
+    const micTrack = localStreamRef.current?.getAudioTracks().find(t => t.readyState === 'live') || null;
     peerConnectionsRef.current.forEach((pc) => {
       try {
         const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
@@ -1676,8 +1676,15 @@ export const ClassroomPage = () => {
         if (videoTransceiver && videoTransceiver.sender) {
           videoTransceiver.sender.replaceTrack(camTrack).catch(() => {});
         }
+        const audioTransceiver = transceivers.find(t => 
+          (t.sender?.track && t.sender.track.kind === 'audio') || 
+          (t.receiver?.track && t.receiver.track.kind === 'audio')
+        ) || transceivers[0];
+        if (audioTransceiver && audioTransceiver.sender && micTrack) {
+          audioTransceiver.sender.replaceTrack(micTrack).catch(() => {});
+        }
       } catch (e) {
-        console.warn('[ScreenShare] Error restoring camera track:', e);
+        console.warn('[ScreenShare] Error restoring camera/mic track:', e);
       }
     });
 
@@ -1689,10 +1696,30 @@ export const ClassroomPage = () => {
   const toggleScreenShare = async () => {
     if (!isScreenSharing) {
       try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { cursor: 'always' },
-          audio: true
-        });
+        // Guide tutor to select Entire Screen so switching between tabs, apps, Word, PPT and PDFs is captured
+        showToast("Select 'Entire Screen' in the browser prompt to share PowerPoint, Word, PDFs, or other tabs with students.", 'info');
+
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              cursor: 'always',
+              displaySurface: 'monitor'
+            },
+            audio: true,
+            selfBrowserSurface: 'exclude',
+            surfaceSwitching: 'include',
+            systemAudio: 'include',
+            preferCurrentTab: false
+          });
+        } catch (specErr) {
+          // Standard fallback
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true
+          });
+        }
+
         localScreenStreamRef.current = stream;
         setIsScreenSharing(true);
         setScreenStageMode('screen');
@@ -1718,6 +1745,30 @@ export const ClassroomPage = () => {
             console.warn('[ScreenShare] Error routing screen track:', e);
           }
         });
+
+        // Mix presentation system audio with microphone if screen audio is present
+        const screenAudioTrack = stream.getAudioTracks()[0];
+        const micTrack = localStreamRef.current?.getAudioTracks()[0];
+        if (screenAudioTrack && micTrack) {
+          try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const micSource = audioCtx.createMediaStreamSource(new MediaStream([micTrack]));
+            const screenSource = audioCtx.createMediaStreamSource(new MediaStream([screenAudioTrack]));
+            const dest = audioCtx.createMediaStreamDestination();
+            micSource.connect(dest);
+            screenSource.connect(dest);
+            const mixedAudio = dest.stream.getAudioTracks()[0];
+            peerConnectionsRef.current.forEach(pc => {
+              const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
+              const audioTransceiver = transceivers[0];
+              if (audioTransceiver?.sender) {
+                audioTransceiver.sender.replaceTrack(mixedAudio).catch(() => {});
+              }
+            });
+          } catch (mixErr) {
+            console.warn('[ScreenShare] Audio mix fallback:', mixErr);
+          }
+        }
 
         if (socket) {
           socket.emit('screen_share_status', { roomId: normClassId, isSharing: true });
@@ -2647,6 +2698,17 @@ export const ClassroomPage = () => {
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none font-sans relative">
       
+      {/* UNIVERSAL BACKGROUND AUDIO ENGINE (Guarantees Bi-Directional Audio Stream Delivery) */}
+      <div className="hidden" aria-hidden="true">
+        {Array.from(remoteStreams.values()).map((peer) => (
+          <RemoteParticipantAudio
+            key={`audio-global-${peer.socketId}`}
+            stream={peer.stream}
+            onAudioBlocked={() => setAudioBlocked(true)}
+          />
+        ))}
+      </div>
+
       {/* MOBILE AUTOPLAY AUDIO PERMISSION UNBLOCK BANNER */}
       {audioBlocked && (
         <div 
@@ -3083,18 +3145,26 @@ export const ClassroomPage = () => {
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    Array.from(remoteStreams.values())[0]?.stream ? (
-                      <RemoteParticipantVideo
-                        stream={Array.from(remoteStreams.values())[0].stream}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-center text-slate-400 p-6 max-w-sm">
-                        <ScreenShare className="w-12 h-12 mx-auto mb-3 text-emerald-400 animate-pulse" />
-                        <h4 className="text-sm font-bold text-white mb-1">Live Screen Broadcast</h4>
-                        <p className="text-xs text-slate-400">Receiving presentation display stream from instructor...</p>
-                      </div>
-                    )
+                    (() => {
+                      const screenStream = (screenSharerInfo?.socketId && remoteStreams.get(screenSharerInfo.socketId)?.stream)
+                        || Array.from(remoteStreams.values()).find(p => p.socketId === screenSharerInfo?.socketId)?.stream
+                        || Array.from(remoteStreams.values()).find(p => p.user?.role === 'tutor')?.stream
+                        || Array.from(remoteStreams.values())[0]?.stream;
+
+                      return screenStream ? (
+                        <RemoteParticipantVideo
+                          stream={screenStream}
+                          className="w-full h-full object-contain"
+                          mirror={false}
+                        />
+                      ) : (
+                        <div className="text-center text-slate-400 p-6 max-w-sm">
+                          <ScreenShare className="w-12 h-12 mx-auto mb-3 text-emerald-400 animate-pulse" />
+                          <h4 className="text-sm font-bold text-white mb-1">Live Screen Broadcast</h4>
+                          <p className="text-xs text-slate-400">Receiving presentation display stream from instructor...</p>
+                        </div>
+                      );
+                    })()
                   )}
                 </div>
               ) : slideMode === 'presentation' ? (
@@ -3249,10 +3319,6 @@ export const ClassroomPage = () => {
                             key={peer.socketId}
                             className="w-28 sm:w-52 aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-emerald-400 bg-slate-900 relative group"
                           >
-                            <RemoteParticipantAudio
-                              stream={peer.stream}
-                              onAudioBlocked={() => setAudioBlocked(true)}
-                            />
                             {hasLiveVideo ? (
                               <RemoteParticipantVideo
                                 stream={peer.stream}
@@ -3287,15 +3353,6 @@ export const ClassroomPage = () => {
               ) : (
                 /* Student View: Prominent Tutor Tile (Top-Right) + Student Self PIP (Bottom-Right) */
                 <>
-                  {/* Remote Audios: Play all remote participants */}
-                  {Array.from(remoteStreams.values()).map((peer) => (
-                    <RemoteParticipantAudio
-                      key={peer.socketId}
-                      stream={peer.stream}
-                      onAudioBlocked={() => setAudioBlocked(true)}
-                    />
-                  ))}
-
                   {/* Top-Right: Tutor Broadcast Tile (Prominent Live Teacher View) */}
                   {(() => {
                     const remoteList = Array.from(remoteStreams.values());

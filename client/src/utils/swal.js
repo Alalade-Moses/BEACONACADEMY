@@ -127,4 +127,49 @@ export const showToast = (title, icon = 'success') => {
   });
 };
 
+/**
+ * Display device permission guidance with instant retry
+ */
+export const showPermissionBlockedAlert = ({ isMobile, onRetry }) => {
+  const htmlContent = isMobile
+    ? `
+      <div style="text-align: left; font-size: 13px; line-height: 1.6; color: #334155;">
+        <p style="font-weight: 700; margin-bottom: 8px; color: #0f172a;">Camera / Microphone access is blocked on your phone.</p>
+        <p style="margin-bottom: 6px; font-weight: 600; color: #050167;">To enable it in Chrome (Android):</p>
+        <ol style="margin-left: 18px; margin-bottom: 12px; padding: 0;">
+          <li style="margin-bottom: 4px;">Tap the <b>3 vertical dots (⋮)</b> at top right of Chrome.</li>
+          <li style="margin-bottom: 4px;">Tap <b>Settings ⚙️</b>, then scroll to <b>Site settings</b>.</li>
+          <li style="margin-bottom: 4px;">Tap <b>Camera</b> (and Microphone).</li>
+          <li style="margin-bottom: 4px;">Under <b>Blocked</b>, tap <b>beaconbridgeacademics.co.uk</b>.</li>
+          <li style="margin-bottom: 4px;">Tap <b>Camera</b> and select <b>"Allow"</b>.</li>
+        </ol>
+        <p style="font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px;">After allowing, tap <b>Retry Camera</b> below to start immediately!</p>
+      </div>
+    `
+    : `
+      <div style="text-align: left; font-size: 13px; line-height: 1.6; color: #334155;">
+        <p style="font-weight: 700; margin-bottom: 8px; color: #0f172a;">Camera / Microphone access is blocked by your browser.</p>
+        <ol style="margin-left: 18px; margin-bottom: 12px; padding: 0;">
+          <li style="margin-bottom: 4px;">Click the <b>lock or tune icon (🔒)</b> on the left of your browser address bar.</li>
+          <li style="margin-bottom: 4px;">Switch <b>Camera</b> and <b>Microphone</b> to <b>Allow</b>.</li>
+        </ol>
+        <p style="font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px;">Once enabled, click <b>Retry Camera</b> below.</p>
+      </div>
+    `;
+
+  return BrandSwal.fire({
+    icon: 'warning',
+    title: 'Permission Blocked',
+    html: htmlContent,
+    iconColor: '#f59e0b',
+    showCancelButton: true,
+    confirmButtonText: 'Retry Camera',
+    cancelButtonText: 'Dismiss'
+  }).then((res) => {
+    if (res.isConfirmed && typeof onRetry === 'function') {
+      onRetry();
+    }
+  });
+};
+
 export default BrandSwal;
