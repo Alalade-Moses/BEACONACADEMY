@@ -1568,41 +1568,61 @@ export const store = {
     payment.admin_notes = 'Payment verified and confirmed by Administrator.';
 
     // ACTIVATE BOTH STUDENT AND PARENT ACCOUNTS!
-    await store.updateProfile(payment.student_id, { status: 'active' });
-    await store.updateProfile(payment.parent_id, { status: 'active' });
+    if (payment.student_id) {
+      await store.updateProfile(payment.student_id, { status: 'active' });
+    }
+    if (payment.parent_id) {
+      await store.updateProfile(payment.parent_id, { status: 'active' });
+    }
 
-    const student = memoryData.profiles.find(p => p.id === payment.student_id);
-    const parent = memoryData.profiles.find(p => p.id === payment.parent_id);
+    const student = payment.student_id ? memoryData.profiles.find(p => p.id === payment.student_id) : null;
+    const parent = payment.parent_id ? memoryData.profiles.find(p => p.id === payment.parent_id) : null;
 
     // If student has course enrollment, ensure it's marked enrolled
-    if (payment.course_id) {
-      const existingEnr = memoryData.course_enrollments.find(e => e.course_id === payment.course_id && e.student_id === payment.student_id);
-      if (!existingEnr) {
-        await store.createEnrollment({
-          course_id: payment.course_id,
-          student_id: payment.student_id,
-          status: 'enrolled',
-          progress_pct: 0
-        });
+    if (payment.course_id && payment.student_id) {
+      try {
+        const existingEnr = memoryData.course_enrollments.find(e => e.course_id === payment.course_id && e.student_id === payment.student_id);
+        if (!existingEnr) {
+          await store.createEnrollment({
+            course_id: payment.course_id,
+            student_id: payment.student_id,
+            status: 'enrolled',
+            progress_pct: 0
+          });
+        }
+      } catch (err) {
+        console.warn('[Enrollment activation note]:', err.message);
       }
     }
 
     // In-app notifications
-    await store.createNotification({
-      user_id: payment.student_id,
-      title: 'Payment Confirmed & Account Activated!',
-      message: 'Your tuition payment has been officially verified by the administrator. You may now access all classes and materials!',
-      type: 'payment',
-      link: '/student/dashboard'
-    });
+    if (payment.student_id) {
+      try {
+        await store.createNotification({
+          user_id: payment.student_id,
+          title: 'Payment Confirmed & Account Activated!',
+          message: 'Your tuition payment has been officially verified by the administrator. You may now access all classes and materials!',
+          type: 'payment',
+          link: '/student/dashboard'
+        });
+      } catch (err) {
+        console.warn('[Student notification note]:', err.message);
+      }
+    }
 
-    await store.createNotification({
-      user_id: payment.parent_id,
-      title: 'Tuition Payment Confirmed & Child Account Activated',
-      message: `Your payment for ${student?.full_name || 'your child'} was verified. Both parent and student portals are now unlocked!`,
-      type: 'payment',
-      link: '/parent/dashboard'
-    });
+    if (payment.parent_id) {
+      try {
+        await store.createNotification({
+          user_id: payment.parent_id,
+          title: 'Tuition Payment Confirmed & Child Account Activated',
+          message: `Your payment for ${student?.full_name || 'your child'} was verified. Both parent and student portals are now unlocked!`,
+          type: 'payment',
+          link: '/parent/dashboard'
+        });
+      } catch (err) {
+        console.warn('[Parent notification note]:', err.message);
+      }
+    }
 
     console.log(`\n======================================================`);
     console.log(`📧 [EMAIL CONFIRMATION TO STUDENT]: ${student?.email}`);

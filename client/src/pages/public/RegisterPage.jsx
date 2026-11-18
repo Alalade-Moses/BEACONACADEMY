@@ -511,6 +511,19 @@ export const RegisterPage = () => {
   if (successData) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-12">
+        {/* Master Logo Header on Proof Container */}
+        <div className="bg-white rounded-3xl border border-[#050167]/15 shadow-xl shadow-[#050167]/5 overflow-hidden mb-8">
+          <div className="w-full bg-gradient-to-b from-[#f0faff] to-slate-50 border-b border-[#050167]/10 px-6 py-6 sm:py-7 flex items-center justify-center rounded-t-3xl">
+            <Link to="/" className="inline-block group">
+              <img 
+                src="/logo.png" 
+                alt="Beacon Bridge Academics" 
+                className="h-14 sm:h-16 w-auto object-contain transition-transform group-hover:scale-105"
+              />
+            </Link>
+          </div>
+        </div>
+
         <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#050167]/15 shadow-xl text-center">
           
           <div className="w-20 h-20 rounded-3xl bg-[#f0faff] border border-[#050167]/20 text-[#050167] mx-auto flex items-center justify-center mb-6">
@@ -598,7 +611,8 @@ export const RegisterPage = () => {
             </Link>
             <Link
               to="/"
-              className="px-6 py-3 rounded-xl bg-[#050167] hover:bg-[#001f3f] text-[#f0faff] font-bold text-sm transition-all"
+              style={{ backgroundColor: '#001f3f', color: '#ffffff' }}
+              className="px-6 py-3 rounded-xl bg-[#001f3f] hover:bg-[#050167] text-white font-bold text-sm transition-all shadow-md"
             >
               Return to Home Page
             </Link>

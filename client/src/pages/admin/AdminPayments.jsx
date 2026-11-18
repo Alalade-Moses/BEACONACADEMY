@@ -27,6 +27,7 @@ export const AdminPayments = () => {
   const [rejectModalPayment, setRejectModalPayment] = useState(null);
   const [rejectReason, setRejectReason] = useState('Proof receipt was illegible or wire reference could not be matched.');
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
   const fetchPayments = async () => {
@@ -55,15 +56,17 @@ export const AdminPayments = () => {
   const handleVerify = async (paymentId) => {
     try {
       setActionLoading(true);
+      setActionLoadingId(paymentId);
       const res = await api.put(`/payments/${paymentId}/verify`);
       if (res.data.success) {
         showToast('Payment verified successfully! Both Student and Parent accounts have been activated.');
         await fetchPayments();
       }
     } catch (err) {
-      showToast(`❌ ${err.response?.data?.message || 'Verification failed. Please try again.'}`);
+      showToast(`❌ ${err.response?.data?.message || err.message || 'Verification failed. Please try again.'}`);
     } finally {
       setActionLoading(false);
+      setActionLoadingId(null);
     }
   };
 
@@ -349,12 +352,21 @@ export const AdminPayments = () => {
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => handleVerify(payment.id)}
-                            disabled={actionLoading}
-                            className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-sm transition-all"
+                            disabled={actionLoadingId === payment.id}
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-[11px] shadow-sm transition-all cursor-pointer"
                             title="Verify Payment and Activate Accounts"
                           >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Verify & Activate</span>
+                            {actionLoadingId === payment.id ? (
+                              <>
+                                <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Activating...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Verify & Activate</span>
+                              </>
+                            )}
                           </button>
                           <button
                             onClick={() => setRejectModalPayment(payment)}

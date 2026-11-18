@@ -160,6 +160,19 @@ export const PaymentProofPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
+      {/* Master Container Logo Header */}
+      <div className="bg-white rounded-3xl border border-[#050167]/15 shadow-xl shadow-[#050167]/5 overflow-hidden mb-10">
+        <div className="w-full bg-gradient-to-b from-[#f0faff] to-slate-50 border-b border-[#050167]/10 px-6 py-6 sm:py-7 flex items-center justify-center rounded-t-3xl">
+          <Link to="/" className="inline-block group">
+            <img 
+              src="/logo.png" 
+              alt="Beacon Bridge Academics" 
+              className="h-14 sm:h-16 w-auto object-contain transition-transform group-hover:scale-105"
+            />
+          </Link>
+        </div>
+      </div>
+
       <div className="text-center max-w-2xl mx-auto mb-10">
         <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/10 text-[#050167] text-xs font-bold mb-4 border border-[#050167]/20">
           <CreditCard className="w-4 h-4 text-[#050167]" />
@@ -286,7 +299,11 @@ export const PaymentProofPage = () => {
               <Link to="/login" className="px-5 py-2.5 rounded-xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-bold text-xs transition-all shadow-md shadow-[#40ffa7]/30">
                 Back to Login
               </Link>
-              <Link to="/" className="px-5 py-2.5 rounded-xl bg-[#050167] hover:bg-[#001f3f] text-[#f0faff] font-bold text-xs transition-all">
+              <Link
+                to="/"
+                style={{ backgroundColor: '#001f3f', color: '#ffffff' }}
+                className="px-5 py-2.5 rounded-xl bg-[#001f3f] hover:bg-[#050167] text-white font-bold text-xs transition-all shadow-md"
+              >
                 Home Page
               </Link>
             </div>
