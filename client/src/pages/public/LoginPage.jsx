@@ -199,43 +199,6 @@ export const LoginPage = () => {
           </p>
         </div>
 
-        {/* Quick Demo Credentials for Fast Portal Access */}
-        <div className="mt-5 pt-4 border-t border-slate-100">
-          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">
-            Test Access (Default: <code>Password123!</code>)
-          </p>
-          <div className="flex flex-wrap gap-1.5 justify-center">
-            <button
-              type="button"
-              onClick={() => { setEmail('admin@beaconbridgeacademics.co.uk'); setPassword('Password123!'); }}
-              className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#40ffa7]/30 text-slate-700 font-semibold transition-colors cursor-pointer"
-            >
-              Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => { setEmail('dr.sarah@beaconbridgeacademics.co.uk'); setPassword('Password123!'); }}
-              className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#40ffa7]/30 text-slate-700 font-semibold transition-colors cursor-pointer"
-            >
-              Tutor (Sarah)
-            </button>
-            <button
-              type="button"
-              onClick={() => { setEmail('alex.morgan@beaconbridgeacademics.co.uk'); setPassword('Password123!'); }}
-              className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#40ffa7]/30 text-slate-700 font-semibold transition-colors cursor-pointer"
-            >
-              Student (Alex)
-            </button>
-            <button
-              type="button"
-              onClick={() => { setEmail('david.morgan@beaconbridgeacademics.co.uk'); setPassword('Password123!'); }}
-              className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#40ffa7]/30 text-slate-700 font-semibold transition-colors cursor-pointer"
-            >
-              Parent (David)
-            </button>
-          </div>
-        </div>
-
         </div>
       </div>
     </div>

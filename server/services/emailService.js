@@ -361,7 +361,9 @@ const buildEmailTemplate = ({ headerTitle, contentHtml, callToAction }) => {
 <body>
   <div class="container">
     <div class="header">
-      <p>Beacon Bridge Academics</p>
+      <div style="margin-bottom: 16px;">
+        <img src="https://beaconbridgeacademics.co.uk/logo.png" alt="Beacon Bridge Academics" style="height: 60px; width: auto; border-radius: 10px; display: block; margin: 0 auto;" />
+      </div>
       <h1>${headerTitle}</h1>
     </div>
     <div class="content">

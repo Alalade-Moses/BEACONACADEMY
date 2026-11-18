@@ -61,7 +61,7 @@ export const AdminPayments = () => {
         await fetchPayments();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Verification failed.');
+      showToast(`❌ ${err.response?.data?.message || 'Verification failed. Please try again.'}`);
     } finally {
       setActionLoading(false);
     }
@@ -438,17 +438,40 @@ export const AdminPayments = () => {
                 </div>
               </div>
 
-              {/* Receipt Preview */}
+              {/* Receipt Preview — click to open full size, PDF support */}
               <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-100 text-center">
-                <img
-                  src={activeModalPayment.proof_url}
-                  alt="Payment Receipt Slip"
-                  className="w-full max-h-80 object-contain mx-auto"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600';
-                  }}
-                />
+                {activeModalPayment.proof_url?.toLowerCase().endsWith('.pdf') ? (
+                  <div className="p-6 flex flex-col items-center gap-3">
+                    <div className="text-4xl">📄</div>
+                    <p className="text-sm font-semibold text-slate-700">PDF Payment Proof</p>
+                    <a
+                      href={activeModalPayment.proof_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 flex items-center gap-1.5"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Open / Download PDF
+                    </a>
+                    <iframe
+                      src={activeModalPayment.proof_url}
+                      title="Payment Proof PDF"
+                      className="w-full h-64 rounded-xl border border-slate-200 mt-2"
+                    />
+                  </div>
+                ) : (
+                  <img
+                    src={activeModalPayment.proof_url}
+                    alt="Payment Receipt Slip"
+                    loading="eager"
+                    className="w-full max-h-80 object-contain mx-auto cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => window.open(activeModalPayment.proof_url, '_blank')}
+                    title="Click to open full size"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600';
+                    }}
+                  />
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-2">
@@ -457,6 +480,7 @@ export const AdminPayments = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1"
+                  onClick={(e) => { e.preventDefault(); window.open(activeModalPayment.proof_url, '_blank'); }}
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Open Full Size Slip</span>
@@ -465,13 +489,14 @@ export const AdminPayments = () => {
                 {activeModalPayment.status === 'pending' && (
                   <button
                     onClick={() => {
-                      handleVerify(activeModalPayment.id);
+                      const id = activeModalPayment.id;
                       setActiveModalPayment(null);
+                      handleVerify(id);
                     }}
                     disabled={actionLoading}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md disabled:opacity-60"
                   >
-                    Confirm & Activate Accounts
+                    {actionLoading ? 'Activating…' : 'Confirm & Activate Accounts'}
                   </button>
                 )}
               </div>
