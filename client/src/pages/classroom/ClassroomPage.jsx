@@ -46,8 +46,10 @@ import {
   Eye,
   Clock,
   AlertTriangle,
-  Power
+  Power,
+  Loader2
 } from 'lucide-react';
+import { showError, showWarning, showSuccess, showToast } from '../../utils/swal';
 
 const ICE_CONFIG = {
   iceServers: [
@@ -56,7 +58,16 @@ const ICE_CONFIG = {
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478' }
+    { urls: 'stun:global.stun.twilio.com:3478' },
+    {
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp'
+      ],
+      username: 'openrelay',
+      credential: 'openrelay'
+    }
   ],
   iceCandidatePoolSize: 10
 };
@@ -160,21 +171,19 @@ const LocalParticipantVideo = ({ stream, isVideoActive, className, mirror = true
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      if (stream && isVideoActive) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch((err) => {
-          if (err.name !== 'AbortError') {
-            console.warn('[LocalVideo] play warning:', err);
-          }
-        });
-      } else {
-        videoRef.current.srcObject = null;
-      }
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+    if (stream && isVideoActive) {
+      videoEl.srcObject = stream;
+      videoEl.play().catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.warn('[LocalVideo] play warning:', err);
+        }
+      });
+    } else {
+      videoEl.srcObject = null;
     }
   }, [stream, isVideoActive]);
-
-  if (!stream || !isVideoActive) return null;
 
   return (
     <video
@@ -182,7 +191,7 @@ const LocalParticipantVideo = ({ stream, isVideoActive, className, mirror = true
       autoPlay
       playsInline
       muted
-      className={`${className} ${mirror ? 'scale-x-[-1]' : ''}`}
+      className={`${className} ${mirror ? 'scale-x-[-1]' : ''} ${!isVideoActive || !stream ? 'hidden' : 'block'}`}
     />
   );
 };
@@ -216,6 +225,7 @@ export const ClassroomPage = () => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [cameraError, setCameraError] = useState(null);
+  const [isCameraStarting, setIsCameraStarting] = useState(false);
   const localVideoRef = useRef(null);
   const localStreamRef = useRef(null);
   const [remoteStreams, setRemoteStreams] = useState(new Map());
@@ -510,15 +520,16 @@ export const ClassroomPage = () => {
       const audioTrack = localStreamRef.current?.getAudioTracks()[0] || null;
       const videoTrack = (!localScreenStreamRef.current && localStreamRef.current?.getVideoTracks()[0]) || null;
       const screenTrack = localScreenStreamRef.current?.getVideoTracks()[0] || null;
+      const initialVideo = screenTrack || videoTrack;
 
-      const audioTransceiver = pc.addTransceiver('audio', { direction: 'sendrecv' });
-      if (audioTrack && audioTransceiver.sender) {
+      // Pass track directly so initial SDP offer synchronously contains media SSRC/MSIDs
+      const audioTransceiver = pc.addTransceiver(audioTrack || 'audio', { direction: 'sendrecv' });
+      if (audioTrack && audioTransceiver.sender && audioTransceiver.sender.track !== audioTrack) {
         audioTransceiver.sender.replaceTrack(audioTrack).catch(() => {});
       }
 
-      const videoTransceiver = pc.addTransceiver('video', { direction: 'sendrecv' });
-      const initialVideo = screenTrack || videoTrack;
-      if (initialVideo && videoTransceiver.sender) {
+      const videoTransceiver = pc.addTransceiver(initialVideo || 'video', { direction: 'sendrecv' });
+      if (initialVideo && videoTransceiver.sender && videoTransceiver.sender.track !== initialVideo) {
         videoTransceiver.sender.replaceTrack(initialVideo).catch(() => {});
       }
     } catch (e) {
@@ -551,15 +562,15 @@ export const ClassroomPage = () => {
         }
         // Always provide a fresh MediaStream clone so React triggers re-render for audio & video elements
         const freshStream = new MediaStream(stream.getTracks());
-        const hasLiveVideo = freshStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
-        const hasLiveAudio = freshStream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled);
+        const hasLiveVideo = freshStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled) || freshStream.getVideoTracks().length > 0;
+        const hasLiveAudio = freshStream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled) || freshStream.getAudioTracks().length > 0;
 
         next.set(targetSocketId, {
           socketId: targetSocketId,
           user: targetUser || existing?.user,
           stream: freshStream,
-          isVideoActive: hasLiveVideo,
-          isMicActive: hasLiveAudio
+          isVideoActive: (existing?.isVideoActive !== undefined) ? existing.isVideoActive : hasLiveVideo,
+          isMicActive: (existing?.isMicActive !== undefined) ? existing.isMicActive : hasLiveAudio
         });
         return next;
       });
@@ -571,13 +582,11 @@ export const ClassroomPage = () => {
             if (!existing) return prev;
             const next = new Map(prev);
             const freshStream = new MediaStream(existing.stream.getTracks());
-            const hasLiveVideo = freshStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
-            const hasLiveAudio = freshStream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled);
             next.set(targetSocketId, {
               ...existing,
               stream: freshStream,
-              isVideoActive: hasLiveVideo,
-              isMicActive: hasLiveAudio
+              isVideoActive: true,
+              isMicActive: true
             });
             return next;
           });
@@ -603,7 +612,9 @@ export const ClassroomPage = () => {
   const acquireMedia = useCallback(async (requestVideo = true, requestAudio = true) => {
     setCameraError(null);
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setCameraError('Media access not supported in this browser environment.');
+      const msg = 'Media access not supported in this browser environment.';
+      setCameraError(msg);
+      showError('Unsupported Browser', msg);
       setVideoActive(false);
       setMicActive(false);
       return;
@@ -628,38 +639,45 @@ export const ClassroomPage = () => {
     let stream = null;
     try {
       if (requestVideo && requestAudio) {
-        // Try user-facing camera + audio with ideal constraints
         try {
           stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } },
-            audio: { echoCancellation: true, noiseSuppression: true }
+            video: { facingMode: 'user' },
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
           });
         } catch (e1) {
           try {
             stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
           } catch (e2) {
-            // Fallback: video only
             try {
-              stream = await navigator.mediaDevices.getUserMedia({ video: true });
+              stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
               requestAudio = false;
             } catch (e3) {
-              // Fallback: audio only
-              stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-              requestVideo = false;
+              try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                  audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                });
+                requestVideo = false;
+              } catch (e4) {
+                throw e4;
+              }
             }
           }
         }
       } else if (requestVideo) {
         try {
           stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } }
+            video: { facingMode: 'user' }
           });
         } catch (e1) {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          } catch (e2) {
+            throw e2;
+          }
         }
       } else if (requestAudio) {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true }
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
       }
 
@@ -688,17 +706,24 @@ export const ClassroomPage = () => {
       }
     } catch (err) {
       console.warn('acquireMedia error:', err.name, err.message);
+      let userMsg = 'Unable to access camera or microphone.';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setCameraError('Permission dismissed. Tap the lock icon in your address bar to Allow camera/mic.');
+        userMsg = 'Camera or microphone access is blocked by your browser. Please tap the lock icon (🔒) in your browser address bar at the top, select Permissions, set Camera/Microphone to Allow, and tap Retry.';
+        showWarning('Device Permission Blocked', userMsg);
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        setCameraError('No camera found on this device.');
+        userMsg = 'No camera or microphone was detected on this device.';
+        showError('Device Not Found', userMsg);
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        setCameraError('Camera is in use by another app or browser tab.');
+        userMsg = 'Camera or microphone is currently in use by another app or browser tab. Please close any background apps and retry.';
+        showWarning('Camera In Use', userMsg);
       } else if (err.name === 'AbortError') {
-        setCameraError('Camera start was interrupted or timed out. Click Turn On Camera to retry.');
+        userMsg = 'Media acquisition timed out or was interrupted. Tap Turn On to retry.';
+        showToast(userMsg, 'warning');
       } else {
-        setCameraError(err.message || 'Camera unavailable.');
+        userMsg = err.message || 'Camera or microphone unavailable.';
+        showError('Media Error', userMsg);
       }
+      setCameraError(userMsg);
       if (requestVideo) setVideoActive(false);
       if (requestAudio) setMicActive(false);
     }
@@ -744,6 +769,27 @@ export const ClassroomPage = () => {
       stopAllMediaTracks();
     };
   }, [startMedia, stopAllMediaTracks]);
+
+  // Mobile Audio Context Unlock: First touch or click anywhere in the classroom unlocks any paused audio elements
+  useEffect(() => {
+    const unlockAudio = () => {
+      const audios = document.querySelectorAll('audio');
+      audios.forEach(a => {
+        if (a.paused && a.srcObject) {
+          a.play().catch(() => {});
+        }
+      });
+      if (audioBlocked) {
+        setAudioBlocked(false);
+      }
+    };
+    window.addEventListener('touchstart', unlockAudio, { passive: true });
+    window.addEventListener('click', unlockAudio, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('click', unlockAudio);
+    };
+  }, [audioBlocked]);
 
   // Bind localStream to video element safely and trigger play
   useEffect(() => {
@@ -917,6 +963,12 @@ export const ClassroomPage = () => {
         await pc.setLocalDescription(offer);
         socket.emit('webrtc_offer', {
           targetSocketId: socketId,
+          user: {
+            id: user?.id,
+            full_name: user?.full_name,
+            role: user?.role,
+            avatar_url: user?.avatar_url
+          },
           offer,
           isScreen: Boolean(localScreenStreamRef.current)
         });
@@ -963,6 +1015,12 @@ export const ClassroomPage = () => {
         await pc.setLocalDescription(answer);
         socket.emit('webrtc_answer', {
           targetSocketId: senderSocketId,
+          user: {
+            id: user?.id,
+            full_name: user?.full_name,
+            role: user?.role,
+            avatar_url: user?.avatar_url
+          },
           answer: pc.localDescription
         });
       } catch (err) {
@@ -971,8 +1029,17 @@ export const ClassroomPage = () => {
     });
 
     // WebRTC Mesh Signaling: Inbound answer
-    socket.on('webrtc_answer', async ({ senderSocketId, answer }) => {
+    socket.on('webrtc_answer', async ({ senderSocketId, user: senderUser, answer }) => {
       const pc = peerConnectionsRef.current.get(senderSocketId);
+      if (senderUser) {
+        setRemoteStreams(prev => {
+          const existing = prev.get(senderSocketId);
+          if (!existing) return prev;
+          const next = new Map(prev);
+          next.set(senderSocketId, { ...existing, user: senderUser });
+          return next;
+        });
+      }
       if (pc && pc.signalingState === 'have-local-offer') {
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(answer));
@@ -997,30 +1064,28 @@ export const ClassroomPage = () => {
     socket.on('ice_candidate', async ({ senderSocketId, candidate }) => {
       if (!senderSocketId || !candidate) return;
       const pc = peerConnectionsRef.current.get(senderSocketId);
-      if (pc) {
-        if (pc.remoteDescription && pc.remoteDescription.type) {
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (err) {
-            console.warn('[WebRTC] Error adding ICE candidate:', err);
-          }
-        } else {
-          if (!pendingCandidatesRef.current.has(senderSocketId)) {
-            pendingCandidatesRef.current.set(senderSocketId, []);
-          }
-          pendingCandidatesRef.current.get(senderSocketId).push(candidate);
+      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.warn('[WebRTC] Error adding ICE candidate:', err);
         }
+      } else {
+        if (!pendingCandidatesRef.current.has(senderSocketId)) {
+          pendingCandidatesRef.current.set(senderSocketId, []);
+        }
+        pendingCandidatesRef.current.get(senderSocketId).push(candidate);
       }
     });
 
     // WebRTC Media State Change (Camera on/off, mic mute/unmute)
-    socket.on('participant_media_state_changed', ({ socketId, isVideoActive, isMicActive }) => {
+    socket.on('participant_media_state_changed', ({ socketId, user: senderUser, isVideoActive, isMicActive }) => {
       setRemoteStreams(prev => {
-        if (!prev.has(socketId)) return prev;
         const next = new Map(prev);
-        const cur = next.get(socketId);
+        const cur = next.get(socketId) || { socketId, user: senderUser, stream: new MediaStream() };
         next.set(socketId, {
           ...cur,
+          user: senderUser || cur.user,
           isVideoActive: isVideoActive !== undefined ? isVideoActive : cur.isVideoActive,
           isMicActive: isMicActive !== undefined ? isMicActive : cur.isMicActive
         });
@@ -1581,8 +1646,13 @@ export const ClassroomPage = () => {
         return;
       }
     }
-    // Re-acquire user-facing video on explicit user click
-    await acquireMedia(true, false);
+    // Re-acquire user-facing video on explicit user click with loading feedback
+    try {
+      setIsCameraStarting(true);
+      await acquireMedia(true, false);
+    } finally {
+      setIsCameraStarting(false);
+    }
   };
 
   // 8. Screen Sharing Broadcast Engine
@@ -3233,7 +3303,11 @@ export const ClassroomPage = () => {
                     const tutorStream = tutorPeer?.stream;
                     const hasTutorVideo = Boolean(
                       tutorStream &&
-                      (tutorPeer.isVideoActive || tutorStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled))
+                      (
+                        tutorPeer?.isVideoActive ||
+                        tutorStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled) ||
+                        tutorStream.getVideoTracks().length > 0
+                      )
                     );
 
                     return (
@@ -3250,45 +3324,46 @@ export const ClassroomPage = () => {
                             <span>Tutor: {classDetails?.tutor?.full_name?.split(' ')[0] || 'Dr. Sarah'}</span>
                             <Maximize2 className="w-2.5 h-2.5 text-slate-400" />
                           </button>
-                        ) : hasTutorVideo ? (
+                        ) : (
                           <div className="w-full h-full relative">
-                            <RemoteParticipantVideo
-                              stream={tutorStream}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute bottom-1 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold text-emerald-400 flex items-center space-x-1">
+                            {/* Always mount RemoteParticipantVideo so media pipeline is never destroyed */}
+                            {tutorStream && (
+                              <RemoteParticipantVideo
+                                stream={tutorStream}
+                                className={`w-full h-full object-cover ${hasTutorVideo ? 'block' : 'hidden'}`}
+                              />
+                            )}
+
+                            {/* Show Teaching Live Card when video is not broadcasting */}
+                            {!hasTutorVideo && (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-2 text-center relative overflow-hidden select-none min-h-[92px]">
+                                <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-emerald-600/30 border border-emerald-400 flex items-center justify-center text-white font-extrabold text-xs sm:text-sm mb-0.5 shadow-lg shrink-0">
+                                  {classDetails?.tutor?.full_name?.charAt(0) || 'T'}
+                                </div>
+                                <span className="text-[10px] sm:text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[160px]">
+                                  {classDetails?.tutor?.full_name || 'Dr. Sarah Jenkins'}
+                                </span>
+                                <div className="flex items-center space-x-1 mt-0.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                  <span className="text-[8px] sm:text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider">
+                                    Teaching Live
+                                  </span>
+                                </div>
+                                {/* Dynamic Live Audio Equalizer */}
+                                <div className="flex items-center gap-1 mt-1">
+                                  <span className="w-1 h-2 sm:h-2.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                  <span className="w-1 h-3 sm:h-4 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                  <span className="w-1 h-1.5 sm:h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                  <span className="w-1 h-3.5 sm:h-5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '100ms' }} />
+                                  <span className="w-1 h-2 sm:h-3 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Badge and controls */}
+                            <div className="absolute bottom-1 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold text-emerald-400 flex items-center space-x-1 pointer-events-none">
                               <span>👨‍🏫 {classDetails?.tutor?.full_name?.split(' ')[0] || 'Tutor'}</span>
                               {!tutorPeer?.isMicActive && <MicOff className="w-2.5 h-2.5 text-rose-400" />}
-                            </div>
-                            <button
-                              onClick={() => setVideoMinimized(true)}
-                              title="Minimize Tutor Tile"
-                              className="absolute top-1 right-1 p-1 rounded bg-black/60 hover:bg-black text-slate-300 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Minimize2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-2 text-center relative overflow-hidden select-none min-h-[92px]">
-                            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-emerald-600/30 border border-emerald-400 flex items-center justify-center text-white font-extrabold text-xs sm:text-sm mb-0.5 shadow-lg shrink-0">
-                              {classDetails?.tutor?.full_name?.charAt(0) || 'T'}
-                            </div>
-                            <span className="text-[10px] sm:text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[160px]">
-                              {classDetails?.tutor?.full_name || 'Dr. Sarah Jenkins'}
-                            </span>
-                            <div className="flex items-center space-x-1 mt-0.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                              <span className="text-[8px] sm:text-[10px] text-emerald-400 font-extrabold uppercase tracking-wider">
-                                Teaching Live
-                              </span>
-                            </div>
-                            {/* Dynamic Live Audio Equalizer */}
-                            <div className="flex items-center gap-1 mt-1">
-                              <span className="w-1 h-2 sm:h-2.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                              <span className="w-1 h-3 sm:h-4 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                              <span className="w-1 h-1.5 sm:h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                              <span className="w-1 h-3.5 sm:h-5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '100ms' }} />
-                              <span className="w-1 h-2 sm:h-3 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
                             </div>
                             <button
                               onClick={() => setVideoMinimized(true)}
@@ -3311,18 +3386,33 @@ export const ClassroomPage = () => {
                       className="w-full h-full object-cover"
                     />
                     {(!videoActive || !localStream) && (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500 p-1 text-center select-none">
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500 p-1 text-center select-none z-10">
                         <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 text-[10px] font-bold mb-0.5">
                           {user?.full_name?.charAt(0) || 'U'}
                         </div>
                         <button
                           type="button"
                           onClick={toggleVideo}
-                          className="px-2 py-0.5 rounded bg-brand-600 hover:bg-brand-500 text-white text-[8px] font-bold shadow-sm transition-all active:scale-95 flex items-center space-x-0.5"
+                          disabled={isCameraStarting}
+                          className="px-2 py-0.5 rounded bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white text-[8px] font-bold shadow-sm transition-all active:scale-95 flex items-center space-x-1"
                         >
-                          <VideoIcon className="w-2.5 h-2.5" />
-                          <span>Turn On</span>
+                          {isCameraStarting ? (
+                            <>
+                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                              <span>Starting...</span>
+                            </>
+                          ) : (
+                            <>
+                              <VideoIcon className="w-2.5 h-2.5" />
+                              <span>Turn On</span>
+                            </>
+                          )}
                         </button>
+                        {cameraError && (
+                          <span className="text-[7px] text-amber-400 leading-none mt-0.5 px-1 line-clamp-2">
+                            {cameraError}
+                          </span>
+                        )}
                       </div>
                     )}
                     <div className="absolute bottom-0.5 left-1 bg-black/80 px-1 py-0.2 rounded text-[7px] sm:text-[8px] font-bold text-slate-200 flex items-center space-x-1 pointer-events-none">
@@ -3797,14 +3887,21 @@ export const ClassroomPage = () => {
           {/* Camera */}
           <button
             onClick={toggleVideo}
+            disabled={isCameraStarting}
             className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
               videoActive 
                 ? 'bg-slate-800 text-white hover:bg-slate-700' 
                 : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/30'
-            }`}
+            } ${isCameraStarting ? 'opacity-70 animate-pulse' : ''}`}
             title={videoActive ? 'Turn Off Camera' : 'Turn On Camera'}
           >
-            {videoActive ? <VideoIcon className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
+            {isCameraStarting ? (
+              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
+            ) : videoActive ? (
+              <VideoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            ) : (
+              <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />
+            )}
           </button>
 
           {/* Screen Share */}

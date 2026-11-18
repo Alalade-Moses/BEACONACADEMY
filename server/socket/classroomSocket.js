@@ -199,26 +199,26 @@ export const initClassroomSocket = (io) => {
     });
 
     // WebRTC Peer Signaling (Offer, Answer, ICE Candidates, Media State)
-    socket.on('webrtc_offer', ({ to, targetSocketId, offer, isScreen }) => {
+    socket.on('webrtc_offer', ({ to, targetSocketId, user: senderUser, offer, isScreen }) => {
       const targetId = to || targetSocketId;
       if (targetId) {
         io.to(targetId).emit('webrtc_offer', {
           from: socket.id,
           senderSocketId: socket.id,
-          user: currentUser,
+          user: senderUser || currentUser,
           offer,
           isScreen: Boolean(isScreen)
         });
       }
     });
 
-    socket.on('webrtc_answer', ({ to, targetSocketId, answer }) => {
+    socket.on('webrtc_answer', ({ to, targetSocketId, user: senderUser, answer }) => {
       const targetId = to || targetSocketId;
       if (targetId) {
         io.to(targetId).emit('webrtc_answer', {
           from: socket.id,
           senderSocketId: socket.id,
-          user: currentUser,
+          user: senderUser || currentUser,
           answer
         });
       }
