@@ -66,18 +66,44 @@ const RemoteParticipantAudio = ({ stream, onAudioBlocked }) => {
   const audioRef = useRef(null);
 
   useEffect(() => {
-    if (audioRef.current && stream) {
-      audioRef.current.srcObject = stream;
-      audioRef.current.muted = false;
-      audioRef.current.volume = 1.0;
-      const playPromise = audioRef.current.play();
+    const audioEl = audioRef.current;
+    if (!audioEl || !stream) return;
+
+    audioEl.srcObject = stream;
+    audioEl.muted = false;
+    audioEl.volume = 1.0;
+
+    const tryPlay = () => {
+      const playPromise = audioEl.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
-          console.warn('[Audio] Autoplay blocked, awaiting user gesture:', err);
-          if (onAudioBlocked) onAudioBlocked();
+          if (err.name === 'AbortError') return;
+          if (err.name === 'NotAllowedError') {
+            console.warn('[Audio] Autoplay blocked, awaiting user gesture:', err);
+            if (onAudioBlocked) onAudioBlocked();
+          }
         });
       }
-    }
+    };
+
+    tryPlay();
+
+    const handleTrackChange = () => {
+      audioEl.srcObject = stream;
+      tryPlay();
+    };
+
+    stream.addEventListener('addtrack', handleTrackChange);
+    stream.getAudioTracks().forEach(track => {
+      track.addEventListener('unmute', handleTrackChange);
+    });
+
+    return () => {
+      stream.removeEventListener('addtrack', handleTrackChange);
+      stream.getAudioTracks().forEach(track => {
+        track.removeEventListener('unmute', handleTrackChange);
+      });
+    };
   }, [stream, onAudioBlocked]);
 
   return <audio ref={audioRef} autoPlay playsInline style={{ position: 'fixed', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }} />;
@@ -87,15 +113,35 @@ const RemoteParticipantVideo = ({ stream, className, mirror = false }) => {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn('[Video] Remote video playback error:', err);
-        });
-      }
+    const videoEl = videoRef.current;
+    if (!videoEl || !stream) return;
+
+    videoEl.srcObject = stream;
+    const playPromise = videoEl.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.warn('[Video] Remote video playback warning:', err);
+        }
+      });
     }
+
+    const handleTrackChange = () => {
+      videoEl.srcObject = stream;
+      videoEl.play().catch(() => {});
+    };
+
+    stream.addEventListener('addtrack', handleTrackChange);
+    stream.getVideoTracks().forEach(track => {
+      track.addEventListener('unmute', handleTrackChange);
+    });
+
+    return () => {
+      stream.removeEventListener('addtrack', handleTrackChange);
+      stream.getVideoTracks().forEach(track => {
+        track.removeEventListener('unmute', handleTrackChange);
+      });
+    };
   }, [stream]);
 
   return (
@@ -118,7 +164,9 @@ const LocalParticipantVideo = ({ stream, isVideoActive, className, mirror = true
       if (stream && isVideoActive) {
         videoRef.current.srcObject = stream;
         videoRef.current.play().catch((err) => {
-          console.warn('[LocalVideo] play warning:', err);
+          if (err.name !== 'AbortError') {
+            console.warn('[LocalVideo] play warning:', err);
+          }
         });
       } else {
         videoRef.current.srcObject = null;
@@ -411,64 +459,27 @@ export const ClassroomPage = () => {
     const audioTrack = stream.getAudioTracks()[0] || null;
     const videoTrack = stream.getVideoTracks()[0] || null;
 
-    peerConnectionsRef.current.forEach((pc, targetSocketId) => {
+    peerConnectionsRef.current.forEach((pc) => {
       try {
-        const senders = pc.getSenders ? pc.getSenders() : [];
-        let needsRenegotiation = false;
+        const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
+        const audioTransceiver = transceivers.find(t => 
+          t.sender?.track?.kind === 'audio' || t.receiver?.track?.kind === 'audio'
+        ) || transceivers[0];
 
-        if (audioTrack) {
-          try {
-            const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
-            const audioTransceiver = transceivers.find(t => t.receiver?.track?.kind === 'audio' || t.sender?.track?.kind === 'audio');
-            if (audioTransceiver && audioTransceiver.direction !== 'sendrecv') {
-              audioTransceiver.direction = 'sendrecv';
-              needsRenegotiation = true;
-            }
-          } catch (e) {}
-
-          const audioSender = senders.find(s => (s.track && s.track.kind === 'audio') || (!s.track && s.kind === 'audio'));
-          if (audioSender) {
-            const hadLiveTrack = Boolean(audioSender.track && audioSender.track.readyState === 'live');
-            audioSender.replaceTrack(audioTrack);
-            if (!hadLiveTrack) needsRenegotiation = true;
-          } else {
-            pc.addTrack(audioTrack, stream);
-            needsRenegotiation = true;
-          }
+        if (audioTransceiver && audioTransceiver.sender) {
+          audioTransceiver.sender.replaceTrack(audioTrack || null).catch(err => {
+            console.warn('[WebRTC] Replace audio track warning:', err);
+          });
         }
 
-        if (videoTrack && !localScreenStreamRef.current) {
-          try {
-            const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
-            const videoTransceiver = transceivers.find(t => t.receiver?.track?.kind === 'video' || t.sender?.track?.kind === 'video');
-            if (videoTransceiver && videoTransceiver.direction !== 'sendrecv') {
-              videoTransceiver.direction = 'sendrecv';
-              needsRenegotiation = true;
-            }
-          } catch (e) {}
+        const videoTransceiver = transceivers.find(t => 
+          t.sender?.track?.kind === 'video' || t.receiver?.track?.kind === 'video'
+        ) || transceivers[1];
 
-          const videoSender = senders.find(s => (s.track && s.track.kind === 'video') || (!s.track && s.kind === 'video'));
-          if (videoSender) {
-            const hadLiveTrack = Boolean(videoSender.track && videoSender.track.readyState === 'live');
-            videoSender.replaceTrack(videoTrack);
-            if (!hadLiveTrack) needsRenegotiation = true;
-          } else {
-            pc.addTrack(videoTrack, stream);
-            needsRenegotiation = true;
-          }
-        }
-
-        // Trigger renegotiation if a new track was added without an existing sender
-        if (needsRenegotiation && socket) {
-          pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
-            .then(offer => pc.setLocalDescription(offer))
-            .then(() => {
-              socket.emit('webrtc_offer', {
-                targetSocketId,
-                offer: pc.localDescription
-              });
-            })
-            .catch(err => console.warn('[WebRTC] Track update renegotiation error:', err));
+        if (videoTransceiver && videoTransceiver.sender && !localScreenStreamRef.current) {
+          videoTransceiver.sender.replaceTrack(videoTrack || null).catch(err => {
+            console.warn('[WebRTC] Replace video track warning:', err);
+          });
         }
       } catch (err) {
         console.warn('[WebRTC] Sync track error:', err);
@@ -494,46 +505,24 @@ export const ClassroomPage = () => {
     const pc = new RTCPeerConnection(ICE_CONFIG);
     peerConnectionsRef.current.set(targetSocketId, pc);
 
-    // Pre-create transceivers so SDP negotiation always establishes audio & video channels
+    // Pre-create transceivers IN STRICT ORDER: 1st Audio (m-line 0), 2nd Video (m-line 1)
     try {
-      const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
-      if (!transceivers.some(t => t.receiver?.track?.kind === 'audio')) {
-        pc.addTransceiver('audio', { direction: 'sendrecv' });
+      const audioTrack = localStreamRef.current?.getAudioTracks()[0] || null;
+      const videoTrack = (!localScreenStreamRef.current && localStreamRef.current?.getVideoTracks()[0]) || null;
+      const screenTrack = localScreenStreamRef.current?.getVideoTracks()[0] || null;
+
+      const audioTransceiver = pc.addTransceiver('audio', { direction: 'sendrecv' });
+      if (audioTrack && audioTransceiver.sender) {
+        audioTransceiver.sender.replaceTrack(audioTrack).catch(() => {});
       }
-      if (!transceivers.some(t => t.receiver?.track?.kind === 'video')) {
-        pc.addTransceiver('video', { direction: 'sendrecv' });
+
+      const videoTransceiver = pc.addTransceiver('video', { direction: 'sendrecv' });
+      const initialVideo = screenTrack || videoTrack;
+      if (initialVideo && videoTransceiver.sender) {
+        videoTransceiver.sender.replaceTrack(initialVideo).catch(() => {});
       }
     } catch (e) {
       console.warn('[WebRTC] Transceiver setup warning:', e);
-    }
-
-    // Attach local stream tracks immediately if available
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      const senders = pc.getSenders();
-      const audioSender = senders.find(s => (s.track && s.track.kind === 'audio') || (!s.track && s.kind === 'audio'));
-      const videoSender = senders.find(s => (s.track && s.track.kind === 'video') || (!s.track && s.kind === 'video'));
-
-      if (audioTrack) {
-        if (audioSender) audioSender.replaceTrack(audioTrack);
-        else pc.addTrack(audioTrack, localStreamRef.current);
-      }
-      if (videoTrack && !localScreenStreamRef.current) {
-        if (videoSender) videoSender.replaceTrack(videoTrack);
-        else pc.addTrack(videoTrack, localStreamRef.current);
-      }
-    }
-
-    // If currently screen sharing, ensure screen track replaces camera video track
-    if (localScreenStreamRef.current) {
-      const screenTrack = localScreenStreamRef.current.getVideoTracks()[0];
-      if (screenTrack) {
-        setTimeout(() => {
-          const videoSender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-          if (videoSender) videoSender.replaceTrack(screenTrack);
-        }, 80);
-      }
     }
 
     // Route ICE candidate through server relay
@@ -560,13 +549,15 @@ export const ClassroomPage = () => {
             stream.addTrack(event.track);
           }
         }
-        const hasLiveVideo = stream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
-        const hasLiveAudio = stream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled);
+        // Always provide a fresh MediaStream clone so React triggers re-render for audio & video elements
+        const freshStream = new MediaStream(stream.getTracks());
+        const hasLiveVideo = freshStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
+        const hasLiveAudio = freshStream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled);
 
         next.set(targetSocketId, {
           socketId: targetSocketId,
           user: targetUser || existing?.user,
-          stream,
+          stream: freshStream,
           isVideoActive: hasLiveVideo,
           isMicActive: hasLiveAudio
         });
@@ -579,10 +570,12 @@ export const ClassroomPage = () => {
             const existing = prev.get(targetSocketId);
             if (!existing) return prev;
             const next = new Map(prev);
-            const hasLiveVideo = existing.stream?.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
-            const hasLiveAudio = existing.stream?.getAudioTracks().some(t => t.readyState === 'live' && t.enabled);
+            const freshStream = new MediaStream(existing.stream.getTracks());
+            const hasLiveVideo = freshStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
+            const hasLiveAudio = freshStream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled);
             next.set(targetSocketId, {
               ...existing,
+              stream: freshStream,
               isVideoActive: hasLiveVideo,
               isMicActive: hasLiveAudio
             });
@@ -616,10 +609,26 @@ export const ClassroomPage = () => {
       return;
     }
 
+    // Release any existing tracks of requested type first so hardware camera/mic locks are freed!
+    if (localStreamRef.current) {
+      if (requestVideo) {
+        localStreamRef.current.getVideoTracks().forEach(t => {
+          try { t.stop(); } catch (e) {}
+          localStreamRef.current.removeTrack(t);
+        });
+      }
+      if (requestAudio) {
+        localStreamRef.current.getAudioTracks().forEach(t => {
+          try { t.stop(); } catch (e) {}
+          localStreamRef.current.removeTrack(t);
+        });
+      }
+    }
+
     let stream = null;
     try {
       if (requestVideo && requestAudio) {
-        // Try user-facing camera + audio with ideal constraints (never throws OverconstrainedError)
+        // Try user-facing camera + audio with ideal constraints
         try {
           stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } },
@@ -656,13 +665,7 @@ export const ClassroomPage = () => {
 
       if (stream) {
         if (localStreamRef.current) {
-          // Merge newly acquired tracks into existing local stream
           stream.getTracks().forEach(track => {
-            const sameKind = localStreamRef.current.getTracks().filter(t => t.kind === track.kind);
-            sameKind.forEach(t => {
-              localStreamRef.current.removeTrack(t);
-              t.stop();
-            });
             localStreamRef.current.addTrack(track);
           });
           const updated = new MediaStream(localStreamRef.current.getTracks());
@@ -691,6 +694,8 @@ export const ClassroomPage = () => {
         setCameraError('No camera found on this device.');
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
         setCameraError('Camera is in use by another app or browser tab.');
+      } else if (err.name === 'AbortError') {
+        setCameraError('Camera start was interrupted or timed out. Click Turn On Camera to retry.');
       } else {
         setCameraError(err.message || 'Camera unavailable.');
       }
@@ -924,7 +929,23 @@ export const ClassroomPage = () => {
     socket.on('webrtc_offer', async ({ senderSocketId, user: senderUser, offer }) => {
       if (!senderSocketId || senderSocketId === socket.id) return;
       try {
-        const pc = createPeerConnection(senderSocketId, senderUser, false);
+        let pc = peerConnectionsRef.current.get(senderSocketId);
+        if (!pc) {
+          pc = createPeerConnection(senderSocketId, senderUser, false);
+        }
+
+        // Handle glare or non-stable state safely
+        if (pc.signalingState !== 'stable') {
+          try {
+            await pc.setLocalDescription({ type: 'rollback' });
+          } catch (rollbackErr) {
+            console.warn('[WebRTC] Rollback error, recreating connection:', rollbackErr);
+            try { pc.close(); } catch (e) {}
+            peerConnectionsRef.current.delete(senderSocketId);
+            pc = createPeerConnection(senderSocketId, senderUser, false);
+          }
+        }
+
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
         // Drain any pending ICE candidates buffered before remote description was set
@@ -952,7 +973,7 @@ export const ClassroomPage = () => {
     // WebRTC Mesh Signaling: Inbound answer
     socket.on('webrtc_answer', async ({ senderSocketId, answer }) => {
       const pc = peerConnectionsRef.current.get(senderSocketId);
-      if (pc && pc.signalingState !== 'stable') {
+      if (pc && pc.signalingState === 'have-local-offer') {
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(answer));
 
@@ -1574,13 +1595,16 @@ export const ClassroomPage = () => {
     setScreenStageMode('whiteboard');
 
     // Restore user webcam track to all peer connections
-    const camTrack = localStreamRef.current?.getVideoTracks().find(t => t.readyState === 'live');
+    const camTrack = localStreamRef.current?.getVideoTracks().find(t => t.readyState === 'live') || null;
     peerConnectionsRef.current.forEach((pc) => {
       try {
-        const senders = pc.getSenders();
-        const videoSender = senders.find(s => s.track && s.track.kind === 'video');
-        if (videoSender && camTrack) {
-          videoSender.replaceTrack(camTrack);
+        const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
+        const videoTransceiver = transceivers.find(t => 
+          (t.sender?.track && t.sender.track.kind === 'video') || 
+          (t.receiver?.track && t.receiver.track.kind === 'video')
+        ) || transceivers[1];
+        if (videoTransceiver && videoTransceiver.sender) {
+          videoTransceiver.sender.replaceTrack(camTrack).catch(() => {});
         }
       } catch (e) {
         console.warn('[ScreenShare] Error restoring camera track:', e);
@@ -1612,10 +1636,13 @@ export const ClassroomPage = () => {
         const screenTrack = stream.getVideoTracks()[0];
         peerConnectionsRef.current.forEach((pc) => {
           try {
-            const senders = pc.getSenders();
-            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
-            if (videoSender && screenTrack) {
-              videoSender.replaceTrack(screenTrack);
+            const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
+            const videoTransceiver = transceivers.find(t => 
+              (t.sender?.track && t.sender.track.kind === 'video') || 
+              (t.receiver?.track && t.receiver.track.kind === 'video')
+            ) || transceivers[1];
+            if (videoTransceiver && videoTransceiver.sender && screenTrack) {
+              videoTransceiver.sender.replaceTrack(screenTrack).catch(() => {});
             }
           } catch (e) {
             console.warn('[ScreenShare] Error routing screen track:', e);
