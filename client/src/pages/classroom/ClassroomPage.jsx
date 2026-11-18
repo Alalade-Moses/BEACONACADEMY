@@ -518,8 +518,8 @@ export const ClassroomPage = () => {
     // Pre-create transceivers IN STRICT ORDER: 1st Audio (m-line 0), 2nd Video (m-line 1)
     try {
       const audioTrack = localStreamRef.current?.getAudioTracks()[0] || null;
-      const videoTrack = (!localScreenStreamRef.current && localStreamRef.current?.getVideoTracks()[0]) || null;
-      const screenTrack = localScreenStreamRef.current?.getVideoTracks()[0] || null;
+      const videoTrack = (isTutor && !localScreenStreamRef.current && localStreamRef.current?.getVideoTracks()[0]) || null;
+      const screenTrack = (isTutor && localScreenStreamRef.current?.getVideoTracks()[0]) || null;
       const initialVideo = screenTrack || videoTrack;
 
       // Pass track directly so initial SDP offer synchronously contains media SSRC/MSIDs
@@ -528,7 +528,8 @@ export const ClassroomPage = () => {
         audioTransceiver.sender.replaceTrack(audioTrack).catch(() => {});
       }
 
-      const videoTransceiver = pc.addTransceiver(initialVideo || 'video', { direction: 'sendrecv' });
+      // Tutor broadcasts video (sendrecv); Students strictly receive video (recvonly)
+      const videoTransceiver = pc.addTransceiver(initialVideo || 'video', { direction: isTutor ? 'sendrecv' : 'recvonly' });
       if (initialVideo && videoTransceiver.sender && videoTransceiver.sender.track !== initialVideo) {
         videoTransceiver.sender.replaceTrack(initialVideo).catch(() => {});
       }
@@ -611,6 +612,13 @@ export const ClassroomPage = () => {
   // Dynamic media acquisition engine with user-gesture safety
   const acquireMedia = useCallback(async (requestVideo = true, requestAudio = true) => {
     setCameraError(null);
+
+    // CRITICAL: Students do NOT broadcast video. They strictly transmit microphone audio.
+    // This guarantees students are NEVER prompted for camera permissions on phone or desktop!
+    if (!isTutor) {
+      requestVideo = false;
+    }
+
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       const msg = 'Media access not supported in this browser environment.';
       setCameraError(msg);
@@ -747,11 +755,15 @@ export const ClassroomPage = () => {
     }
 
     try {
-      await acquireMedia(true, true);
+      if (isTutor) {
+        await acquireMedia(true, true);
+      } else {
+        await acquireMedia(false, true); // Students strictly acquire microphone voice stream
+      }
     } catch (e) {
       console.warn('Initial media acquire warning:', e);
     }
-  }, [acquireMedia]);
+  }, [acquireMedia, isTutor]);
 
   useEffect(() => {
     startMedia();
@@ -770,7 +782,9 @@ export const ClassroomPage = () => {
     const unlockAudio = () => {
       const audios = document.querySelectorAll('audio');
       audios.forEach(a => {
-        if (a.paused && a.srcObject) {
+        a.muted = false;
+        a.volume = 1.0;
+        if (a.srcObject) {
           a.play().catch(() => {});
         }
       });
@@ -1629,6 +1643,7 @@ export const ClassroomPage = () => {
   };
 
   const toggleVideo = async () => {
+    if (!isTutor) return; // Students strictly do not broadcast camera
     if (localStreamRef.current && localStreamRef.current.getVideoTracks().length > 0) {
       const track = localStreamRef.current.getVideoTracks()[0];
       if (track.readyState === 'live') {
@@ -2644,22 +2659,28 @@ export const ClassroomPage = () => {
           {/* Device Self-Check while waiting */}
           <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between">
             <div className="flex items-center space-x-3 text-left">
-              <div className="w-16 h-12 bg-black rounded-lg overflow-hidden border border-slate-700">
-                <LocalParticipantVideo
-                  stream={localStream}
-                  isVideoActive={videoActive}
-                  className="w-full h-full object-cover"
-                />
-                {(!videoActive || !localStream) && (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-500">
-                    <VideoOff className="w-4 h-4" />
-                  </div>
-                )}
-              </div>
+              {isTutor && (
+                <div className="w-16 h-12 bg-black rounded-lg overflow-hidden border border-slate-700">
+                  <LocalParticipantVideo
+                    stream={localStream}
+                    isVideoActive={videoActive}
+                    className="w-full h-full object-cover"
+                  />
+                  {(!videoActive || !localStream) && (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-500">
+                      <VideoOff className="w-4 h-4" />
+                    </div>
+                  )}
+                </div>
+              )}
               <div>
-                <span className="text-xs font-bold text-white block">Device Pre-Check</span>
+                <span className="text-xs font-bold text-white block">
+                  {isTutor ? 'Device Pre-Check' : 'Microphone Voice Pre-Check'}
+                </span>
                 <span className="text-[11px] text-slate-400">
-                  {videoActive ? 'Camera Ready' : 'Camera Muted'} &bull; {micActive ? 'Mic Ready' : 'Mic Muted'}
+                  {isTutor 
+                    ? `${videoActive ? 'Camera Ready' : 'Camera Muted'} • ${micActive ? 'Mic Ready' : 'Mic Muted'}`
+                    : (micActive ? '🎙️ Microphone Ready & Active' : '🔇 Microphone Muted')}
                 </span>
               </div>
             </div>
@@ -2672,13 +2693,15 @@ export const ClassroomPage = () => {
               >
                 {micActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
               </button>
-              <button
-                onClick={toggleVideo}
-                className={`p-2 rounded-xl transition-all ${videoActive ? 'bg-slate-700 text-white' : 'bg-rose-600 text-white'}`}
-                title={videoActive ? 'Camera Off' : 'Camera On'}
-              >
-                {videoActive ? <VideoIcon className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-              </button>
+              {isTutor && (
+                <button
+                  onClick={toggleVideo}
+                  className={`p-2 rounded-xl transition-all ${videoActive ? 'bg-slate-700 text-white' : 'bg-rose-600 text-white'}`}
+                  title={videoActive ? 'Camera Off' : 'Camera On'}
+                >
+                  {videoActive ? <VideoIcon className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                </button>
+              )}
             </div>
           </div>
 
@@ -3306,38 +3329,35 @@ export const ClassroomPage = () => {
                     )}
                   </div>
 
-                  {/* Remote Student Video Tile(s) (Top-Left) for Tutor */}
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-4 z-20 flex flex-col gap-2 pointer-events-auto">
+                  {/* Connected Students Voice & Presence Chips (Top-Left) for Tutor */}
+                  <div className="absolute top-2 left-2 sm:top-3 sm:left-4 z-20 flex flex-col gap-1.5 pointer-events-auto max-w-[200px] sm:max-w-xs">
                     {Array.from(remoteStreams.values()).length > 0 ? (
                       Array.from(remoteStreams.values()).map((peer) => {
-                        const hasLiveVideo = Boolean(
-                          peer.stream &&
-                          (peer.isVideoActive || peer.stream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled))
-                        );
                         return (
                           <div
                             key={peer.socketId}
-                            className="w-28 sm:w-52 aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-emerald-400 bg-slate-900 relative group"
+                            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 shadow-lg backdrop-blur-md"
                           >
-                            {hasLiveVideo ? (
-                              <RemoteParticipantVideo
-                                stream={peer.stream}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-2 text-center select-none">
-                                <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs mb-0.5">
-                                  {peer.user?.full_name?.charAt(0) || 'S'}
-                                </div>
-                                <span className="text-[10px] font-bold text-white truncate max-w-full">
-                                  {peer.user?.full_name || 'Enrolled Student'}
-                                </span>
-                                <span className="text-[8px] text-slate-400">Camera Off</span>
+                            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-[10px] shrink-0">
+                              {peer.user?.full_name?.charAt(0) || 'S'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-bold text-white truncate">
+                                {peer.user?.full_name || 'Student'}
+                              </p>
+                              <div className="flex items-center space-x-1">
+                                {peer.isMicActive ? (
+                                  <span className="text-[9px] text-emerald-400 font-semibold flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    Voice Connected
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] text-slate-400 flex items-center gap-1">
+                                    <MicOff className="w-2.5 h-2.5 text-rose-400" />
+                                    Muted
+                                  </span>
+                                )}
                               </div>
-                            )}
-                            <div className="absolute bottom-1 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold text-emerald-400 flex items-center space-x-1">
-                              <span>🎓 {peer.user?.full_name?.split(' ')[0] || 'Student'}</span>
-                              {!peer.isMicActive && <MicOff className="w-2.5 h-2.5 text-rose-400" />}
                             </div>
                           </div>
                         );
@@ -3345,7 +3365,7 @@ export const ClassroomPage = () => {
                     ) : (
                       <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-[11px] text-slate-400 shadow-md backdrop-blur-xs">
                         <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                        <span>Awaiting student video stream...</span>
+                        <span>Awaiting students...</span>
                       </div>
                     )}
                   </div>
@@ -3435,47 +3455,17 @@ export const ClassroomPage = () => {
                     );
                   })()}
 
-                  {/* Bottom-Right: Student Self-View PIP Tile (Positioned safely above bottom slide bar on mobile) */}
-                  <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 w-28 sm:w-36 h-20 sm:h-24 rounded-xl overflow-hidden shadow-xl border border-slate-700 bg-slate-900 group">
-                    <LocalParticipantVideo
-                      stream={localStream}
-                      isVideoActive={videoActive}
-                      className="w-full h-full object-cover"
-                    />
-                    {(!videoActive || !localStream) && (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-950 text-slate-500 p-1 text-center select-none z-10">
-                        <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 text-[10px] font-bold mb-0.5">
-                          {user?.full_name?.charAt(0) || 'U'}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={toggleVideo}
-                          disabled={isCameraStarting}
-                          className="px-2 py-0.5 rounded bg-brand-600 hover:bg-brand-500 disabled:opacity-60 text-white text-[8px] font-bold shadow-sm transition-all active:scale-95 flex items-center space-x-1"
-                        >
-                          {isCameraStarting ? (
-                            <>
-                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                              <span>Starting...</span>
-                            </>
-                          ) : (
-                            <>
-                              <VideoIcon className="w-2.5 h-2.5" />
-                              <span>Turn On</span>
-                            </>
-                          )}
-                        </button>
-                        {cameraError && (
-                          <span className="text-[7px] text-amber-400 leading-none mt-0.5 px-1 line-clamp-2">
-                            {cameraError}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <div className="absolute bottom-0.5 left-1 bg-black/80 px-1 py-0.2 rounded text-[7px] sm:text-[8px] font-bold text-slate-200 flex items-center space-x-1 pointer-events-none">
-                      <span className="truncate max-w-[55px] sm:max-w-[65px]">{user?.full_name?.split(' ')[0] || 'Me'}</span>
-                      {!micActive && <MicOff className="w-2 h-2 text-rose-400" />}
+                  {/* Bottom-Right: Student Voice Status Badge */}
+                  <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-slate-700/80 shadow-xl flex items-center space-x-2 pointer-events-none select-none">
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">
+                      {user?.full_name?.charAt(0) || 'S'}
                     </div>
+                    <span className="text-xs font-bold text-slate-200 truncate max-w-[100px] sm:max-w-none">
+                      {user?.full_name?.split(' ')[0] || 'Student'}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${micActive ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}`}>
+                      {micActive ? '🎙️ Mic Active' : '🔇 Muted'}
+                    </span>
                   </div>
                 </>
               )}
@@ -3941,38 +3931,42 @@ export const ClassroomPage = () => {
             {micActive ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
 
-          {/* Camera */}
-          <button
-            onClick={toggleVideo}
-            disabled={isCameraStarting}
-            className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
-              videoActive 
-                ? 'bg-slate-800 text-white hover:bg-slate-700' 
-                : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/30'
-            } ${isCameraStarting ? 'opacity-70 animate-pulse' : ''}`}
-            title={videoActive ? 'Turn Off Camera' : 'Turn On Camera'}
-          >
-            {isCameraStarting ? (
-              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
-            ) : videoActive ? (
-              <VideoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            ) : (
-              <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />
-            )}
-          </button>
+          {/* Camera (Tutor Only - Students strictly view the instructor and presentation) */}
+          {isTutor && (
+            <button
+              onClick={toggleVideo}
+              disabled={isCameraStarting}
+              className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
+                videoActive 
+                  ? 'bg-slate-800 text-white hover:bg-slate-700' 
+                  : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/30'
+              } ${isCameraStarting ? 'opacity-70 animate-pulse' : ''}`}
+              title={videoActive ? 'Turn Off Camera' : 'Turn On Camera'}
+            >
+              {isCameraStarting ? (
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
+              ) : videoActive ? (
+                <VideoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              ) : (
+                <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />
+              )}
+            </button>
+          )}
 
-          {/* Screen Share */}
-          <button
-            onClick={toggleScreenShare}
-            className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
-              isScreenSharing 
-                ? 'bg-brand-600 text-white shadow-md shadow-brand-500/30' 
-                : 'bg-slate-800 text-white hover:bg-slate-700'
-            }`}
-            title="Share Screen"
-          >
-            <ScreenShare className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+          {/* Screen Share (Tutor Only) */}
+          {isTutor && (
+            <button
+              onClick={toggleScreenShare}
+              className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
+                isScreenSharing 
+                  ? 'bg-brand-600 text-white shadow-md shadow-brand-500/30' 
+                  : 'bg-slate-800 text-white hover:bg-slate-700'
+              }`}
+              title="Share Screen"
+            >
+              <ScreenShare className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          )}
 
           {/* Student Raise Hand Toggle */}
           {!isTutor && (

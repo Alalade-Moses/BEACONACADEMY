@@ -158,15 +158,15 @@ export const DashboardLayout = () => {
   const getRoleBadge = (role) => {
     switch (role) {
       case 'superadmin':
-        return { label: 'Super Admin', bg: 'bg-purple-100 text-purple-800 border-purple-200' };
+        return { label: 'Super Admin', bg: 'bg-purple-100 text-purple-900 border-purple-300' };
       case 'tutor':
-        return { label: 'Tutor / Educator', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+        return { label: 'Tutor / Educator', bg: 'bg-emerald-100 text-emerald-900 border-emerald-300' };
       case 'student':
-        return { label: 'Student', bg: 'bg-brand-100 text-brand-800 border-brand-200' };
+        return { label: 'Student', bg: 'bg-brand-100 text-brand-900 border-brand-300' };
       case 'parent':
-        return { label: 'Parent / Guardian', bg: 'bg-amber-100 text-amber-800 border-amber-200' };
+        return { label: 'Parent / Guardian', bg: 'bg-amber-100 text-amber-900 border-amber-300' };
       default:
-        return { label: role, bg: 'bg-slate-100 text-slate-800 border-slate-200' };
+        return { label: role, bg: 'bg-slate-100 text-slate-900 border-slate-300' };
     }
   };
 
@@ -183,13 +183,13 @@ export const DashboardLayout = () => {
         />
       )}
 
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (High-Contrast, Ultra-Crisp SaaS Styling) */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-72 h-full bg-white border-r border-slate-200/90 flex flex-col shrink-0 transition-transform duration-200 ease-in-out shadow-sm
+        fixed lg:static inset-y-0 left-0 z-50 w-64 lg:w-72 h-full bg-white border-r border-slate-200 flex flex-col shrink-0 transition-transform duration-200 ease-in-out shadow-[2px_0_12px_rgba(0,0,0,0.03)]
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100 shrink-0">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200 shrink-0 bg-slate-50/50">
           <Link to="/" className="flex items-center space-x-2.5">
             <img 
               src="/logo.png" 
@@ -199,20 +199,20 @@ export const DashboardLayout = () => {
           </Link>
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600"
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/60"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* User Identity Chip */}
-        <div className="px-4 pt-3 pb-1 shrink-0">
-          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50/80 border border-slate-100">
+        <div className="px-3.5 pt-3.5 pb-1 shrink-0">
+          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-100/70 border border-slate-200/90 shadow-xs">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-[11px] font-bold text-slate-700 truncate">{user?.full_name?.split(' ')[0] || 'User'}</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] shrink-0" />
+              <span className="text-xs font-bold text-slate-900 truncate">{user?.full_name?.split(' ')[0] || 'User'}</span>
             </div>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border shrink-0 ${roleBadge.bg}`}>
+            <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border shrink-0 ${roleBadge.bg}`}>
               {roleBadge.label}
             </span>
           </div>
@@ -242,8 +242,8 @@ export const DashboardLayout = () => {
           </div>
         )}
 
-        {/* Nav Links (Sleek, Modern SaaS Styling) */}
-        <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto no-scrollbar scrollbar-none">
+        {/* Nav Links (High-Contrast, Clear Modern Typography) */}
+        <nav className="flex-1 px-3.5 py-3 space-y-1 overflow-y-auto no-scrollbar scrollbar-none">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path || (item.path !== `/${user?.role}/dashboard` && location.pathname.startsWith(item.path));
@@ -253,16 +253,20 @@ export const DashboardLayout = () => {
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
                 className={`
-                  flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs transition-all group
+                  flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm transition-all group
                   ${isActive 
-                    ? 'bg-[#050167] text-[#f0faff] font-bold shadow-md shadow-[#050167]/20' 
-                    : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 font-semibold'}
+                    ? 'bg-[#050167] text-white font-bold shadow-md shadow-[#050167]/25 ring-1 ring-[#050167]' 
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-[#050167] font-semibold'}
                 `}
               >
-                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-[#40ffa7]' : 'text-slate-400 group-hover:text-slate-700'}`} />
-                <span className="truncate">{item.name}</span>
+                <Icon className={`w-4.5 h-4.5 shrink-0 transition-all ${
+                  isActive 
+                    ? 'text-[#40ffa7] stroke-[2.3]' 
+                    : 'text-slate-500 group-hover:text-[#050167] group-hover:scale-105 stroke-[2]'
+                }`} />
+                <span className="truncate tracking-tight">{item.name}</span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#40ffa7] ml-auto shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-[#40ffa7] shadow-[0_0_8px_#40ffa7] ml-auto shrink-0" />
                 )}
               </Link>
             );
@@ -270,8 +274,8 @@ export const DashboardLayout = () => {
         </nav>
 
         {/* User Signout footer */}
-        <div className="p-3 border-t border-slate-100 shrink-0 bg-white">
-          <div className="flex items-center justify-between p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
+        <div className="p-3 border-t border-slate-200 shrink-0 bg-slate-50/60">
+          <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200/90 shadow-xs hover:border-slate-300 transition-colors">
             <div className="flex items-center space-x-2.5 overflow-hidden min-w-0">
               <div className="relative shrink-0">
                 <img
@@ -279,11 +283,11 @@ export const DashboardLayout = () => {
                   alt={user?.full_name}
                   className="w-8 h-8 rounded-xl object-cover border border-slate-200"
                 />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-white" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
               </div>
               <div className="overflow-hidden min-w-0">
-                <p className="text-xs font-bold text-slate-800 truncate">{user?.full_name}</p>
-                <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+                <p className="text-xs font-bold text-slate-900 truncate">{user?.full_name}</p>
+                <p className="text-[10px] text-slate-500 font-medium truncate">{user?.email}</p>
               </div>
             </div>
             <button
