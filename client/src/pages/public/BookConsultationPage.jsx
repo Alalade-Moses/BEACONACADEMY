@@ -21,10 +21,10 @@ import {
 } from 'lucide-react';
 
 const ADVISOR = {
-  name: 'Dr. Sarah Jenkins',
-  title: 'Head of Academic Advisory & Oxbridge Admissions Mentor',
-  qualifications: 'PhD Pure Mathematics (Oxford), BSc Physics (Imperial), 12+ Yrs UK Curriculum Lead',
-  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=240&auto=format&fit=crop&q=80',
+  name: 'Mr. Gideon Babs',
+  title: 'Head of Academic Advisory & Admissions Director',
+  qualifications: 'Lead Academic Strategist & Senior Curriculum Specialist, 12+ Yrs UK Curriculum Lead',
+  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=240&auto=format&fit=crop&q=80',
   bio: 'Specialist in diagnosing learning bottlenecks, exam board timing techniques (AQA, Edexcel, OCR), and structuring high-yield revision roadmaps for GCSE and A-Level students.'
 };
 

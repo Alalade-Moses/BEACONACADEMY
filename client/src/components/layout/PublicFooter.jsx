@@ -123,7 +123,7 @@ export const PublicFooter = () => {
             <h4 className="text-white font-bold mb-4 tracking-wider uppercase text-xs">Other</h4>
             <ul className="space-y-2.5">
               <li><Link to="/about" className="hover:text-[#40ffa7] transition-colors">About Us</Link></li>
-              <li><Link to="/book-consultation" className="hover:text-[#40ffa7] transition-colors font-bold text-[#40ffa7]">Book a Free Consultation</Link></li>
+              <li><Link to="/book-consultation" className="hover:text-[#40ffa7] transition-colors">Book a Free Consultation</Link></li>
               <li><Link to="/register" className="hover:text-[#40ffa7] transition-colors">Register with Us</Link></li>
               <li><Link to="/payment-proof" className="hover:text-[#40ffa7] transition-colors">Tuition & Wire Account</Link></li>
               <li><Link to="/about#cancellation" className="hover:text-[#40ffa7] transition-colors">Lesson Cancellation Policy</Link></li>

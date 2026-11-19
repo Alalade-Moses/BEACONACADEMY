@@ -102,7 +102,7 @@ export const PublicNavbar = () => {
             </Link>
             <Link
               to="/book-consultation"
-              className="px-2.5 xl:px-3 py-1.5 rounded-lg text-[#050167] bg-[#40ffa7]/20 hover:bg-[#40ffa7]/35 active:scale-95 font-bold transition-all whitespace-nowrap"
+              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               Book a Free Consultation
             </Link>
@@ -209,7 +209,7 @@ export const PublicNavbar = () => {
             <Link
               to="/book-consultation"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl bg-[#40ffa7]/20 text-[#050167] font-bold flex items-center"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center"
             >
               <span>Book a Free Consultation</span>
             </Link>

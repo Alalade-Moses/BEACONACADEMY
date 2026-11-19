@@ -466,15 +466,6 @@ export const LandingPage = () => {
             {/* Left Column: Headline, Copy, Actions & Trust Chips */}
             <div className="lg:col-span-7 space-y-6 text-left bg-[#001f3f]/65 lg:backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-white/15 shadow-2xl">
               
-              {/* Official Brand Logo Rectangle (Prominent & High-Fidelity) */}
-              <div className="inline-block bg-white px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-white/40">
-                <img 
-                  src="/logo.png" 
-                  alt="Beacon Bridge Academics" 
-                  className="h-16 sm:h-20 lg:h-24 w-auto object-contain transition-transform hover:scale-105" 
-                />
-              </div>
-
               {/* Badge */}
               <div className="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-[#40ffa7]/20 border border-[#40ffa7]/40 text-[#40ffa7] text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#40ffa7] animate-pulse" />
@@ -1331,10 +1322,12 @@ export const LandingPage = () => {
           <div className="mt-10 text-center">
             <Link
               to="/curriculum"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-[#050167] hover:bg-[#001f3f] text-[#40ffa7] font-bold text-sm shadow-xl shadow-[#050167]/20 transition-all hover:-translate-y-0.5 active:scale-95"
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-[#050167] hover:bg-[#001f3f] text-white font-extrabold text-sm sm:text-base border-2 border-[#40ffa7]/40 shadow-xl shadow-[#050167]/30 transition-all hover:-translate-y-0.5 active:scale-95 group cursor-pointer"
             >
-              <span>View Full Curriculum & Exam Boards</span>
-              <ArrowRight className="w-4 h-4" />
+              <span className="text-white group-hover:text-[#40ffa7] font-bold transition-colors">
+                View Full Curriculum & Exam Boards
+              </span>
+              <ArrowRight className="w-4 h-4 text-[#40ffa7] group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
@@ -1529,11 +1522,13 @@ export const LandingPage = () => {
           <div className="mt-12 text-center">
             <Link
               to="/book-consultation"
-              className="inline-flex items-center space-x-2.5 px-6 py-3.5 rounded-2xl bg-[#050167] hover:bg-[#001f3f] text-[#40ffa7] font-bold text-sm shadow-xl shadow-[#050167]/15 hover:shadow-2xl transition-all hover:-translate-y-0.5 active:scale-95"
+              className="inline-flex items-center space-x-2.5 px-8 py-4 rounded-2xl bg-[#050167] hover:bg-[#001f3f] text-white font-extrabold text-sm sm:text-base border-2 border-[#40ffa7]/40 shadow-xl shadow-[#050167]/30 hover:shadow-2xl transition-all hover:-translate-y-0.5 active:scale-95 group cursor-pointer"
             >
-              <CalendarCheck className="w-4 h-4 text-[#40ffa7]" />
-              <span>Book Your Child's Free 20-Min Consultation</span>
-              <ArrowRight className="w-4 h-4" />
+              <CalendarCheck className="w-5 h-5 text-[#40ffa7]" />
+              <span className="text-white group-hover:text-[#40ffa7] font-bold transition-colors">
+                Book Your Child's Free 20-Min Consultation
+              </span>
+              <ArrowRight className="w-4 h-4 text-[#40ffa7] group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 

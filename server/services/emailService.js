@@ -714,7 +714,7 @@ export const sendConsultationBookingNotifications = async (consultation) => {
       
       <div class="card" style="border-left: 4px solid #059669;">
         <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 16px;">Consultation Appointment Details</h3>
-        <p style="margin: 4px 0;"><strong>Advisor:</strong> ${consultation.consultant_name || 'Dr. Sarah Jenkins'}</p>
+        <p style="margin: 4px 0;"><strong>Advisor:</strong> ${consultation.consultant_name || 'Mr. Gideon Babs'}</p>
         <p style="margin: 4px 0;"><strong>Scheduled Slot:</strong> <span class="badge badge-gold">${consultation.consultation_day} &bull; ${consultation.consultation_time}</span></p>
         <p style="margin: 4px 0;"><strong>Specific Date:</strong> ${consultation.consultation_date || 'Upcoming'}</p>
         <p style="margin: 4px 0;"><strong>Format / Mode:</strong> ${consultation.mode || 'Live Interactive Video'}</p>
@@ -748,7 +748,7 @@ export const sendConsultationBookingNotifications = async (consultation) => {
       
       <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
         <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 16px;">Confirmed Appointment Details</h3>
-        <p style="margin: 4px 0;"><strong>Academic Advisor:</strong> ${consultation.consultant_name || 'Dr. Sarah Jenkins (Head of Academic Advisory)'}</p>
+        <p style="margin: 4px 0;"><strong>Academic Advisor:</strong> ${consultation.consultant_name || 'Mr. Gideon Babs (Head of Academic Advisory)'}</p>
         <p style="margin: 4px 0;"><strong>Day & Time:</strong> <span class="badge badge-green">${consultation.consultation_day} &bull; ${consultation.consultation_time}</span></p>
         <p style="margin: 4px 0;"><strong>Curriculum / Target:</strong> ${consultation.curriculum} &bull; ${consultation.subjects || 'All Core Subjects'}</p>
         <p style="margin: 4px 0;"><strong>Exam Board:</strong> ${consultation.exam_board || 'AQA / Edexcel'}</p>
