@@ -21,7 +21,13 @@ import {
   Volume2,
   Mic,
   Monitor,
-  Zap
+  Zap,
+  CalendarCheck,
+  Award,
+  BookOpen,
+  Heart,
+  Check,
+  Star
 } from 'lucide-react';
 
 export const HowItWorksPage = () => {
@@ -141,15 +147,20 @@ export const HowItWorksPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
               
-              <div className="group bg-[#f0faff] rounded-3xl p-7 sm:p-8 border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none" />
+              <div className="group bg-white rounded-3xl p-7 border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform" />
                 <div>
-                  <div className="w-13 h-13 rounded-2xl bg-[#050167] text-[#40ffa7] font-black flex items-center justify-center mb-5 text-lg shadow-md shadow-[#050167]/20 ring-4 ring-[#40ffa7]/20 group-hover:scale-105 transition-transform">
-                    1
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-[#40ffa7] font-black flex items-center justify-center text-lg shadow-md shadow-[#050167]/20 ring-4 ring-[#40ffa7]/20 group-hover:scale-105 transition-transform">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#f0faff] text-[#050167] border border-[#050167]/15">
+                      Step 01
+                    </span>
                   </div>
                   <h3 className="text-xl font-bold text-[#050167] mb-2.5">Register as a family</h3>
                   <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed">
-                    A parent completes one registration form for themselves and their child, together. This keeps every account accurate and linked correctly from day one.
+                    A parent completes one registration form for themselves and their child, together. This keeps every account accurate, safeguarded, and properly linked from day one.
                   </p>
                 </div>
                 <div className="mt-6 pt-3.5 border-t border-[#050167]/10 text-xs font-bold text-[#050167] flex items-center justify-between">
@@ -158,15 +169,20 @@ export const HowItWorksPage = () => {
                 </div>
               </div>
 
-              <div className="group bg-[#f0faff] rounded-3xl p-7 sm:p-8 border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none" />
+              <div className="group bg-white rounded-3xl p-7 border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform" />
                 <div>
-                  <div className="w-13 h-13 rounded-2xl bg-[#001f3f] text-[#40ffa7] font-black flex items-center justify-center mb-5 text-lg shadow-md shadow-[#001f3f]/20 ring-4 ring-[#40ffa7]/20 group-hover:scale-105 transition-transform">
-                    2
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-[#40ffa7] font-black flex items-center justify-center text-lg shadow-md shadow-[#050167]/20 ring-4 ring-[#40ffa7]/20 group-hover:scale-105 transition-transform">
+                      <CalendarCheck className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#f0faff] text-[#050167] border border-[#050167]/15">
+                      Step 02
+                    </span>
                   </div>
                   <h3 className="text-xl font-bold text-[#050167] mb-2.5">Speak to a teacher first</h3>
                   <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed">
-                    Before lessons begin, you have a consultation with a teacher. You discuss your child's goals, their difficulties, and the exam board they follow.
+                    Before lessons begin, you have a 1-on-1 consultation with an academic lead. You discuss your child's goals, their difficulties, and their specific exam board.
                   </p>
                 </div>
                 <div className="mt-6 pt-3.5 border-t border-[#050167]/10 text-xs font-bold text-[#001f3f] flex items-center justify-between">
@@ -175,15 +191,20 @@ export const HowItWorksPage = () => {
                 </div>
               </div>
 
-              <div className="group bg-[#f0faff] rounded-3xl p-7 sm:p-8 border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none" />
+              <div className="group bg-white rounded-3xl p-7 border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform" />
                 <div>
-                  <div className="w-13 h-13 rounded-2xl bg-[#050167] text-[#40ffa7] font-black flex items-center justify-center mb-5 text-lg shadow-md shadow-[#050167]/20 ring-4 ring-[#40ffa7]/20 group-hover:scale-105 transition-transform">
-                    3
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-800 text-[#40ffa7] font-black flex items-center justify-center text-lg shadow-md shadow-[#050167]/20 ring-4 ring-[#40ffa7]/20 group-hover:scale-105 transition-transform">
+                      <Award className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#f0faff] text-[#050167] border border-[#050167]/15">
+                      Step 03
+                    </span>
                   </div>
                   <h3 className="text-xl font-bold text-[#050167] mb-2.5">Get set up</h3>
                   <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed">
-                    Our team completes your onboarding and confirms your plan, and your child is matched with a teacher who knows their syllabus.
+                    Our team completes your onboarding and confirms your plan, and your child is matched with a dedicated UK teacher who knows their exact curriculum.
                   </p>
                 </div>
                 <div className="mt-6 pt-3.5 border-t border-[#050167]/10 text-xs font-bold text-[#050167] flex items-center justify-between">
@@ -192,15 +213,20 @@ export const HowItWorksPage = () => {
                 </div>
               </div>
 
-              <div className="group bg-[#f0faff] rounded-3xl p-7 sm:p-8 border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none" />
+              <div className="group bg-white rounded-3xl p-7 border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform" />
                 <div>
-                  <div className="w-13 h-13 rounded-2xl bg-[#001f3f] text-[#40ffa7] font-black flex items-center justify-center mb-5 text-lg shadow-md shadow-[#001f3f]/20 ring-4 ring-[#40ffa7]/20 group-hover:scale-105 transition-transform">
-                    4
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-sky-600 to-blue-700 text-[#40ffa7] font-black flex items-center justify-center text-lg shadow-md shadow-[#001f3f]/20 ring-4 ring-[#40ffa7]/20 group-hover:scale-105 transition-transform">
+                      <Monitor className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-[#f0faff] text-[#050167] border border-[#050167]/15">
+                      Step 04
+                    </span>
                   </div>
                   <h3 className="text-xl font-bold text-[#050167] mb-2.5">Learn live & track progress</h3>
                   <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed">
-                    Lessons take place in our live classroom. You follow progress, attendance and homework directly from your parent account.
+                    Lessons take place in our live classroom. You follow attendance, homework submissions, and milestone reports directly from your parent account.
                   </p>
                 </div>
                 <div className="mt-6 pt-3.5 border-t border-[#050167]/10 text-xs font-bold text-[#001f3f] flex items-center justify-between">

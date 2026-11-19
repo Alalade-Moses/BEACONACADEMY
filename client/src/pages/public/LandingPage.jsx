@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   GraduationCap,
@@ -45,10 +45,53 @@ import {
   Zap,
   CheckCheck,
   BadgeCheck,
-  Quote
+  Quote,
+  Calculator,
+  FlaskConical,
+  PenLine,
+  Code2,
+  Globe2,
+  Music,
+  Palette,
+  Languages
 } from 'lucide-react';
 
+// Animated counter hook
+function useCountUp(target, duration = 2000, start = false) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!start) return;
+    let startTime = null;
+    const step = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      setCount(Math.floor(progress * target));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [target, duration, start]);
+  return count;
+}
+
 export const LandingPage = () => {
+  // Stats counter visibility
+  const [statsVisible, setStatsVisible] = useState(false);
+  const statsRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setStatsVisible(true); },
+      { threshold: 0.3 }
+    );
+    if (statsRef.current) observer.observe(statsRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const studentsCount = useCountUp(850, 1800, statsVisible);
+  const tutorsCount = useCountUp(40, 1800, statsVisible);
+  const sessionsCount = useCountUp(12000, 1800, statsVisible);
+  const ratingCount = useCountUp(49, 1800, statsVisible);
+
   // Hero Background Carousel State
   const [heroSlide, setHeroSlide] = useState(0);
 
@@ -604,6 +647,36 @@ export const LandingPage = () => {
           </div>
         </div>
 
+      </section>
+
+      {/* ========================================================= */}
+      {/* STATS STRIP — Animated social proof numbers               */}
+      {/* ========================================================= */}
+      <section ref={statsRef} className="py-14 bg-gradient-to-r from-[#050167] via-[#001f3f] to-[#050167] border-b border-[#40ffa7]/20 relative overflow-hidden">
+        {/* Decorative grid pattern */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 39px,#40ffa7 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,#40ffa7 40px)'}} />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {[
+              { icon: Users, label: 'Students Supported', value: studentsCount, suffix: '+', color: 'text-[#40ffa7]' },
+              { icon: GraduationCap, label: 'Specialist Tutors', value: tutorsCount, suffix: '+', color: 'text-sky-300' },
+              { icon: Video, label: 'Live Sessions Delivered', value: sessionsCount, suffix: '+', color: 'text-amber-300' },
+              { icon: Star, label: 'Family Satisfaction', value: ratingCount, suffix: '/50', display: (v) => (v / 10).toFixed(1), color: 'text-rose-300' },
+            ].map(({ icon: Icon, label, value, suffix, display, color }) => (
+              <div key={label} className="text-center group">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-[#40ffa7]/20 transition-colors">
+                    <Icon className={`w-7 h-7 ${color}`} />
+                  </div>
+                </div>
+                <div className={`text-3xl sm:text-4xl lg:text-5xl font-black ${color} tabular-nums`}>
+                  {display ? display(value) : value.toLocaleString()}{suffix}
+                </div>
+                <div className="text-xs sm:text-sm text-white/70 font-semibold mt-1 uppercase tracking-wider">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ========================================================= */}
@@ -1216,6 +1289,58 @@ export const LandingPage = () => {
       </section>
 
       {/* ========================================================= */}
+      {/* SUBJECTS WE TEACH — Visual icon grid                      */}
+      {/* ========================================================= */}
+      <section className="py-20 sm:py-28 bg-gradient-to-b from-[#f0faff] to-white border-b border-[#050167]/10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#40ffa7]/8 rounded-full blur-3xl pointer-events-none" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167] text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-3 shadow-sm">
+              <BookOpen className="w-3.5 h-3.5 text-[#40ffa7]" />
+              <span>What We Teach</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#001f3f] tracking-tight">
+              Every Subject Your Child Needs
+            </h2>
+            <p className="mt-3 text-[#001f3f]/80 text-sm sm:text-base">
+              Curriculum-aligned specialists for every stage, from KS2 SATs to A-Level and professional tracks.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+            {[
+              { icon: Calculator, label: 'Mathematics', sub: 'KS3 · GCSE · A-Level', color: 'from-indigo-500 to-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+              { icon: FlaskConical, label: 'Sciences', sub: 'Biology · Chemistry · Physics', color: 'from-emerald-500 to-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+              { icon: PenLine, label: 'English', sub: 'Language · Literature', color: 'from-rose-500 to-rose-700', bg: 'bg-rose-50', border: 'border-rose-200' },
+              { icon: Code2, label: 'Software Dev', sub: 'React · Node · PostgreSQL', color: 'from-sky-500 to-sky-700', bg: 'bg-sky-50', border: 'border-sky-200' },
+              { icon: Globe2, label: 'IELTS / English', sub: 'Academic · UKVI Band 7.5+', color: 'from-teal-500 to-teal-700', bg: 'bg-teal-50', border: 'border-teal-200' },
+              { icon: Palette, label: 'Graphic Design', sub: 'Figma · Illustrator · UI/UX', color: 'from-fuchsia-500 to-fuchsia-700', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200' },
+              { icon: Compass, label: 'Homeschool', sub: 'Structured · Exam-Board Led', color: 'from-amber-500 to-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
+              { icon: Globe, label: 'International', sub: 'UK · US · Canada · Australia', color: 'from-[#050167] to-[#001f3f]', bg: 'bg-[#f0faff]', border: 'border-[#050167]/20' },
+            ].map(({ icon: Icon, label, sub, color, bg, border }) => (
+              <div key={label} className={`group ${bg} ${border} border rounded-3xl p-6 flex flex-col items-center text-center hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-default`}>
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
+                  <Icon className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-[#050167] text-sm sm:text-base leading-tight">{label}</h3>
+                <p className="text-xs text-[#001f3f]/60 mt-1 font-medium">{sub}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              to="/curriculum"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-[#050167] hover:bg-[#001f3f] text-[#40ffa7] font-bold text-sm shadow-xl shadow-[#050167]/20 transition-all hover:-translate-y-0.5 active:scale-95"
+            >
+              <span>View Full Curriculum & Exam Boards</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
       {/* SECTION: 10 AUTHENTIC STUDENT & PARENT TESTIMONIALS       */}
       {/* ========================================================= */}
       <section 
@@ -1550,6 +1675,19 @@ export const LandingPage = () => {
       {/* ========================================================= */}
       <section className="py-24 sm:py-36 bg-gradient-to-br from-[#050167] via-[#001f3f] to-[#050167] text-white text-center relative overflow-hidden border-t border-[#40ffa7]/30">
         <div className="absolute inset-0 bg-radial-gradient from-[#40ffa7]/15 via-transparent to-transparent pointer-events-none" />
+        
+        {/* Decorative floating shapes */}
+        <div className="absolute top-8 left-8 w-24 h-24 rounded-full border-2 border-[#40ffa7]/20 animate-pulse pointer-events-none" />
+        <div className="absolute top-16 left-20 w-12 h-12 rounded-full border border-[#40ffa7]/15 animate-pulse pointer-events-none" style={{animationDelay:'0.5s'}} />
+        <div className="absolute bottom-10 right-10 w-32 h-32 rounded-full border-2 border-[#40ffa7]/15 animate-pulse pointer-events-none" style={{animationDelay:'1s'}} />
+        <div className="absolute bottom-20 right-24 w-16 h-16 rounded-full border border-[#40ffa7]/20 pointer-events-none" />
+        {/* Graduation cap SVG decoration */}
+        <svg className="absolute top-6 right-1/4 opacity-10 pointer-events-none" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#40ffa7" strokeWidth="1.5">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        </svg>
+        <svg className="absolute bottom-8 left-1/4 opacity-10 pointer-events-none" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#40ffa7" strokeWidth="1.5">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
         
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           

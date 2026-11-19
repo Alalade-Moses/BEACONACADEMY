@@ -12,7 +12,16 @@ import {
   Globe,
   Compass,
   Building2,
-  Layers
+  Layers,
+  Calculator,
+  FlaskConical,
+  PenLine,
+  Code2,
+  Globe2,
+  Palette,
+  FileText,
+  Zap,
+  Star
 } from 'lucide-react';
 
 export const CurriculumPage = () => {
@@ -122,17 +131,107 @@ export const CurriculumPage = () => {
     }
   ];
 
-  // 3. Subjects Directory Data
+  // 3. Subjects Directory Data with rich visuals & icons
   const subjects = [
-    { title: "GCSE Maths tutors", desc: "Foundation & Higher tiers for AQA, Edexcel and OCR." },
-    { title: "GCSE English tutors", desc: "English Language & English Literature analysis." },
-    { title: "GCSE Science tutors", desc: "Biology, Chemistry, and Physics (Combined & Triple)." },
-    { title: "KS3 Maths and English tutors", desc: "Foundational numeracy and literacy for Years 7-9." },
-    { title: "Key Stage 2 (KS2) Primary", desc: "Years 3–6 foundational literacy, numeracy and SATs preparation." },
-    { title: "A-Level tutors", desc: "Advanced specialist subject coaching & mock exam prep." },
-    { title: "IELTS Exam Preparation", desc: "Academic & UKVI preparation targeting Band 7.0–8.5+ for university admissions." },
-    { title: "Homeschool tutoring", desc: "Complete syllabus coverage and structured assessments." },
-    { title: "US, Canadian & Australian curricula", desc: "Cross-system bridge support for relocating families." }
+    {
+      title: "GCSE Mathematics",
+      category: "Core STEM",
+      desc: "Foundation & Higher tiers for AQA, Edexcel, and OCR with live algebra & geometry walkthroughs.",
+      icon: Calculator,
+      color: "from-blue-600 to-indigo-700",
+      boards: "AQA · Edexcel · OCR",
+      tag: "Grade 4-9 Focus"
+    },
+    {
+      title: "GCSE English Language & Lit",
+      category: "Literacy & Analysis",
+      desc: "Comparative essays, poetry clusters, Shakespeare analysis, and precise AO mark scheme phrasing.",
+      icon: PenLine,
+      color: "from-rose-600 to-pink-700",
+      boards: "AQA · Edexcel · WJEC",
+      tag: "Essay Masterclasses"
+    },
+    {
+      title: "GCSE Sciences (Triple & Combined)",
+      category: "Natural Sciences",
+      desc: "Biology, Chemistry, and Physics. Practical paper breakdown, math calculations, and required practicals.",
+      icon: FlaskConical,
+      color: "from-emerald-600 to-teal-700",
+      boards: "Trilogy & Separate",
+      tag: "Practical Ready"
+    },
+    {
+      title: "KS3 Maths & English",
+      category: "Years 7 to 9",
+      desc: "Closing learning gaps early, developing algebra fluency, and building reading stamina before GCSEs.",
+      icon: BookOpen,
+      color: "from-amber-600 to-orange-700",
+      boards: "UK National Curriculum",
+      tag: "Foundation Strength"
+    },
+    {
+      title: "Key Stage 2 (KS2) Primary",
+      category: "Years 3 to 6",
+      desc: "Warm, confidence-building numeracy, phonics, reading comprehension, and Year 6 SATs preparation.",
+      icon: Sparkles,
+      color: "from-yellow-500 to-amber-600",
+      boards: "Primary SATs",
+      tag: "Confidence Rebuilding"
+    },
+    {
+      title: "A-Level Specialist Tutoring",
+      category: "Years 12 & 13",
+      desc: "Advanced calculus, synoptic chemistry, mechanics, and extended essay critique for UCAS & Russell Group offers.",
+      icon: GraduationCap,
+      color: "from-purple-600 to-indigo-800",
+      boards: "OCR · AQA · Edexcel",
+      tag: "A* Coaching"
+    },
+    {
+      title: "IELTS Academic & UKVI",
+      category: "University & Visa",
+      desc: "Meticulous Task 1 & 2 essay evaluation, fluency coaching, and mock interview sittings targeting Band 7.5+.",
+      icon: Globe2,
+      color: "from-teal-600 to-cyan-700",
+      boards: "British Council Rubric",
+      tag: "Band 7.5 - 8.5"
+    },
+    {
+      title: "Software Development Track",
+      category: "Applied Engineering",
+      desc: "Modern industry coding in HTML5, CSS3, React, Node.js, and PostgreSQL with live hands-on projects.",
+      icon: Code2,
+      color: "from-sky-600 to-blue-700",
+      boards: "Frontend & Backend",
+      tag: "Portfolio Track"
+    },
+    {
+      title: "Graphic Design & UI/UX",
+      category: "Creative Technology",
+      desc: "Figma wireframing, interactive prototyping, brand systems, and production design workflows.",
+      icon: Palette,
+      color: "from-fuchsia-600 to-pink-700",
+      boards: "Figma & Adobe",
+      tag: "Design Systems"
+    },
+    {
+      title: "Homeschool Syllabus Support",
+      category: "Home Education",
+      desc: "Complete syllabus coverage, structured assessments, mock examination grading, and regular parent reports.",
+      icon: Compass,
+      color: "from-indigo-600 to-purple-700",
+      boards: "Full Curriculum",
+      tag: "Independent Study"
+    },
+    {
+      title: "International Curriculum Bridge",
+      category: "Global Relocation",
+      desc: "Cross-system terminology and calendar alignment for families moving between UK, US, Canada, and Australia.",
+      icon: Globe,
+      color: "from-[#050167] to-[#001f3f]",
+      boards: "Cross-System Mapping",
+      tag: "Seamless Transition"
+    }
   ];
 
   return (
@@ -346,20 +445,45 @@ export const CurriculumPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subjects.map((sub, i) => (
-              <div 
-                key={i} 
-                className="group bg-white p-7 sm:p-8 rounded-3xl border border-slate-200 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-1.5 flex items-start gap-4 relative overflow-hidden"
-              >
-                <div className="w-11 h-11 rounded-2xl bg-[#050167] text-[#40ffa7] flex items-center justify-center font-bold shrink-0 shadow-md group-hover:scale-105 transition-transform">
-                  <Check className="w-5 h-5" />
+            {subjects.map((sub, i) => {
+              const Icon = sub.icon;
+              return (
+                <div 
+                  key={i} 
+                  className="group bg-white p-7 rounded-3xl border border-[#050167]/15 shadow-sm hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform" />
+
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${sub.color} text-white flex items-center justify-center font-bold shrink-0 shadow-md group-hover:scale-110 transition-transform`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#f0faff] text-[#050167] border border-[#050167]/15">
+                        {sub.category}
+                      </span>
+                    </div>
+
+                    <h3 className="font-bold text-slate-900 text-lg group-hover:text-[#050167] transition-colors mb-2">
+                      {sub.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {sub.desc}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-[#050167]/10 flex items-center justify-between text-xs">
+                    <span className="font-semibold text-[#001f3f]/70 text-[11px] bg-slate-50 px-2 py-0.5 rounded-md">
+                      {sub.boards}
+                    </span>
+                    <span className="font-bold text-[#050167] flex items-center gap-1 group-hover:text-[#001f3f]">
+                      <span>{sub.tag}</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#40ffa7] group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-slate-900 text-base sm:text-lg group-hover:text-[#050167] transition-colors">{sub.title}</h3>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">{sub.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
         </div>

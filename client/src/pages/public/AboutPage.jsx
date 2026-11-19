@@ -13,7 +13,11 @@ import {
   Building2,
   Star,
   Users,
-  Compass
+  Compass,
+  BookOpen,
+  TrendingUp,
+  Lightbulb,
+  Clock
 } from 'lucide-react';
 
 export const AboutPage = () => {
@@ -51,38 +55,106 @@ export const AboutPage = () => {
       {/* CORE PHILOSOPHY & LEADERSHIP                              */}
       {/* ========================================================= */}
       <section className="py-20 sm:py-28 bg-white border-b border-[#050167]/10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-b from-[#f0faff] to-white rounded-3xl p-8 sm:p-14 border border-[#050167]/15 shadow-xl shadow-[#050167]/5 space-y-8">
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/5 text-[#050167] text-xs font-bold uppercase tracking-wider">
-              <GraduationCap className="w-3.5 h-3.5 text-[#050167]" />
-              <span>Educational Leadership</span>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            {/* Left Column: Narrative & Values */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/5 text-[#050167] text-xs font-bold uppercase tracking-wider">
+                <GraduationCap className="w-3.5 h-3.5 text-[#050167]" />
+                <span>Educational Leadership</span>
+              </div>
+
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#050167] tracking-tight leading-tight">
+                Built Around One Simple Belief:{' '}
+                <span className="bg-gradient-to-r from-[#050167] via-[#001f3f] to-[#2563eb] bg-clip-text text-transparent">
+                  Helping Children Feel Capable Again
+                </span>
+              </h2>
+
+              <p className="text-base sm:text-lg text-[#001f3f]/85 leading-relaxed">
+                Beacon Bridge Academics is led by experienced educators with classroom experience, international teaching licences, and a background in educational leadership. 
+                We built Beacon around one simple truth: a struggling student does best with a teacher who knows their syllabus, modern tools that make lessons clear, and parents who can see what is happening.
+              </p>
+
+              <p className="text-base sm:text-lg text-[#001f3f]/85 leading-relaxed">
+                Our teachers are trained across the UK, US, Canadian and Australian curricula before they meet a student. When a child learns in a safe, judgment-free environment with clear exam board guidance, anxiety fades and genuine mastery begins.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div className="p-4 rounded-2xl bg-[#f0faff] border border-[#050167]/10 hover:border-[#40ffa7] transition-all">
+                  <div className="w-8 h-8 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center mb-2 font-bold text-xs">
+                    <Award className="w-4 h-4" />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#050167] uppercase tracking-wider block">Faculty</span>
+                  <span className="font-bold text-slate-800 text-xs sm:text-sm">Licensed UK Teachers</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#f0faff] border border-[#050167]/10 hover:border-[#40ffa7] transition-all">
+                  <div className="w-8 h-8 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center mb-2 font-bold text-xs">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#050167] uppercase tracking-wider block">Syllabus Match</span>
+                  <span className="font-bold text-slate-800 text-xs sm:text-sm">AQA • Edexcel • OCR</span>
+                </div>
+                <div className="p-4 rounded-2xl bg-[#f0faff] border border-[#050167]/10 hover:border-[#40ffa7] transition-all">
+                  <div className="w-8 h-8 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center mb-2 font-bold text-xs">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <span className="text-[11px] font-bold text-[#050167] uppercase tracking-wider block">Safety First</span>
+                  <span className="font-bold text-slate-800 text-xs sm:text-sm">100% DBS Verified</span>
+                </div>
+              </div>
             </div>
 
-            <h2 className="text-2xl sm:text-4xl font-black text-[#050167] tracking-tight">
-              About Beacon Bridge Academics
-            </h2>
+            {/* Right Column: High-End Photographic Showcase Card */}
+            <div className="lg:col-span-5 relative">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/30 bg-gradient-to-br from-[#050167] to-[#001f3f] p-3">
+                <div className="relative rounded-2xl overflow-hidden aspect-4/3">
+                  <img
+                    src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80"
+                    alt="Beacon Bridge Academics Teacher & Mentoring"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/30 to-transparent" />
+                  
+                  {/* Floating Badges */}
+                  <div className="absolute top-3 left-3 bg-[#050167]/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#40ffa7]/40 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#40ffa7] animate-pulse" />
+                    <span className="text-[11px] font-bold text-white">UK Qualified Faculty</span>
+                  </div>
 
-            <p className="text-base sm:text-lg text-[#001f3f]/85 leading-relaxed">
-              Beacon Bridge Academics is led by experienced educators with classroom experience, international teaching licences and a background in educational leadership. 
-              We built Beacon around one simple belief: a struggling student does best with a teacher who knows their syllabus, modern tools that make lessons clear, and parents who can see what is happening. 
-              Our teachers are trained across the UK, US, Canadian and Australian curricula before they meet a student, and the whole team shares one aim: 
-              <strong className="text-[#050167]"> helping children feel capable again</strong>.
-            </p>
+                  <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-slate-200 shadow-lg text-xs">
+                    <div className="flex items-center justify-between font-bold text-[#050167]">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        Dedicated Academic Lead Assigned
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Active</span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-1">
+                      Matching each student with a teacher who specializes directly in their exam board.
+                    </p>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-[#050167]/10">
-              <div className="p-4 rounded-2xl bg-white border border-[#050167]/10">
-                <span className="text-xs font-bold text-[#050167] uppercase tracking-wider block">Classroom Experience</span>
-                <span className="font-bold text-slate-800 text-sm">International Licenced Educators</span>
-              </div>
-              <div className="p-4 rounded-2xl bg-white border border-[#050167]/10">
-                <span className="text-xs font-bold text-[#050167] uppercase tracking-wider block">Syllabus Alignment</span>
-                <span className="font-bold text-slate-800 text-sm">AQA • Edexcel • OCR • WJEC</span>
-              </div>
-              <div className="p-4 rounded-2xl bg-white border border-[#050167]/10">
-                <span className="text-xs font-bold text-[#050167] uppercase tracking-wider block">Family Transparency</span>
-                <span className="font-bold text-slate-800 text-sm">Real-Time Parent Progress Portal</span>
+                {/* Bottom Trust Stat Bar */}
+                <div className="grid grid-cols-3 gap-2 text-center p-3 text-white text-xs">
+                  <div>
+                    <div className="font-black text-[#40ffa7] text-base">4.9/5</div>
+                    <div className="text-[10px] text-white/70">Parent Rating</div>
+                  </div>
+                  <div className="border-x border-white/10">
+                    <div className="font-black text-sky-300 text-base">100%</div>
+                    <div className="text-[10px] text-white/70">DBS Checked</div>
+                  </div>
+                  <div>
+                    <div className="font-black text-amber-300 text-base">1-on-1</div>
+                    <div className="text-[10px] text-white/70">Tailored Lessons</div>
+                  </div>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
@@ -91,7 +163,7 @@ export const AboutPage = () => {
       {/* WHAT MAKES BEACON BRIDGE ACADEMICS DIFFERENT              */}
       {/* ========================================================= */}
       <section className="py-20 sm:py-28 bg-[#f0faff] border-b border-[#050167]/10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-2xl mx-auto mb-16">
             <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167] text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-3 shadow-sm">
@@ -101,44 +173,95 @@ export const AboutPage = () => {
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#001f3f] tracking-tight">
               What Makes Beacon Bridge Academics Different
             </h2>
+            <p className="mt-3 text-[#001f3f]/80 text-sm sm:text-base">
+              Designed from the ground up to solve the real obstacles students and parents face.
+            </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
+                icon: BookOpen,
+                step: '01',
                 title: "We teach to your child's curriculum.",
-                desc: "Not just the subject, but the exam board and the way it is assessed."
+                desc: "Not just the subject in general, but the exact exam board (AQA, Edexcel, OCR) and how it is assessed.",
+                highlight: "Targeted Spec Revision",
+                color: "from-blue-600 to-indigo-700"
               },
               {
+                icon: Users,
+                step: '02',
                 title: "We keep parents informed.",
-                desc: "A parent account, attendance records, and homework emails mean you are never in the dark."
+                desc: "A dedicated parent account, attendance logs, and instant homework emails mean you are never left guessing.",
+                highlight: "Full Parent Transparency",
+                color: "from-emerald-600 to-teal-700"
               },
               {
+                icon: Heart,
+                step: '03',
                 title: "We were built for struggling students.",
-                desc: "Our aim is to rebuild confidence as well as grades."
+                desc: "Our primary aim is rebuilding foundational confidence, identifying missed concepts, and making learning enjoyable.",
+                highlight: "Confidence First",
+                color: "from-rose-600 to-pink-700"
               },
               {
+                icon: ShieldCheck,
+                step: '04',
                 title: "We put safeguarding first.",
-                desc: "Joint registration and a consultation before lessons begin."
+                desc: "Joint parent-student registration, enhanced DBS checks, and an introductory consultation before lessons begin.",
+                highlight: "Safeguarding Tier 1",
+                color: "from-amber-600 to-orange-700"
               },
               {
+                icon: Sparkles,
+                step: '05',
                 title: "We use modern tools properly.",
-                desc: "A purpose-built classroom, not a borrowed video call."
+                desc: "A purpose-built virtual classroom with real-time synchronized whiteboard, past-paper annotation, and recordings.",
+                highlight: "Engineered for Learning",
+                color: "from-purple-600 to-indigo-800"
+              },
+              {
+                icon: Globe,
+                step: '06',
+                title: "Cross-System Curriculum Mapping.",
+                desc: "Specialist bridge tutoring for families relocating between the UK, US, Canada, and Australia.",
+                highlight: "Global Curriculum Support",
+                color: "from-cyan-600 to-blue-800"
               }
-            ].map((diff, idx) => (
-              <div 
-                key={idx} 
-                className="group p-6 sm:p-7 rounded-2xl bg-white border border-slate-200 flex items-start gap-5 hover:border-[#40ffa7] hover:shadow-xl hover:shadow-[#050167]/5 transition-all duration-300 hover:-translate-x-1"
-              >
-                <div className="w-11 h-11 rounded-2xl bg-[#050167] text-[#40ffa7] flex items-center justify-center font-black text-sm shrink-0 shadow-md group-hover:scale-105 transition-transform">
-                  0{idx + 1}
+            ].map((diff, idx) => {
+              const Icon = diff.icon;
+              return (
+                <div 
+                  key={idx} 
+                  className="group p-7 rounded-3xl bg-white border border-[#050167]/15 hover:border-[#40ffa7] hover:shadow-2xl hover:shadow-[#050167]/10 transition-all duration-300 hover:-translate-y-2 flex flex-col justify-between relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-[#40ffa7]/15 to-transparent rounded-bl-full pointer-events-none group-hover:scale-125 transition-transform" />
+                  
+                  <div>
+                    <div className="flex items-center justify-between mb-5">
+                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${diff.color} text-white flex items-center justify-center font-black shadow-md group-hover:scale-105 transition-transform`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#f0faff] text-[#050167] border border-[#050167]/15">
+                        {diff.step}
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 group-hover:text-[#050167] transition-colors mb-2">
+                      {diff.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      {diff.desc}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-[#050167]/10 flex items-center justify-between text-xs font-bold text-[#050167]">
+                    <span>{diff.highlight}</span>
+                    <CheckCircle2 className="w-4 h-4 text-[#40ffa7] fill-[#050167]" />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 group-hover:text-[#050167] transition-colors">{diff.title}</h3>
-                  <p className="text-sm text-slate-600 mt-1 leading-relaxed">{diff.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
         </div>
@@ -159,8 +282,33 @@ export const AboutPage = () => {
               Safeguarding Comes First
             </h2>
             <p className="mt-3 text-[#001f3f]/80 text-sm sm:text-base">
-              We take the safety of children seriously, and we have built it into how Beacon Bridge Academics works.
+              We take the safety of children seriously, and we have built rigorous checks into every layer of our platform.
             </p>
+          </div>
+
+          {/* Visual 4-Stage Safeguarding Pipeline */}
+          <div className="mb-14 p-6 sm:p-8 rounded-3xl bg-[#f0faff] border border-[#050167]/15">
+            <div className="text-center mb-6">
+              <span className="text-xs font-black uppercase tracking-wider text-[#050167]">
+                Our Multi-Tier Safeguarding Verification Pipeline
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { step: "1", title: "Identity & Degree Check", desc: "Government photo ID and university degree certification verification." },
+                { step: "2", title: "Enhanced DBS Clearance", desc: "Clean background and criminal-record checks via the UK Disclosure & Barring Service." },
+                { step: "3", title: "Syllabus Competency", desc: "Assessment on AQA, Edexcel, and OCR marking criteria and pedagogical methods." },
+                { step: "4", title: "Continuous Auditing", desc: "Session logs, attendance audits, and parental progress oversight on every lesson." },
+              ].map((pipe) => (
+                <div key={pipe.step} className="bg-white p-5 rounded-2xl border border-slate-200 text-center relative shadow-xs">
+                  <div className="w-8 h-8 rounded-full bg-[#050167] text-[#40ffa7] font-black text-xs flex items-center justify-center mx-auto mb-2">
+                    {pipe.step}
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm mb-1">{pipe.title}</h4>
+                  <p className="text-[11px] text-slate-600 leading-snug">{pipe.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
