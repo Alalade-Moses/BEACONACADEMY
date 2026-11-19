@@ -21,24 +21,46 @@ export const pool = databaseUrl
     })
   : null;
 
+// Super Administrator Credentials — Exclusively read from environment variables
+const SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@beaconbridgeacademics.co.uk').trim().toLowerCase();
+const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD;
+
+// Generate secure hash: Uses environment variable if supplied, otherwise a cryptographically unique hash
+const SUPERADMIN_HASH = SUPERADMIN_PASSWORD
+  ? bcrypt.hashSync(SUPERADMIN_PASSWORD, 10)
+  : bcrypt.hashSync(uuidv4(), 10);
+
+// Disabled hash for sample display profiles ensuring no generic/leaked password can be used to log in
+const SECURE_LOCKED_HASH = bcrypt.hashSync(uuidv4(), 10);
+
 if (pool) {
-  pool.query('SELECT NOW()').then(() => {
+  pool.query('SELECT NOW()').then(async () => {
     console.log('✅ PostgreSQL connection pool initialized successfully for LMS Store.');
+    // Synchronize Super Administrator profile from environment variables into persistent database
+    try {
+      if (SUPERADMIN_PASSWORD) {
+        await pool.query(`
+          INSERT INTO profiles (id, email, password_hash, full_name, role, status)
+          VALUES ('00000000-0000-0000-0000-000000000001', $1, $2, 'Platform Administrator', 'superadmin', 'active')
+          ON CONFLICT (id) DO UPDATE SET email = $1, password_hash = $2, role = 'superadmin', status = 'active';
+        `, [SUPERADMIN_EMAIL, SUPERADMIN_HASH]);
+        console.log(`🔐 [AUTH] Super Administrator account synchronized from environment (${SUPERADMIN_EMAIL}).`);
+      }
+    } catch (syncErr) {
+      console.warn('⚠️ [AUTH] Superadmin sync notice:', syncErr.message);
+    }
   }).catch(err => {
     console.warn('⚠️ PostgreSQL pool connection warning, running on hybrid memory fallback:', err.message);
   });
 }
-
-// Pre-computed hash for 'Password123!'
-const DEFAULT_HASH = bcrypt.hashSync('Password123!', 10);
 
 // Default in-memory state seeded with real-world sample data
 const memoryData = {
   profiles: [
     {
       id: '00000000-0000-0000-0000-000000000001',
-      email: 'admin@beaconbridgeacademics.co.uk',
-      password_hash: DEFAULT_HASH,
+      email: SUPERADMIN_EMAIL,
+      password_hash: SUPERADMIN_HASH,
       full_name: 'Platform Administrator',
       role: 'superadmin',
       avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
@@ -51,7 +73,7 @@ const memoryData = {
     {
       id: '00000000-0000-0000-0000-000000000002',
       email: 'dr.sarah@beaconbridgeacademics.co.uk',
-      password_hash: DEFAULT_HASH,
+      password_hash: SECURE_LOCKED_HASH,
       full_name: 'Dr. Sarah Jenkins',
       role: 'tutor',
       avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
@@ -64,7 +86,7 @@ const memoryData = {
     {
       id: '00000000-0000-0000-0000-000000000003',
       email: 'prof.chen@beaconbridgeacademics.co.uk',
-      password_hash: DEFAULT_HASH,
+      password_hash: SECURE_LOCKED_HASH,
       full_name: 'Prof. Michael Chen',
       role: 'tutor',
       avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
@@ -77,7 +99,7 @@ const memoryData = {
     {
       id: '00000000-0000-0000-0000-000000000004',
       email: 'alex.morgan@beaconbridgeacademics.co.uk',
-      password_hash: DEFAULT_HASH,
+      password_hash: SECURE_LOCKED_HASH,
       full_name: 'Alex Morgan',
       role: 'student',
       avatar_url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150',
@@ -90,7 +112,7 @@ const memoryData = {
     {
       id: '00000000-0000-0000-0000-000000000005',
       email: 'david.morgan@beaconbridgeacademics.co.uk',
-      password_hash: DEFAULT_HASH,
+      password_hash: SECURE_LOCKED_HASH,
       full_name: 'David Morgan',
       role: 'parent',
       avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
@@ -103,7 +125,7 @@ const memoryData = {
     {
       id: '00000000-0000-0000-0000-000000000006',
       email: 'liam.chen@beaconbridgeacademics.co.uk',
-      password_hash: DEFAULT_HASH,
+      password_hash: SECURE_LOCKED_HASH,
       full_name: 'Liam Chen',
       role: 'student',
       avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150',
@@ -116,7 +138,7 @@ const memoryData = {
     {
       id: '00000000-0000-0000-0000-000000000007',
       email: 'grace.chen@beaconbridgeacademics.co.uk',
-      password_hash: DEFAULT_HASH,
+      password_hash: SECURE_LOCKED_HASH,
       full_name: 'Grace Chen',
       role: 'parent',
       avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
@@ -1409,12 +1431,14 @@ export const store = {
     if (existingStudent) throw new Error(`Student email '${student.email}' is already registered.`);
     if (existingParent) throw new Error(`Parent email '${parent.email}' is already registered.`);
 
-    // 2. Hash passwords
+    // 2. Hash passwords (strictly required upon registration)
+    if (!student.password) throw new Error('Student password is required.');
+    if (!parent.password) throw new Error('Parent password is required.');
     const studentSalt = await bcrypt.genSalt(10);
-    const student_password_hash = await bcrypt.hash(student.password || 'Password123!', studentSalt);
+    const student_password_hash = await bcrypt.hash(student.password, studentSalt);
 
     const parentSalt = await bcrypt.genSalt(10);
-    const parent_password_hash = await bcrypt.hash(parent.password || 'Password123!', parentSalt);
+    const parent_password_hash = await bcrypt.hash(parent.password, parentSalt);
 
     // 3. Create both profiles with pending_verification status
     const subjectsList = Array.isArray(selected_subjects) && selected_subjects.length > 0 
@@ -2024,10 +2048,11 @@ export const store = {
     if (status === 'approved') {
       const existingProfile = memoryData.profiles.find(p => p.email.toLowerCase() === app.email.toLowerCase());
       if (!existingProfile) {
+        const tempTutorHash = bcrypt.hashSync(uuidv4(), 10);
         const newTutorProfile = {
           id: uuidv4(),
           email: app.email.toLowerCase(),
-          password_hash: DEFAULT_HASH,
+          password_hash: tempTutorHash,
           full_name: app.full_name,
           role: 'tutor',
           avatar_url: `https://images.unsplash.com/photo-${1534528741775 + (memoryData.profiles.length * 100)}?w=150`,
@@ -2038,7 +2063,7 @@ export const store = {
           updated_at: new Date().toISOString()
         };
         memoryData.profiles.push(newTutorProfile);
-        console.log(`✅ [TUTOR PROVISIONED]: Created active tutor profile for ${app.full_name} (${app.email}) with temporary password 'Password123!'`);
+        console.log(`✅ [TUTOR PROVISIONED]: Created active tutor profile for ${app.full_name} (${app.email}) with secure temporary credentials.`);
       } else if (existingProfile.role !== 'tutor' && existingProfile.role !== 'superadmin') {
         existingProfile.role = 'tutor';
         existingProfile.status = 'active';

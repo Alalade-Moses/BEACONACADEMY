@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { showInfo } from '../../utils/swal';
 import {
   GraduationCap,
   Mail,
@@ -141,7 +142,7 @@ export const LoginPage = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-xs font-bold text-[#050167]">Password</label>
-              <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('Please contact admissions@beaconbridgeacademics.co.uk or your school administrator to reset your credentials.'); }} className="text-xs text-[#050167] hover:underline font-medium">
+              <a href="#forgot" onClick={(e) => { e.preventDefault(); showInfo('Reset Password', 'Please contact admissions@beaconbridgeacademics.co.uk or your school administrator to reset your credentials.'); }} className="text-xs text-[#050167] hover:underline font-medium">
                 Forgot password?
               </a>
             </div>

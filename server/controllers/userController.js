@@ -43,7 +43,7 @@ export const getUserById = async (req, res, next) => {
 
 export const createUser = async (req, res, next) => {
   try {
-    const { email, password = 'Password123!', full_name, role, phone, bio, status = 'active' } = req.body;
+    const { email, password, full_name, role, phone, bio, status = 'active' } = req.body;
 
     if (!email || !full_name || !role) {
       return res.status(400).json({ success: false, message: 'Email, full name, and role are required.' });
@@ -54,8 +54,9 @@ export const createUser = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'User with this email already exists.' });
     }
 
+    const initialPassword = password || `${Math.random().toString(36).slice(-8)}A1!#`;
     const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(password, salt);
+    const password_hash = await bcrypt.hash(initialPassword, salt);
 
     const newUser = await store.createProfile({
       email,

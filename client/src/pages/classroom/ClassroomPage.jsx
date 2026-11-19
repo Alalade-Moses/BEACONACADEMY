@@ -80,7 +80,9 @@ const RemoteParticipantAudio = ({ stream, onAudioBlocked }) => {
     const audioEl = audioRef.current;
     if (!audioEl || !stream) return;
 
-    audioEl.srcObject = stream;
+    if (audioEl.srcObject !== stream) {
+      audioEl.srcObject = stream;
+    }
     audioEl.muted = false;
     audioEl.volume = 1.0;
 
@@ -100,7 +102,9 @@ const RemoteParticipantAudio = ({ stream, onAudioBlocked }) => {
     tryPlay();
 
     const handleTrackChange = () => {
-      audioEl.srcObject = stream;
+      if (audioEl.srcObject !== stream) {
+        audioEl.srcObject = stream;
+      }
       tryPlay();
     };
 
@@ -117,7 +121,7 @@ const RemoteParticipantAudio = ({ stream, onAudioBlocked }) => {
     };
   }, [stream, onAudioBlocked]);
 
-  return <audio ref={audioRef} autoPlay playsInline style={{ position: 'fixed', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px' }} />;
+  return <audio ref={audioRef} autoPlay playsInline style={{ position: 'fixed', top: -50, left: -50, opacity: 0.01, pointerEvents: 'none', width: '1px', height: '1px' }} />;
 };
 
 const RemoteParticipantVideo = ({ stream, className, mirror = false }) => {
@@ -777,9 +781,19 @@ export const ClassroomPage = () => {
     };
   }, [startMedia, stopAllMediaTracks]);
 
-  // Mobile Audio Context Unlock: First touch or click anywhere in the classroom unlocks any paused audio elements
+  // Mobile & Desktop Audio Context Unlock: First touch, click, pointerdown or keypress anywhere unlocks audio
   useEffect(() => {
     const unlockAudio = () => {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) {
+          const dummyCtx = new AudioCtx();
+          if (dummyCtx.state === 'suspended') {
+            dummyCtx.resume().catch(() => {});
+          }
+        }
+      } catch (e) {}
+
       const audios = document.querySelectorAll('audio');
       audios.forEach(a => {
         a.muted = false;
@@ -794,9 +808,13 @@ export const ClassroomPage = () => {
     };
     window.addEventListener('touchstart', unlockAudio, { passive: true });
     window.addEventListener('click', unlockAudio, { passive: true });
+    window.addEventListener('pointerdown', unlockAudio, { passive: true });
+    window.addEventListener('keydown', unlockAudio, { passive: true });
     return () => {
       window.removeEventListener('touchstart', unlockAudio);
       window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
     };
   }, [audioBlocked]);
 
@@ -969,10 +987,7 @@ export const ClassroomPage = () => {
       if (!socketId || socketId === socket.id) return;
       try {
         const pc = createPeerConnection(socketId, joinedUser, true);
-        const offer = await pc.createOffer({
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true
-        });
+        const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         socket.emit('webrtc_offer', {
           targetSocketId: socketId,
@@ -2722,7 +2737,7 @@ export const ClassroomPage = () => {
     <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none font-sans relative">
       
       {/* UNIVERSAL BACKGROUND AUDIO ENGINE (Guarantees Bi-Directional Audio Stream Delivery) */}
-      <div className="hidden" aria-hidden="true">
+      <div style={{ position: 'fixed', top: -100, left: -100, width: 1, height: 1, opacity: 0.001, pointerEvents: 'none', zIndex: -1 }}>
         {Array.from(remoteStreams.values()).map((peer) => (
           <RemoteParticipantAudio
             key={`audio-global-${peer.socketId}`}

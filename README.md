@@ -80,15 +80,13 @@ Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## 🔑 Initial Production Administration Account
+## 🔑 Administration & Environment Security
 
-The database initializes with the Super Administrator credential:
+All administrative credentials and sensitive keys are managed strictly through environment variables. No plain-text passwords or secret keys are committed to the repository.
 
-| Role | Email | Initial Password | Notes |
-| :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@beaconbridgeacademics.co.uk` | `Password123!` | Change upon first client login via Settings |
-| **Faculty Tutor** | `dr.sarah@beaconbridgeacademics.co.uk` | `Password123!` | Head of Mathematics & Physics |
-| **Faculty Tutor** | `prof.chen@beaconbridgeacademics.co.uk` | `Password123!` | Head of Science & STEM |
+Configure the Super Administrator access in your deployment environment variables (e.g. Railway / Render / `.env`):
+- `SUPERADMIN_EMAIL`: The institutional administrator email address (e.g. `admin@beaconbridgeacademics.co.uk`).
+- `SUPERADMIN_PASSWORD`: A secure, high-entropy password of your choosing (minimum 12 characters, including uppercase, lowercase, numbers, and symbols).
 
 *Note: All student, parent, enrollment, and payment tables are clean and ready for real customer registrations.*
 
