@@ -133,7 +133,7 @@ const FALLBACK_ARTICLES = [
 ];
 
 export const BlogPage = () => {
-  const { socket } = useSocket();
+  const socket = useSocket();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'article' | 'flyer'

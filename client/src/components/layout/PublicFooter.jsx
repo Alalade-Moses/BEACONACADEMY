@@ -144,7 +144,7 @@ export const PublicFooter = () => {
             <Link to="/terms" className="hover:text-[#40ffa7] transition-colors">Terms of Service</Link>
             <Link to="/privacy" className="hover:text-[#40ffa7] transition-colors">Privacy Policy</Link>
             <Link to="/security" className="hover:text-[#40ffa7] transition-colors">Security Policy</Link>
-            <Link to="/contact" className="hover:text-[#40ffa7] transition-colors">Contact</Link>
+            <Link to="/contact" className="hover:text-[#40ffa7] transition-colors">Contact Us</Link>
           </div>
         </div>
       </div>

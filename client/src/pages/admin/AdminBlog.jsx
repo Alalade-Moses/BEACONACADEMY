@@ -35,7 +35,7 @@ const CATEGORIES = [
 ];
 
 export const AdminBlog = () => {
-  const { socket } = useSocket();
+  const socket = useSocket();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState('all'); // 'all' | 'article' | 'flyer'

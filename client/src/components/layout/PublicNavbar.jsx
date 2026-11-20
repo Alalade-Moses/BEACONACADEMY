@@ -11,7 +11,10 @@ import {
   CreditCard,
   HelpCircle,
   Home,
-  CalendarCheck
+  CalendarCheck,
+  BookOpen,
+  Mail,
+  Sparkles
 } from 'lucide-react';
 
 export const PublicNavbar = () => {
@@ -68,7 +71,7 @@ export const PublicNavbar = () => {
         ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-[#050167]/15' 
         : 'bg-white/95 backdrop-blur-md border-b border-[#050167]/10'
     }`}>
-      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-4 xl:px-8">
+      <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-4 xl:px-6">
         <div className="flex items-center justify-between h-20 gap-1.5 lg:gap-2">
           
           {/* Brand Logo */}
@@ -76,64 +79,64 @@ export const PublicNavbar = () => {
             <img 
               src="/logo.png" 
               alt="Beacon Bridge Academics" 
-              className="h-13 sm:h-15 lg:h-16 w-auto max-h-[64px] object-contain transition-transform duration-200 group-hover:scale-105" 
+              className="h-12 sm:h-14 lg:h-15 w-auto max-h-[60px] object-contain transition-transform duration-200 group-hover:scale-105" 
             />
           </Link>
 
-          {/* Desktop Navigation Links — Streamlined & Essential */}
-          <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2 text-xs xl:text-sm font-semibold text-[#001f3f]/85">
+          {/* Desktop Navigation Links — Streamlined, Balanced & Scalable */}
+          <nav className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 2xl:space-x-2 text-xs xl:text-[13px] 2xl:text-sm font-semibold text-[#001f3f]/85">
             <Link
               to="/"
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               Home
             </Link>
             <Link
               to="/about"
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
-              About
+              About Us
             </Link>
             <Link
               to="/curriculum"
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               Curriculum
             </Link>
             <Link
               to="/book-consultation"
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
-              Book a Free Consultation
+              <span className="hidden 2xl:inline">Book a </span>Free Consultation
             </Link>
             <Link
               to="/how-it-works"
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               How It Works
             </Link>
             <Link
               to="/blog"
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               Blog
             </Link>
             <button
               type="button"
               onClick={() => scrollToSection('faq')}
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
               FAQ
             </button>
             <Link
               to="/contact"
-              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
             >
-              Contact
+              Contact Us
             </Link>
             <Link
               to="/apply-to-teach"
-              className="px-2 xl:px-3 py-1.5 rounded-lg text-emerald-700 hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer font-extrabold"
+              className="px-1.5 xl:px-2.5 py-1.5 rounded-lg text-emerald-700 hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer font-extrabold"
             >
               Teach With Us
             </Link>
@@ -159,16 +162,16 @@ export const PublicNavbar = () => {
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2 shrink-0">
+              <div className="flex items-center space-x-1.5 xl:space-x-2 shrink-0">
                 <Link
                   to="/login"
-                  className="px-3 xl:px-3.5 py-1.5 xl:py-2 rounded-xl text-[#001f3f] hover:text-[#050167] hover:bg-[#f0faff] active:scale-95 font-bold text-xs xl:text-sm transition-colors whitespace-nowrap shrink-0"
+                  className="px-2.5 xl:px-3.5 py-1.5 xl:py-2 rounded-xl text-[#001f3f] hover:text-[#050167] hover:bg-[#f0faff] active:scale-95 font-bold text-xs xl:text-sm transition-colors whitespace-nowrap shrink-0"
                 >
                   Log In
                 </Link>
                 <Link
                   to="/register"
-                  className="inline-flex items-center space-x-1.5 px-3.5 xl:px-4 py-1.5 xl:py-2 rounded-xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-xs xl:text-sm transition-all shadow-md shadow-[#40ffa7]/25 hover:shadow-lg hover:shadow-[#40ffa7]/35 hover:-translate-y-0.5 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center space-x-1.5 px-3 xl:px-4 py-1.5 xl:py-2 rounded-xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-xs xl:text-sm transition-all shadow-md shadow-[#40ffa7]/25 hover:shadow-lg hover:shadow-[#40ffa7]/35 hover:-translate-y-0.5 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <span>Register with Us</span>
                   <ArrowRight className="w-3.5 h-3.5 text-[#001f3f] shrink-0" />
@@ -213,7 +216,7 @@ export const PublicNavbar = () => {
             <Link
               to="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2.5"
             >
               <Home className="w-4 h-4 text-[#050167]" />
               <span>Home</span>
@@ -221,58 +224,65 @@ export const PublicNavbar = () => {
             <Link
               to="/book-consultation"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2.5"
             >
+              <CalendarCheck className="w-4 h-4 text-emerald-600" />
               <span>Book a Free Consultation</span>
             </Link>
             <Link
               to="/about"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2.5"
             >
-              About Beacon Bridge Academics
+              <GraduationCap className="w-4 h-4 text-[#050167]" />
+              <span>About Us</span>
             </Link>
             <Link
               to="/curriculum"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2.5"
             >
-              Curriculum (KS3, GCSE & A-Level)
+              <Video className="w-4 h-4 text-[#050167]" />
+              <span>Curriculum (KS3, GCSE & A-Level)</span>
             </Link>
             <Link
               to="/how-it-works"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2.5"
             >
-              How It Works
+              <HelpCircle className="w-4 h-4 text-[#050167]" />
+              <span>How It Works</span>
             </Link>
             <Link
               to="/blog"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2.5"
             >
-              Academic Blog & Insights
-            </Link>
-            <Link
-              to="/contact"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
-            >
-              Contact Us
+              <BookOpen className="w-4 h-4 text-purple-600" />
+              <span>Blog & Event Flyers</span>
             </Link>
             <button
               type="button"
               onClick={() => scrollToSection('faq')}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] flex items-center gap-2 cursor-pointer"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] flex items-center gap-2.5 cursor-pointer"
             >
               <HelpCircle className="w-4 h-4 text-[#050167]" />
               <span>Frequently Asked Questions</span>
             </button>
             <Link
+              to="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2.5"
+            >
+              <Mail className="w-4 h-4 text-[#050167]" />
+              <span>Contact Us</span>
+            </Link>
+            <Link
               to="/apply-to-teach"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] text-emerald-800 font-bold flex items-center"
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] text-emerald-800 font-bold flex items-center gap-2.5"
             >
+              <Sparkles className="w-4 h-4 text-emerald-600" />
               <span>Teach With Us</span>
             </Link>
           </nav>
