@@ -225,12 +225,12 @@ export const LandingPage = () => {
     }
   ];
 
-  // Auto-advance testimonials carousel every 7 seconds unless hovered
+  // Auto-advance testimonials carousel every 5 seconds unless hovered
   useEffect(() => {
     if (isTestimonialHovered) return;
     const timer = setInterval(() => {
       setTestimonialSlide(prev => (prev + 1) % testimonials.length);
-    }, 7000);
+    }, 5000);
     return () => clearInterval(timer);
   }, [isTestimonialHovered, testimonials.length]);
 
@@ -1358,10 +1358,53 @@ export const LandingPage = () => {
             </p>
           </div>
 
-          {/* Carousel Viewport Card with Distinct Styles & Centered Large Student Photo */}
-          <div className="relative max-w-4xl mx-auto">
+          {/* Carousel Viewport with Center Mode & Scale Contrast */}
+          <div className="relative w-full overflow-hidden py-4 sm:py-6">
+            
+            {/* Height Spacer matching active card footprint to guarantee responsive flow height */}
+            <div className="invisible pointer-events-none select-none max-w-2xl mx-auto p-5 sm:p-8 md:p-10 border-2 opacity-0">
+              <div className="h-6 mb-4" />
+              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full mx-auto my-3" />
+              <div className="h-6 w-48 mx-auto my-2" />
+              <div className="h-4 w-36 mx-auto my-1" />
+              <div className="my-5 max-w-xl mx-auto">
+                <p className="text-base sm:text-lg leading-relaxed italic">
+                  "Oliver had lost all enthusiasm for maths and dreaded tests. The kind, calm 1-to-1 lessons rebuilt his confidence from the ground up. As a working parent, the weekly attendance and progress email updates gave me total peace of mind."
+                </p>
+              </div>
+              <div className="h-14 max-w-lg mx-auto mb-3" />
+              <div className="h-8 pt-2" />
+            </div>
+
+            {/* Floating Navigation Controls (Left & Right) */}
+            <button
+              type="button"
+              onClick={() => setTestimonialSlide(prev => (prev === 0 ? testimonials.length - 1 : prev - 1))}
+              className="absolute left-2 sm:left-4 lg:left-8 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-[#050167] text-[#050167] hover:text-[#40ffa7] border border-[#050167]/15 shadow-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 group"
+              aria-label="Previous Testimonial"
+            >
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:-translate-x-0.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTestimonialSlide(prev => (prev + 1) % testimonials.length)}
+              className="absolute right-2 sm:right-4 lg:right-8 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white/95 hover:bg-[#050167] text-[#050167] hover:text-[#40ffa7] border border-[#050167]/15 shadow-xl flex items-center justify-center transition-all cursor-pointer active:scale-95 group"
+              aria-label="Next Testimonial"
+            >
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-0.5" />
+            </button>
+
+            {/* Render Center-Mode Scaled Cards (Active 100% scale/opacity; Prev & Next 75% scale/50% opacity slightly blurred) */}
             {testimonials.map((item, index) => {
-              if (index !== testimonialSlide) return null;
+              const total = testimonials.length;
+              let offset = index - testimonialSlide;
+              if (offset > total / 2) offset -= total;
+              if (offset < -total / 2) offset += total;
+
+              const isActive = offset === 0;
+              const isPrev = offset === -1;
+              const isNext = offset === 1;
 
               // Distinct Dynamic Visual Styles per Category
               const isOxbridgeOrMedical = item.tag.includes('Oxbridge') || item.tag.includes('Medical');
@@ -1369,12 +1412,12 @@ export const LandingPage = () => {
               const isIELTSOrTech = item.tag.includes('IELTS') || item.tag.includes('Professional');
 
               const cardTheme = isOxbridgeOrMedical
-                ? 'border-indigo-400/60 bg-gradient-to-b from-indigo-50/80 via-white to-white shadow-indigo-900/10'
+                ? 'border-indigo-400/60 bg-gradient-to-b from-indigo-50/90 via-white to-white shadow-indigo-900/10'
                 : isPrimaryOrHome
-                  ? 'border-amber-400/60 bg-gradient-to-b from-amber-50/70 via-white to-white shadow-amber-900/10'
+                  ? 'border-amber-400/60 bg-gradient-to-b from-amber-50/80 via-white to-white shadow-amber-900/10'
                   : isIELTSOrTech
-                    ? 'border-cyan-400/60 bg-gradient-to-b from-cyan-50/70 via-white to-white shadow-cyan-900/10'
-                    : 'border-[#40ffa7]/60 bg-gradient-to-b from-emerald-50/70 via-white to-white shadow-emerald-900/10';
+                    ? 'border-cyan-400/60 bg-gradient-to-b from-cyan-50/80 via-white to-white shadow-cyan-900/10'
+                    : 'border-[#40ffa7]/60 bg-gradient-to-b from-emerald-50/80 via-white to-white shadow-emerald-900/10';
 
               const photoRing = isOxbridgeOrMedical
                 ? 'ring-indigo-400 border-indigo-600'
@@ -1392,104 +1435,166 @@ export const LandingPage = () => {
                     ? 'bg-slate-900 text-cyan-300 border-cyan-400/40'
                     : 'bg-[#050167] text-[#40ffa7] border-[#40ffa7]/40';
 
+              // Positioning and Scale calculation
+              let transformStyle = '';
+              let opacityStyle = 0;
+              let filterStyle = 'blur(4px)';
+              let zIndex = 0;
+              let pointerEvents = 'none';
+
+              if (isActive) {
+                transformStyle = 'translateX(-50%) translateY(-50%) scale(1)';
+                opacityStyle = 1;
+                filterStyle = 'blur(0px)';
+                zIndex = 20;
+                pointerEvents = 'auto';
+              } else if (isPrev) {
+                transformStyle = 'translateX(calc(-50% - 66%)) translateY(-50%) scale(0.75)';
+                opacityStyle = 0.5;
+                filterStyle = 'blur(1.5px)';
+                zIndex = 10;
+                pointerEvents = 'auto';
+              } else if (isNext) {
+                transformStyle = 'translateX(calc(-50% + 66%)) translateY(-50%) scale(0.75)';
+                opacityStyle = 0.5;
+                filterStyle = 'blur(1.5px)';
+                zIndex = 10;
+                pointerEvents = 'auto';
+              } else {
+                transformStyle = `translateX(${offset > 0 ? 'calc(-50% + 140%)' : 'calc(-50% - 140%)'}) translateY(-50%) scale(0.6)`;
+                opacityStyle = 0;
+                filterStyle = 'blur(4px)';
+                zIndex = 0;
+                pointerEvents = 'none';
+              }
+
               return (
                 <div
                   key={item.id}
-                  className={`rounded-3xl border-2 p-6 sm:p-12 shadow-2xl relative transition-all duration-300 animate-in fade-in-50 zoom-in-95 text-center ${cardTheme}`}
+                  onClick={() => {
+                    if (isPrev) setTestimonialSlide(prev => (prev === 0 ? testimonials.length - 1 : prev - 1));
+                    if (isNext) setTestimonialSlide(prev => (prev + 1) % testimonials.length);
+                  }}
+                  style={{
+                    transform: transformStyle,
+                    opacity: opacityStyle,
+                    filter: filterStyle,
+                    zIndex,
+                    pointerEvents,
+                    transition: 'transform 500ms cubic-bezier(0.4, 0, 0.2, 1), opacity 500ms cubic-bezier(0.4, 0, 0.2, 1), filter 500ms cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}
+                  className={`absolute top-1/2 left-1/2 w-[88%] sm:w-[78%] md:w-[68%] lg:w-[62%] max-w-2xl rounded-3xl border-2 p-5 sm:p-8 md:p-10 shadow-2xl text-center origin-center select-none ${
+                    isPrev || isNext ? 'cursor-pointer hover:opacity-75 transition-opacity' : ''
+                  } ${cardTheme}`}
                 >
                   {/* Top Tag & Rating Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-slate-200/60">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-200/60">
                     <div className="flex items-center gap-2 mx-auto sm:mx-0">
-                      <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border shadow-xs ${badgeBg}`}>
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border shadow-xs ${badgeBg}`}>
                         {item.tag}
                       </span>
-                      <span className="text-xs text-slate-500 font-semibold hidden sm:inline">
-                        Verified Family Milestone
+                      <span className="text-[11px] text-slate-500 font-semibold hidden sm:inline">
+                        Verified Milestone
                       </span>
                     </div>
 
                     {/* 5-Star Rating */}
                     <div className="flex items-center space-x-1 text-amber-400 mx-auto sm:mx-0">
                       {[...Array(item.rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                        <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       ))}
                       <span className="text-xs font-black text-slate-700 ml-1.5">5.0 / 5.0</span>
                     </div>
                   </div>
 
-                  {/* CENTERED LARGE STUDENT PHOTO AT THE TOP OF CONTAINER */}
-                  <div className="mt-8 mb-6 flex flex-col items-center">
+                  {/* Centered Large Student Photo */}
+                  <div className="mt-6 mb-4 flex flex-col items-center">
                     <div className="relative inline-block">
                       <img
                         src={item.image}
                         alt={item.name}
-                        className={`w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover shadow-2xl ring-4 ring-offset-4 ring-offset-white border-4 mx-auto transition-transform hover:scale-105 duration-300 ${photoRing}`}
+                        className={`w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full object-cover shadow-xl ring-4 ring-offset-4 ring-offset-white border-4 mx-auto transition-transform ${photoRing}`}
                       />
-                      <div className="absolute bottom-1 right-1 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg border-2 border-white">
-                        <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-3" />
+                      <div className="absolute bottom-0 right-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg border-2 border-white">
+                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-3" />
                       </div>
                     </div>
 
-                    {/* Centered Student Details directly below photo */}
-                    <h3 className="text-xl sm:text-2xl font-black text-[#001f3f] mt-4 tracking-tight">
+                    {/* Student Name & Meta */}
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-black text-[#001f3f] mt-3 tracking-tight">
                       {item.name}
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 font-semibold mt-0.5">
                       {item.role} &bull; <span className="text-[#050167] font-bold">{item.location}</span>
                     </p>
-                    <span className="inline-block mt-1.5 px-3.5 py-1 rounded-full bg-white text-[#050167] text-xs font-extrabold border border-[#050167]/15 shadow-xs">
+                    <span className="inline-block mt-1.5 px-3 py-0.5 rounded-full bg-white text-[#050167] text-[11px] font-extrabold border border-[#050167]/15 shadow-xs">
                       {item.subject}
                     </span>
                   </div>
 
-                  {/* Main Quote with Floating Quotation Styling */}
-                  <div className="my-6 relative max-w-2xl mx-auto px-4">
-                    <Quote className="w-12 h-12 text-[#40ffa7]/40 absolute -top-4 left-0 -z-0 opacity-40" />
-                    <p className="text-base sm:text-xl text-[#001f3f] font-semibold leading-relaxed relative z-10 italic">
+                  {/* Main Quote with 300ms Delay Fade-in & 8px Upward Translate */}
+                  <div
+                    className="my-4 sm:my-5 relative max-w-xl mx-auto px-4"
+                    style={{
+                      opacity: isActive ? 1 : 0,
+                      transform: isActive ? 'translateY(0)' : 'translateY(8px)',
+                      transition: isActive
+                        ? 'opacity 500ms cubic-bezier(0.4, 0, 0.2, 1) 300ms, transform 500ms cubic-bezier(0.4, 0, 0.2, 1) 300ms'
+                        : 'opacity 200ms ease-out, transform 200ms ease-out'
+                    }}
+                  >
+                    <Quote className="w-8 h-8 sm:w-10 sm:h-10 text-[#40ffa7]/40 absolute -top-3 left-0 -z-0 opacity-40" />
+                    <p className="text-sm sm:text-base md:text-lg text-[#001f3f] font-semibold leading-relaxed relative z-10 italic">
                       "{item.quote}"
                     </p>
                   </div>
 
-                  {/* Verified Outcome Achievement Banner */}
-                  <div className="max-w-xl mx-auto p-4 sm:p-5 rounded-2xl bg-white/95 border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center shrink-0 shadow-md">
-                        <Award className="w-5 h-5" />
+                  {/* Outcome Achievement Banner */}
+                  <div className="max-w-lg mx-auto p-3 sm:p-4 rounded-2xl bg-white/95 border border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-xs mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center shrink-0 shadow-sm">
+                        <Award className="w-4 h-4" />
                       </div>
                       <div className="text-center sm:text-left">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 block">
                           Verified Grade & Goal Transformation
                         </span>
-                        <span className="text-sm sm:text-base font-extrabold text-[#050167]">
+                        <span className="text-xs sm:text-sm font-extrabold text-[#050167]">
                           {item.outcome}
                         </span>
                       </div>
                     </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
                       Official Milestone
                     </span>
                   </div>
 
-                  {/* Navigation Controls on Card */}
-                  <div className="flex items-center justify-center space-x-3 pt-4 border-t border-slate-200/60">
+                  {/* Card Micro Navigation Counter */}
+                  <div className="flex items-center justify-center space-x-2 pt-2 border-t border-slate-200/50">
                     <button
                       type="button"
-                      onClick={() => setTestimonialSlide(prev => (prev === 0 ? testimonials.length - 1 : prev - 1))}
-                      className="w-11 h-11 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] flex items-center justify-center border border-[#050167]/15 transition-all shadow-xs cursor-pointer active:scale-95"
-                      aria-label="Previous Testimonial"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTestimonialSlide(prev => (prev === 0 ? testimonials.length - 1 : prev - 1));
+                      }}
+                      className="p-1.5 rounded-lg bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] border border-[#050167]/15 transition-all cursor-pointer active:scale-95"
+                      aria-label="Previous"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs font-extrabold text-slate-500 px-2 font-mono">
-                      {testimonialSlide + 1} / {testimonials.length}
+                    <span className="text-[11px] font-extrabold text-slate-500 px-2 font-mono">
+                      {index + 1} / {testimonials.length}
                     </span>
                     <button
                       type="button"
-                      onClick={() => setTestimonialSlide(prev => (prev + 1) % testimonials.length)}
-                      className="w-11 h-11 rounded-xl bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] flex items-center justify-center border border-[#050167]/15 transition-all shadow-xs cursor-pointer active:scale-95"
-                      aria-label="Next Testimonial"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTestimonialSlide(prev => (prev + 1) % testimonials.length);
+                      }}
+                      className="p-1.5 rounded-lg bg-[#f0faff] hover:bg-[#050167] text-[#001f3f] hover:text-[#40ffa7] border border-[#050167]/15 transition-all cursor-pointer active:scale-95"
+                      aria-label="Next"
                     >
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
 
