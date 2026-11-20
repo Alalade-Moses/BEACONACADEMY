@@ -23,7 +23,6 @@ import {
   Mail,
   Send,
   Film,
-  Building2,
   AlertTriangle,
   Lightbulb,
   Lock,
@@ -1717,37 +1716,6 @@ export const LandingPage = () => {
             <p>
               Teachers are not limited to your postcode either, so you can find specialist knowledge of a particular subject or exam board wherever it is. Recorded sessions mean a student can revisit a difficult explanation as many times as they need.
             </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================= */}
-      {/* SECTION 16: CLEAR, SIMPLE PRICING                         */}
-      {/* ========================================================= */}
-      <section id="pricing" className="scroll-mt-24 sm:scroll-mt-28 py-24 sm:py-32 bg-white border-b border-[#050167]/10 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/5 text-[#050167] text-xs font-bold uppercase tracking-wider mb-3">
-            <Building2 className="w-3.5 h-3.5 text-[#050167]" />
-            <span>Honest & Transparent</span>
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-[#001f3f] tracking-tight">
-            Clear, Simple Pricing
-          </h2>
-          <p className="mt-4 text-base sm:text-lg text-[#001f3f]/80 leading-relaxed max-w-2xl mx-auto">
-            You should know what you are paying before you begin. We will explain our lesson prices at your consultation, with no hidden fees. 
-            Payment is by bank transfer, and you receive an email confirmation once it has been checked.
-          </p>
-
-          <div className="mt-10 flex justify-center">
-            <Link
-              to="/payment-proof"
-              className="inline-flex items-center space-x-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#f0faff] to-[#40ffa7]/20 hover:from-[#40ffa7]/30 hover:to-[#40ffa7]/40 text-[#050167] font-black text-xs sm:text-sm transition-all border border-[#050167]/20 shadow-lg shadow-[#050167]/5 hover:-translate-y-0.5 active:scale-95"
-            >
-              <Building2 className="w-4 h-4 text-[#050167]" />
-              <span>Inspect Institutional Bank & Tuition Details</span>
-            </Link>
           </div>
 
         </div>
