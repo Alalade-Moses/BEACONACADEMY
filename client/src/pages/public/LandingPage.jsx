@@ -687,7 +687,7 @@ export const LandingPage = () => {
               { icon: Users, label: 'Students Supported', value: studentsCount, suffix: '+', color: 'text-[#40ffa7]' },
               { icon: GraduationCap, label: 'Specialist Tutors', value: tutorsCount, suffix: '+', color: 'text-sky-300' },
               { icon: Video, label: 'Live Sessions Delivered', value: sessionsCount, suffix: '+', color: 'text-amber-300' },
-              { icon: Star, label: 'Family Satisfaction', value: ratingCount, suffix: '/50', display: (v) => (v / 10).toFixed(1), color: 'text-rose-300' },
+              { icon: Star, label: 'Family Satisfaction', value: ratingCount, suffix: '/5.0', display: (v) => (v / 10).toFixed(1), color: 'text-rose-300' },
             ].map(({ icon: Icon, label, value, suffix, display, color }) => (
               <div key={label} className="text-center group">
                 <div className="flex items-center justify-center mb-3">
@@ -1697,16 +1697,16 @@ export const LandingPage = () => {
             {/* Visual Value Chips */}
             <div className="flex flex-wrap gap-2.5 pb-4 border-b border-slate-200">
               <span className="text-xs font-bold px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-800 shadow-xs">
-                🚗 Zero Commute Time
+                Zero Commute Time
               </span>
               <span className="text-xs font-bold px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-800 shadow-xs">
-                🏡 Familiar Home Comfort
+                Familiar Home Comfort
               </span>
               <span className="text-xs font-bold px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-800 shadow-xs">
-                🌍 Postcode Freedom
+                Postcode Freedom
               </span>
               <span className="text-xs font-bold px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-800 shadow-xs">
-                📼 Rewatchable Recordings
+                Rewatchable Recordings
               </span>
             </div>
 
