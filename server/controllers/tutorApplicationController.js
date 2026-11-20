@@ -1,5 +1,5 @@
 import { store } from '../database/store.js';
-import { sendTutorApplicationReceived } from '../services/emailService.js';
+import { sendTutorApplicationReceived, sendTutorApprovalEmail } from '../services/emailService.js';
 import { safeDeleteUploadedFile } from '../services/fileCleanup.js';
 
 export const VALID_ALEVEL_SUBJECTS = [
@@ -187,10 +187,13 @@ export const updateApplicationStatus = async (req, res, next) => {
     }
 
     const reviewed_by = req.user?.full_name || 'Super Administrator';
+    const tempPassword = req.body.tempPassword || `BBA-Tutor${Math.floor(1000 + Math.random() * 9000)}!`;
+
     const updated = await store.updateTutorApplicationStatus(id, {
       status,
       admin_notes,
-      reviewed_by
+      reviewed_by,
+      tempPassword
     });
 
     if (!updated) {
@@ -198,6 +201,24 @@ export const updateApplicationStatus = async (req, res, next) => {
         success: false,
         message: 'Teacher application not found.'
       });
+    }
+
+    const credentials = updated.provisioned_credentials || {
+      email: updated.email,
+      tempPassword
+    };
+
+    // Send automated congratulations & onboarding email upon approval
+    if (status === 'approved') {
+      try {
+        await sendTutorApprovalEmail({
+          applicant: updated,
+          tempPassword: credentials.tempPassword
+        });
+        console.log(`📧 [TUTOR APPROVED EMAIL SENT]: Dispatched login credentials to ${updated.email}`);
+      } catch (emailErr) {
+        console.warn('⚠️ [Tutor Approval Email Notice]:', emailErr.message);
+      }
     }
 
     // Log in audit log
@@ -218,8 +239,9 @@ export const updateApplicationStatus = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Teacher application marked as ${status}. ${status === 'approved' ? 'Tutor faculty profile provisioned.' : ''}`,
-      application: updated
+      message: `Teacher application marked as ${status}. ${status === 'approved' ? 'Tutor faculty profile provisioned and onboarding email dispatched.' : ''}`,
+      application: updated,
+      credentials: status === 'approved' ? credentials : null
     });
   } catch (err) {
     next(err);

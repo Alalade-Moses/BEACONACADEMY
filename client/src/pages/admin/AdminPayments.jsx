@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { showConfirm, showSuccess, showError } from '../../utils/swal';
 import {
   CreditCard,
   CheckCircle2,
@@ -15,7 +16,8 @@ import {
   X,
   AlertCircle,
   DollarSign,
-  Mail
+  Mail,
+  Trash2
 } from 'lucide-react';
 
 export const AdminPayments = () => {
@@ -96,6 +98,29 @@ export const AdminPayments = () => {
       showToast(res.data.message || 'Invoice and credentials successfully sent to parent email.');
     } catch (err) {
       showToast(err.response?.data?.message || err.message || 'Failed to dispatch invoice email.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeletePayment = async (paymentId, bankRef) => {
+    const confirmed = await showConfirm({
+      title: 'Delete Tuition Record?',
+      text: `Are you sure you want to permanently delete this tuition verification record (Ref: ${bankRef || paymentId})? This action cannot be undone.`,
+      confirmText: 'Yes, Delete Record',
+      cancelText: 'Cancel',
+      icon: 'warning'
+    });
+    if (!confirmed) return;
+
+    try {
+      setActionLoading(true);
+      const res = await api.delete(`/payments/${paymentId}`);
+      await showSuccess('Record Deleted', res.data.message || 'Tuition verification record permanently removed.');
+      setPayments(prev => prev.filter(p => p.id !== paymentId));
+      if (activeModalPayment?.id === paymentId) setActiveModalPayment(null);
+    } catch (err) {
+      showError('Delete Failed', err.response?.data?.message || err.message);
     } finally {
       setActionLoading(false);
     }
@@ -348,38 +373,38 @@ export const AdminPayments = () => {
 
                     {/* Actions */}
                     <td className="py-4 px-6 text-right">
-                      {payment.status === 'pending' ? (
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => handleVerify(payment.id)}
-                            disabled={actionLoadingId === payment.id}
-                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-[11px] shadow-sm transition-all cursor-pointer"
-                            title="Verify Payment and Activate Accounts"
-                          >
-                            {actionLoadingId === payment.id ? (
-                              <>
-                                <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                <span>Activating...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Check className="w-3.5 h-3.5" />
-                                <span>Verify & Activate</span>
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => setRejectModalPayment(payment)}
-                            disabled={actionLoading}
-                            className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-semibold text-[11px] transition-colors"
-                            title="Reject Receipt"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                            <span>Reject</span>
-                          </button>
-                        </div>
-                      ) : payment.status === 'verified' ? (
-                        <div className="flex items-center justify-end space-x-2">
+                      <div className="flex items-center justify-end space-x-2">
+                        {payment.status === 'pending' ? (
+                          <>
+                            <button
+                              onClick={() => handleVerify(payment.id)}
+                              disabled={actionLoadingId === payment.id}
+                              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-[11px] shadow-sm transition-all cursor-pointer"
+                              title="Verify Payment and Activate Accounts"
+                            >
+                              {actionLoadingId === payment.id ? (
+                                <>
+                                  <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  <span>Activating...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Verify & Activate</span>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => setRejectModalPayment(payment)}
+                              disabled={actionLoading}
+                              className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-semibold text-[11px] transition-colors cursor-pointer"
+                              title="Reject Receipt"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>Reject</span>
+                            </button>
+                          </>
+                        ) : payment.status === 'verified' ? (
                           <button
                             onClick={() => handleSendInvoice(payment.id)}
                             disabled={actionLoading}
@@ -389,10 +414,18 @@ export const AdminPayments = () => {
                             <Mail className="w-3.5 h-3.5" />
                             <span>Send Invoice & Credentials</span>
                           </button>
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-slate-400 font-medium">Action Closed</span>
-                      )}
+                        ) : null}
+
+                        {/* Always-accessible Delete Tuition Verification Record button */}
+                        <button
+                          onClick={() => handleDeletePayment(payment.id, payment.bank_reference)}
+                          disabled={actionLoading}
+                          className="p-1.5 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-300 transition-colors cursor-pointer"
+                          title="Permanently Delete Tuition Verification Record"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -510,16 +543,26 @@ export const AdminPayments = () => {
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                <a
-                  href={activeModalPayment.proof_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1"
-                  onClick={(e) => { e.preventDefault(); window.open(activeModalPayment.proof_url, '_blank'); }}
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Open Full Size Slip</span>
-                </a>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={activeModalPayment.proof_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1"
+                    onClick={(e) => { e.preventDefault(); window.open(activeModalPayment.proof_url, '_blank'); }}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Open Full Size Slip</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePayment(activeModalPayment.id, activeModalPayment.bank_reference)}
+                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Record</span>
+                  </button>
+                </div>
 
                 {activeModalPayment.status === 'pending' && (
                   <button
@@ -529,7 +572,7 @@ export const AdminPayments = () => {
                       handleVerify(id);
                     }}
                     disabled={actionLoading}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md disabled:opacity-60"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md disabled:opacity-60 cursor-pointer"
                   >
                     {actionLoading ? 'Activating…' : 'Confirm & Activate Accounts'}
                   </button>

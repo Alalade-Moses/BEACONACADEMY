@@ -235,9 +235,9 @@ export const DashboardLayout = () => {
             </p>
             <Link
               to="/admin/dashboard"
-              className="w-full py-1 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
+              className="w-full py-1.5 px-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 !text-white font-bold text-[11px] flex items-center justify-center space-x-1.5 transition-colors shadow-xs"
             >
-              <span>&larr; Return to Admin Hub</span>
+              <span className="!text-white font-bold">&larr; Return to Admin Hub</span>
             </Link>
           </div>
         )}
@@ -255,7 +255,7 @@ export const DashboardLayout = () => {
                 className={`
                   flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm transition-all group
                   ${isActive 
-                    ? 'bg-[#050167] text-white font-bold shadow-md shadow-[#050167]/25 ring-1 ring-[#050167]' 
+                    ? 'bg-[#050167] !text-white font-bold shadow-md shadow-[#050167]/25 ring-1 ring-[#050167]' 
                     : 'text-slate-700 hover:bg-slate-100 hover:text-[#050167] font-semibold'}
                 `}
               >
@@ -264,7 +264,9 @@ export const DashboardLayout = () => {
                     ? 'text-[#40ffa7] stroke-[2.3]' 
                     : 'text-slate-500 group-hover:text-[#050167] group-hover:scale-105 stroke-[2]'
                 }`} />
-                <span className="truncate tracking-tight">{item.name}</span>
+                <span className={`truncate tracking-tight ${isActive ? '!text-white font-bold' : 'text-slate-700 group-hover:text-[#050167]'}`}>
+                  {item.name}
+                </span>
                 {isActive && (
                   <span className="w-2 h-2 rounded-full bg-[#40ffa7] shadow-[0_0_8px_#40ffa7] ml-auto shrink-0" />
                 )}

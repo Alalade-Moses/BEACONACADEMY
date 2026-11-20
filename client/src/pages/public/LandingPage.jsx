@@ -501,7 +501,7 @@ export const LandingPage = () => {
                   className="px-7 py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-[#f0faff] font-bold text-base border border-white/25 backdrop-blur-md transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <CalendarCheck className="w-5 h-5 text-[#40ffa7]" />
-                  <span>Book a Consultation</span>
+                  <span>Book a Free Consultation</span>
                 </Link>
 
                 <button

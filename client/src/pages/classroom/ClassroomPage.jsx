@@ -884,6 +884,40 @@ export const ClassroomPage = () => {
     };
   }, [unlockAudioPipeline]);
 
+  // Screen Wake Lock API (Ensures mobile and laptop screens NEVER sleep/dim during live class)
+  useEffect(() => {
+    let wakeLockSentinel = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator && navigator.wakeLock?.request) {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.warn('[Classroom] Screen wake lock warning:', err?.message);
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLockSentinel) {
+        try {
+          wakeLockSentinel.release();
+        } catch (e) {}
+      }
+    };
+  }, []);
+
   // Bind localStream to video element safely and trigger play
   useEffect(() => {
     if (localVideoRef.current) {

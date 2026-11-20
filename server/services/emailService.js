@@ -657,7 +657,7 @@ export const sendTutorApplicationReceived = async ({ applicant }) => {
     `,
     callToAction: {
       label: 'Beacon Bridge Faculty Portal',
-      url: `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/apply-tutor`
+      url: `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/apply-to-teach`
     }
   });
 
@@ -666,6 +666,53 @@ export const sendTutorApplicationReceived = async ({ applicant }) => {
     subject: `Teacher Application Acknowledgment — Beacon Bridge Academics`,
     html,
     senderType: 'admissions'
+  });
+};
+
+// 5b. Tutor Application Approved & Account Provisioned Notification
+export const sendTutorApprovalEmail = async ({ applicant, tempPassword }) => {
+  const loginUrl = `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/login`;
+  const subjectsDisplay = Array.isArray(applicant?.selected_subjects) 
+    ? applicant.selected_subjects.join(', ') 
+    : (Array.isArray(applicant?.subjects) ? applicant.subjects.join(', ') : 'Assigned Academic Curricula');
+
+  const html = buildEmailTemplate({
+    headerTitle: 'Welcome to the Beacon Bridge Teaching Faculty',
+    contentHtml: `
+      <p>Dear <strong>${applicant?.full_name}</strong>,</p>
+      <p>We are thrilled to inform you that your application to join the instructional faculty at <strong>Beacon Bridge Academics</strong> has been reviewed and <strong style="color: #059669;">officially approved</strong>!</p>
+      
+      <div class="card" style="border-left: 4px solid #10b981; background: #ecfdf5;">
+        <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 16px;">Your Faculty Portal Credentials</h3>
+        <p style="margin: 4px 0;"><strong>Faculty Role:</strong> Curriculum-Trained Educator & A-Level Specialist</p>
+        <p style="margin: 4px 0;"><strong>Assigned Subject(s):</strong> ${subjectsDisplay}</p>
+        <p style="margin: 4px 0;"><strong>Portal Login Email:</strong> <span style="font-family: monospace; font-weight: bold;">${applicant?.email}</span></p>
+        <p style="margin: 4px 0;"><strong>Temporary Password:</strong> <span style="font-family: monospace; font-weight: bold; background: #fef08a; padding: 2px 8px; border-radius: 4px; font-size: 15px;">${tempPassword}</span></p>
+        <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;"><em>For security, please change your password upon your first login via Platform Settings.</em></p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 15px;">Next Faculty Steps</h3>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.6; color: #334155;">
+          <li>Log into your <strong>Tutor Portal</strong> to review your course schedules and assigned student lecture halls.</li>
+          <li>Familiarize yourself with the <strong>Live Virtual Classroom</strong> and interactive whiteboard tools.</li>
+          <li>Review student cohort diagnostic profiles and curriculum roadmaps.</li>
+        </ul>
+      </div>
+
+      <p>If you have any questions before conducting your first session, please reach out to our Faculty Administration at <a href="mailto:admin@beaconbridgeacademics.co.uk" style="color: #059669;">admin@beaconbridgeacademics.co.uk</a>.</p>
+    `,
+    callToAction: {
+      label: 'Log In to Tutor Portal',
+      url: loginUrl
+    }
+  });
+
+  return await sendEmail({
+    to: applicant?.email,
+    subject: `Congratulations! Your Faculty Application Has Been Approved — Beacon Bridge Academics`,
+    html,
+    senderType: 'admin'
   });
 };
 

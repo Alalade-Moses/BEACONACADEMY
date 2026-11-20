@@ -1698,6 +1698,22 @@ export const store = {
     return payment;
   },
 
+  deletePayment: async (paymentId) => {
+    if (pool) {
+      try {
+        await pool.query('DELETE FROM payments WHERE id = $1', [paymentId]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL payment delete notice:', dbErr.message);
+      }
+    }
+    const idx = memoryData.payments.findIndex(p => p.id === paymentId);
+    if (idx !== -1) {
+      const deleted = memoryData.payments.splice(idx, 1)[0];
+      return deleted;
+    }
+    return { id: paymentId };
+  },
+
   // Assignments System & Notifications
   getAssignments: async (courseId) => {
     let assignments = memoryData.assignments;
@@ -2034,7 +2050,7 @@ export const store = {
     return newApp;
   },
 
-  updateTutorApplicationStatus: async (id, { status, admin_notes, reviewed_by }) => {
+  updateTutorApplicationStatus: async (id, { status, admin_notes, reviewed_by, tempPassword }) => {
     const app = (memoryData.tutor_applications || []).find(a => a.id === id);
     if (!app) return null;
 
@@ -2046,9 +2062,12 @@ export const store = {
 
     // If approved, ensure a tutor account is provisioned so they can teach!
     if (status === 'approved') {
-      const existingProfile = memoryData.profiles.find(p => p.email.toLowerCase() === app.email.toLowerCase());
+      const generatedPass = tempPassword || `BBA-Tutor${Math.floor(1000 + Math.random() * 9000)}!`;
+      const salt = await bcrypt.genSalt(10);
+      const tempTutorHash = await bcrypt.hash(generatedPass, salt);
+
+      let existingProfile = memoryData.profiles.find(p => p.email.toLowerCase() === app.email.toLowerCase());
       if (!existingProfile) {
-        const tempTutorHash = bcrypt.hashSync(uuidv4(), 10);
         const newTutorProfile = {
           id: uuidv4(),
           email: app.email.toLowerCase(),
@@ -2057,16 +2076,58 @@ export const store = {
           role: 'tutor',
           avatar_url: `https://images.unsplash.com/photo-${1534528741775 + (memoryData.profiles.length * 100)}?w=150`,
           phone: app.phone,
-          bio: `${app.highest_qualification}. Specialised in ${app.selected_subjects.join(', ')}. ${app.teaching_approach?.slice(0, 150)}...`,
+          bio: `${app.highest_qualification || 'Qualified Educator'}. Specialised in ${Array.isArray(app.selected_subjects) ? app.selected_subjects.join(', ') : 'A-Level'}. ${app.teaching_approach ? app.teaching_approach.slice(0, 150) + '...' : ''}`,
           status: 'active',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };
         memoryData.profiles.push(newTutorProfile);
+        existingProfile = newTutorProfile;
         console.log(`✅ [TUTOR PROVISIONED]: Created active tutor profile for ${app.full_name} (${app.email}) with secure temporary credentials.`);
-      } else if (existingProfile.role !== 'tutor' && existingProfile.role !== 'superadmin') {
+      } else {
         existingProfile.role = 'tutor';
         existingProfile.status = 'active';
+        existingProfile.password_hash = tempTutorHash;
+        existingProfile.updated_at = new Date().toISOString();
+        console.log(`✅ [TUTOR PROVISIONED]: Updated existing profile for ${app.full_name} (${app.email}) to active tutor role with new credentials.`);
+      }
+
+      // Persist to PostgreSQL if configured
+      if (pool) {
+        try {
+          await pool.query(`
+            INSERT INTO profiles (id, email, password_hash, full_name, role, avatar_url, phone, bio, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ON CONFLICT (email) DO UPDATE SET
+              password_hash = EXCLUDED.password_hash,
+              role = 'tutor',
+              status = 'active',
+              updated_at = EXCLUDED.updated_at
+          `, [
+            existingProfile.id, existingProfile.email, existingProfile.password_hash, existingProfile.full_name,
+            'tutor', existingProfile.avatar_url, existingProfile.phone, existingProfile.bio, 'active',
+            existingProfile.created_at, new Date().toISOString()
+          ]);
+        } catch (dbErr) {
+          console.warn('[store] PostgreSQL tutor profile provision notice:', dbErr.message);
+        }
+      }
+
+      app.provisioned_credentials = {
+        email: app.email,
+        tempPassword: generatedPass
+      };
+    }
+
+    if (pool) {
+      try {
+        await pool.query(`
+          UPDATE tutor_applications
+          SET status = $1, admin_notes = $2, reviewed_by = $3, reviewed_at = $4, updated_at = $5
+          WHERE id = $6
+        `, [app.status, app.admin_notes || null, app.reviewed_by || null, app.reviewed_at, app.updated_at, id]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL tutor_applications update notice:', dbErr.message);
       }
     }
 
@@ -2074,6 +2135,13 @@ export const store = {
   },
 
   deleteTutorApplication: async (id) => {
+    if (pool) {
+      try {
+        await pool.query('DELETE FROM tutor_applications WHERE id = $1', [id]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL tutor_applications delete notice:', dbErr.message);
+      }
+    }
     if (isSupabaseConfigured) {
       await supabase.from('tutor_applications').delete().eq('id', id);
     }

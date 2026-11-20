@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { SafeguardingPolicyDocument } from '../../components/safeguarding/SafeguardingPolicyDocument';
+import { showWarning, showSuccess, showError } from '../../utils/swal';
 import {
   GraduationCap,
   ShieldCheck,
@@ -68,12 +69,6 @@ export const TeacherApplicationPage = () => {
     dbs_certificate_number: ''
   });
 
-  // Video Upload / Link Mode
-  const [videoInputMode, setVideoInputMode] = useState('upload'); // 'upload' | 'link'
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
-  const [videoError, setVideoError] = useState('');
-
   // CV Upload
   const [uploadingCv, setUploadingCv] = useState(false);
   const [cvFileName, setCvFileName] = useState('');
@@ -88,6 +83,61 @@ export const TeacherApplicationPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submittedApp, setSubmittedApp] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Helper to parse and embed video links (Google Drive, YouTube, Loom, Vimeo, Direct)
+  const getEmbedVideoUrl = (url) => {
+    if (!url) return null;
+    const str = String(url).trim();
+
+    // Google Drive: drive.google.com/file/d/ID/... or open?id=ID or uc?id=ID
+    const gDriveMatch = str.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/);
+    if (gDriveMatch && gDriveMatch[1]) {
+      return {
+        type: 'iframe',
+        src: `https://drive.google.com/file/d/${gDriveMatch[1]}/preview`
+      };
+    }
+
+    // YouTube: watch?v=ID, youtu.be/ID, embed/ID, shorts/ID
+    const ytMatch = str.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      return {
+        type: 'iframe',
+        src: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`
+      };
+    }
+
+    // Loom: loom.com/share/ID or loom.com/embed/ID
+    const loomMatch = str.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9_-]+)/);
+    if (loomMatch && loomMatch[1]) {
+      return {
+        type: 'iframe',
+        src: `https://www.loom.com/embed/${loomMatch[1]}`
+      };
+    }
+
+    // Vimeo: vimeo.com/ID
+    const vimeoMatch = str.match(/vimeo\.com\/([0-9]+)/);
+    if (vimeoMatch && vimeoMatch[1]) {
+      return {
+        type: 'iframe',
+        src: `https://player.vimeo.com/video/${vimeoMatch[1]}`
+      };
+    }
+
+    // Direct Video file (.mp4, .webm, .mov)
+    if (str.match(/\.(mp4|webm|mov|ogg)($|\?)/i)) {
+      return {
+        type: 'video',
+        src: str
+      };
+    }
+
+    return {
+      type: 'iframe',
+      src: str
+    };
+  };
 
   // Handle Input Changes
   const handleChange = (e) => {
@@ -116,53 +166,6 @@ export const TeacherApplicationPage = () => {
     });
   };
 
-  // Video File Upload Handler
-  const handleVideoFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setVideoError('');
-    // Size check (max 150MB)
-    if (file.size > 150 * 1024 * 1024) {
-      setVideoError('Video file exceeds 150MB limit. Please compress or provide a link.');
-      return;
-    }
-
-    const uploadPayload = new FormData();
-    uploadPayload.append('file', file);
-
-    setUploadingVideo(true);
-    setVideoUploadProgress(15);
-
-    try {
-      const timer = setInterval(() => {
-        setVideoUploadProgress(prev => (prev < 90 ? prev + 15 : prev));
-      }, 300);
-
-      const res = await api.post('/upload', uploadPayload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      clearInterval(timer);
-      setVideoUploadProgress(100);
-
-      if (res.data.success) {
-        setFormData(prev => ({
-          ...prev,
-          video_url: res.data.url,
-          video_filename: res.data.filename || file.name,
-          video_duration: 'Approx. 3 minutes'
-        }));
-      } else {
-        setVideoError(res.data.message || 'Failed to process video file.');
-      }
-    } catch (err) {
-      setVideoError(err.response?.data?.message || err.message || 'Failed to upload video.');
-    } finally {
-      setUploadingVideo(false);
-    }
-  };
-
   // CV Document Upload Handler
   const handleCvUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -181,7 +184,7 @@ export const TeacherApplicationPage = () => {
         setCvFileName(file.name);
       }
     } catch (err) {
-      alert('Failed to upload CV: ' + (err.response?.data?.message || err.message));
+      showError('CV Upload Failed', err.response?.data?.message || err.message);
     } finally {
       setUploadingCv(false);
     }
@@ -205,7 +208,7 @@ export const TeacherApplicationPage = () => {
         setDegreeFileName(file.name);
       }
     } catch (err) {
-      alert('Failed to upload Degree Certificate: ' + (err.response?.data?.message || err.message));
+      showError('Certificate Upload Failed', err.response?.data?.message || err.message);
     } finally {
       setUploadingDegree(false);
     }
@@ -229,7 +232,7 @@ export const TeacherApplicationPage = () => {
         setLicenceFileName(file.name);
       }
     } catch (err) {
-      alert('Failed to upload Teaching Licence: ' + (err.response?.data?.message || err.message));
+      showError('Teaching Licence Upload Failed', err.response?.data?.message || err.message);
     } finally {
       setUploadingLicence(false);
     }
@@ -240,26 +243,38 @@ export const TeacherApplicationPage = () => {
     e.preventDefault();
     setErrorMsg('');
 
-    // Pre-flight validation
-    if (formData.selected_subjects.length === 0) {
-      setErrorMsg('Please select at least one A-Level subject you are qualified to teach.');
-      window.scrollTo({ top: 400, behavior: 'smooth' });
+    if (!formData.full_name || !formData.email || !formData.phone) {
+      const msg = 'Please enter your full name, email address, and contact phone number.';
+      setErrorMsg(msg);
+      showWarning('Contact Details Incomplete', msg);
       return;
     }
 
-    if (!formData.video_url) {
-      setErrorMsg('A 3-minute introductory video is required for all teacher applications.');
-      window.scrollTo({ top: 700, behavior: 'smooth' });
+    if (formData.selected_subjects.length === 0) {
+      const msg = 'Please select at least one A-Level subject you are qualified to teach.';
+      setErrorMsg(msg);
+      showWarning('Subject Selection Required', msg);
+      return;
+    }
+
+    if (!formData.video_url || !formData.video_url.trim()) {
+      const msg = 'A shareable 3-minute introductory video link (Google Drive, YouTube, Loom, or Vimeo) is mandatory for teacher evaluation.';
+      setErrorMsg(msg);
+      showWarning('Video Link Required', msg);
       return;
     }
 
     if (!formData.safeguarding_acknowledged || !formData.dbs_consent) {
-      setErrorMsg('You must read and acknowledge the Safeguarding & Child Protection Policy and consent to DBS verification.');
+      const msg = 'You must read and formally acknowledge the Safeguarding & Child Protection Policy and consent to statutory DBS verification.';
+      setErrorMsg(msg);
+      showWarning('Safeguarding Compliance Required', msg);
       return;
     }
 
     if (!formData.safeguarding_signature.trim()) {
-      setErrorMsg('Please enter your full legal name as a digital signature for safeguarding verification.');
+      const msg = 'Please type your full legal name as your digital signature for statutory safeguarding compliance.';
+      setErrorMsg(msg);
+      showWarning('Digital Signature Required', msg);
       return;
     }
 
@@ -267,11 +282,17 @@ export const TeacherApplicationPage = () => {
     try {
       const res = await api.post('/tutor-applications', formData);
       if (res.data.success) {
+        await showSuccess(
+          'Application Submitted Successfully!',
+          'Thank you for applying to teach at Beacon Bridge Academics. Our academic evaluation panel will review your credentials, video introduction, and safeguarding compliance within 48 hours.'
+        );
         setSubmittedApp(res.data.application);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Failed to submit application. Please check all fields.');
+      const msg = err.response?.data?.message || 'Failed to submit application. Please check all fields.';
+      setErrorMsg(msg);
+      showError('Submission Failed', msg);
     } finally {
       setSubmitting(false);
     }
@@ -367,15 +388,15 @@ export const TeacherApplicationPage = () => {
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 to="/"
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#001f3f] text-white hover:bg-[#050167] text-xs font-bold transition-all shadow-md"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#001f3f] hover:bg-[#050167] !text-white text-xs font-bold transition-all shadow-md text-center inline-flex items-center justify-center cursor-pointer"
               >
-                Return to Homepage
+                <span className="!text-white font-bold">Return to Homepage</span>
               </Link>
               <Link
                 to="/login"
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all text-center inline-flex items-center justify-center cursor-pointer"
               >
-                Access Tutor Portal Login
+                <span>Access Tutor Portal Login</span>
               </Link>
             </div>
           </div>
@@ -751,118 +772,80 @@ export const TeacherApplicationPage = () => {
                 </div>
               </div>
 
-              {/* Toggle Video Upload vs URL Link */}
-              <div className="flex items-center space-x-2 border-b border-slate-200 pb-3">
-                <button
-                  type="button"
-                  onClick={() => setVideoInputMode('upload')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    videoInputMode === 'upload' ? 'bg-[#001f3f] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Upload Video File (MP4, WebM, MOV)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVideoInputMode('link')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                    videoInputMode === 'link' ? 'bg-[#001f3f] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Paste Video URL (Loom, YouTube, Drive)
-                </button>
-              </div>
-
-              {/* Upload Mode */}
-              {videoInputMode === 'upload' ? (
-                <div className="space-y-3">
-                  <label className="block border-2 border-dashed border-purple-300 hover:border-purple-500 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-purple-50/30">
-                    <Video className="w-10 h-10 text-purple-500 mx-auto mb-2" />
-                    <span className="text-xs font-bold text-slate-800 block">
-                      {uploadingVideo ? 'Uploading your 3-minute video...' : 'Click to select or drag & drop your 3-minute video'}
-                    </span>
-                    <span className="text-[11px] text-slate-500 mt-1 block">
-                      Supports MP4, WebM, MOV up to 150MB
-                    </span>
-                    <input
-                      type="file"
-                      accept="video/mp4,video/webm,video/quicktime,video/mov"
-                      onChange={handleVideoFileUpload}
-                      disabled={uploadingVideo}
-                      className="hidden"
-                    />
-                  </label>
-
-                  {uploadingVideo && (
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs font-bold text-purple-700">
-                        <span>Uploading introductory video...</span>
-                        <span>{videoUploadProgress}%</span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                        <div
-                          style={{ width: `${videoUploadProgress}%` }}
-                          className="bg-purple-600 h-full rounded-full transition-all duration-300"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {videoError && (
-                    <p className="text-xs text-rose-600 font-bold flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      {videoError}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                /* Link Mode */
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Unlisted Video URL (YouTube, Loom, Vimeo, Google Drive)
-                  </label>
+              {/* Single Video Link Input (Google Drive, YouTube, Loom, Vimeo, etc.) */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-slate-800">
+                  Shareable Video Link (Google Drive, YouTube, Loom, or Vimeo) <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <Video className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="url"
                     name="video_url"
+                    required
                     value={formData.video_url}
                     onChange={handleChange}
-                    placeholder="https://www.loom.com/share/... or https://youtu.be/..."
-                    className="w-full px-3.5 py-2.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+                    placeholder="https://drive.google.com/file/d/... or https://youtu.be/... or https://loom.com/share/..."
+                    className="w-full pl-10 pr-4 py-3 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium text-slate-900"
                   />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Please ensure the video permission is set to <strong>"Anyone with the link can view"</strong>.
-                  </p>
                 </div>
-              )}
+                <div className="p-3 bg-purple-50/60 rounded-xl border border-purple-100 text-[11px] text-purple-900 leading-relaxed flex items-start gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                  <span>
+                    Upload your 3-minute video to <strong>Google Drive</strong>, <strong>YouTube (unlisted)</strong>, <strong>Loom</strong>, or <strong>Vimeo</strong>, and paste the shareable link here. Please ensure access permissions are set to <strong>"Anyone with the link can view"</strong> so our evaluation panel can watch it.
+                  </span>
+                </div>
+              </div>
 
-              {/* Video Active Confirmation Preview */}
-              {formData.video_url && (
-                <div className="p-3.5 rounded-2xl bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-                  <div className="flex items-center space-x-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-xl bg-purple-600/30 border border-purple-500/50 flex items-center justify-center shrink-0 text-purple-400">
-                      <Play className="w-5 h-5 fill-current" />
+              {/* Video Test Player Preview */}
+              {formData.video_url && (() => {
+                const embedInfo = getEmbedVideoUrl(formData.video_url);
+                return (
+                  <div className="p-4 rounded-2xl bg-slate-950 text-white space-y-3 shadow-md border border-slate-800 animate-in fade-in">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Play className="w-4 h-4 text-purple-400 fill-current" />
+                        <span className="text-xs font-bold text-purple-300">Test Video Link Preview</span>
+                      </div>
+                      <a
+                        href={formData.video_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] font-semibold text-slate-300 hover:text-white underline flex items-center gap-1"
+                      >
+                        <span>Open in New Tab</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </a>
                     </div>
-                    <div className="overflow-hidden">
-                      <span className="text-xs font-bold block truncate">
-                        {formData.video_filename || '3-Minute Teacher Introductory Video'}
-                      </span>
-                      <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Ready for Admin Evaluation
-                      </span>
-                    </div>
+
+                    {embedInfo && (
+                      <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-slate-800">
+                        {embedInfo.type === 'video' ? (
+                          <video
+                            src={embedInfo.src}
+                            controls
+                            playsInline
+                            className="w-full h-full object-contain"
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        ) : (
+                          <iframe
+                            src={embedInfo.src}
+                            title="Teacher Video Preview"
+                            className="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        )}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-slate-400">
+                      If the video plays above, your sharing link is properly configured and our Superadmin panel will be able to evaluate your video smoothly!
+                    </p>
                   </div>
-
-                  <a
-                    href={formData.video_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-bold text-brand-300 hover:text-white px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-all text-center shrink-0"
-                  >
-                    Preview Video
-                  </a>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* CARD 6: Safeguarding Policy Document & Acknowledgment */}

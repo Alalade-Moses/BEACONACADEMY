@@ -433,29 +433,39 @@ export const RegisterPage = () => {
     e.preventDefault();
     setError('');
 
-    // Validations
+    // Validations with immediate SweetAlert2 modal feedback for mobile & desktop
     if (!formData.student_name || !formData.student_email || !formData.student_password) {
-      setError('Please provide student full name, email, and password.');
+      const msg = 'Please enter student full name, email, and password.';
+      setError(msg);
+      showWarning('Student Details Incomplete', msg);
       return;
     }
 
     if (!formData.parent_name || !formData.parent_email || !formData.parent_password) {
-      setError('Please provide parent/guardian full name, email, and password.');
+      const msg = 'Please enter parent/guardian full name, email, and password.';
+      setError(msg);
+      showWarning('Parent Details Incomplete', msg);
       return;
     }
 
     if (formData.student_email.toLowerCase() === formData.parent_email.toLowerCase()) {
-      setError('Student and Parent must have different email addresses for separate dashboard logins.');
+      const msg = 'Student and Parent must use different email addresses for separate dashboard accounts.';
+      setError(msg);
+      showWarning('Duplicate Email Address', msg);
       return;
     }
 
     if (formData.student_password !== formData.student_confirm_password) {
-      setError('Student passwords do not match.');
+      const msg = 'The student password and confirm password do not match. Please verify both fields.';
+      setError(msg);
+      showWarning('Password Mismatch (Student)', msg);
       return;
     }
 
     if (formData.parent_password !== formData.parent_confirm_password) {
-      setError('Parent passwords do not match.');
+      const msg = 'The parent password and confirm password do not match. Please verify both fields.';
+      setError(msg);
+      showWarning('Password Mismatch (Parent)', msg);
       return;
     }
 
@@ -527,7 +537,14 @@ export const RegisterPage = () => {
       };
 
       const res = await registerJoint(payload);
+      
+      // Prominent SweetAlert modal with clear confirmation before showing the pending verification receipt
+      await showSuccess(
+        'Registration Submitted Successfully!',
+        'Thank you! Your registration and monthly tuition payment proof have been received. Our administration team is reviewing your receipt and will activate your student and parent portals shortly.'
+      );
       setSuccessData(res.data);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       const isNetErr = err.message === 'Network Error' || err.code === 'ERR_NETWORK' || !err.response;
       if (isNetErr) {

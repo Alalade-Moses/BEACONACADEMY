@@ -193,3 +193,28 @@ export const rejectPayment = async (req, res, next) => {
     next(err);
   }
 };
+
+export const deletePayment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await store.deletePayment(id);
+
+    if (typeof store.logAudit === 'function') {
+      await store.logAudit({
+        user_id: req.user?.id || '00000000-0000-0000-0000-000000000001',
+        action: 'PAYMENT_RECORD_DELETED',
+        entity_type: 'PAYMENT',
+        entity_id: id,
+        ip_address: req.ip || '127.0.0.1',
+        details: { paymentId: id }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Tuition verification record permanently deleted.'
+    });
+  } catch (err) {
+    next(err);
+  }
+};

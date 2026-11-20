@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { showConfirm, showSuccess, showError, showTutorApprovedModal } from '../../utils/swal';
 import {
   GraduationCap,
   Video,
@@ -20,12 +21,16 @@ import {
   AlertTriangle,
   Award,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   BookOpen,
   Calendar,
   Sparkles,
   RefreshCw,
   X,
-  Trash2
+  Trash2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const ALL_ALEVEL_SUBJECTS = [
@@ -55,6 +60,62 @@ export const AdminTutorApplications = () => {
   const [evalNotes, setEvalNotes] = useState('');
   const [evalSubmitting, setEvalSubmitting] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState('');
+  const [videoPlayerVisible, setVideoPlayerVisible] = useState(true);
+
+  // Helper to parse and embed video links (Google Drive, YouTube, Loom, Vimeo, Direct)
+  const getEmbedVideoUrl = (url) => {
+    if (!url) return null;
+    const str = String(url).trim();
+
+    // Google Drive: drive.google.com/file/d/ID/... or open?id=ID or uc?id=ID
+    const gDriveMatch = str.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]+)/);
+    if (gDriveMatch && gDriveMatch[1]) {
+      return {
+        type: 'iframe',
+        src: `https://drive.google.com/file/d/${gDriveMatch[1]}/preview`
+      };
+    }
+
+    // YouTube: watch?v=ID, youtu.be/ID, embed/ID, shorts/ID
+    const ytMatch = str.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      return {
+        type: 'iframe',
+        src: `https://www.youtube.com/embed/${ytMatch[1]}?rel=0`
+      };
+    }
+
+    // Loom: loom.com/share/ID or loom.com/embed/ID
+    const loomMatch = str.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9_-]+)/);
+    if (loomMatch && loomMatch[1]) {
+      return {
+        type: 'iframe',
+        src: `https://www.loom.com/embed/${loomMatch[1]}`
+      };
+    }
+
+    // Vimeo: vimeo.com/ID
+    const vimeoMatch = str.match(/vimeo\.com\/([0-9]+)/);
+    if (vimeoMatch && vimeoMatch[1]) {
+      return {
+        type: 'iframe',
+        src: `https://player.vimeo.com/video/${vimeoMatch[1]}`
+      };
+    }
+
+    // Direct Video file (.mp4, .webm, .mov)
+    if (str.match(/\.(mp4|webm|mov|ogg)($|\?)/i)) {
+      return {
+        type: 'video',
+        src: str
+      };
+    }
+
+    return {
+      type: 'iframe',
+      src: str
+    };
+  };
 
   // Fetch applications
   const fetchApplications = async () => {
@@ -84,6 +145,7 @@ export const AdminTutorApplications = () => {
     setSelectedApp(app);
     setEvalNotes(app.admin_notes || '');
     setActionSuccessMsg('');
+    setVideoPlayerVisible(true);
   };
 
   // Close Modal
@@ -97,6 +159,26 @@ export const AdminTutorApplications = () => {
   const handleUpdateStatus = async (newStatus) => {
     if (!selectedApp) return;
 
+    if (newStatus === 'approved') {
+      const confirmed = await showConfirm({
+        title: 'Approve Tutor & Provision Account?',
+        text: `Are you sure you want to approve ${selectedApp.full_name}? A faculty account will be provisioned and an automated congratulations email containing their login credentials will be dispatched to ${selectedApp.email}.`,
+        confirmText: 'Yes, Approve Faculty Member',
+        cancelText: 'Cancel',
+        icon: 'question'
+      });
+      if (!confirmed) return;
+    } else if (newStatus === 'rejected') {
+      const confirmed = await showConfirm({
+        title: 'Reject Teacher Application?',
+        text: `Are you sure you want to mark ${selectedApp.full_name}'s application as rejected?`,
+        confirmText: 'Yes, Reject Application',
+        cancelText: 'Cancel',
+        icon: 'warning'
+      });
+      if (!confirmed) return;
+    }
+
     setEvalSubmitting(true);
     setActionSuccessMsg('');
     try {
@@ -106,13 +188,25 @@ export const AdminTutorApplications = () => {
       });
 
       if (res.data.success) {
-        setActionSuccessMsg(`Application status updated to "${newStatus}". ${newStatus === 'approved' ? 'Tutor account provisioned.' : ''}`);
         // Update local list
         setApplications(prev => prev.map(a => a.id === selectedApp.id ? res.data.application : a));
         setSelectedApp(res.data.application);
+
+        if (newStatus === 'approved' && res.data.credentials) {
+          await showTutorApprovedModal({
+            applicantName: res.data.application?.full_name,
+            email: res.data.credentials.email,
+            tempPassword: res.data.credentials.tempPassword
+          });
+        } else {
+          await showSuccess(
+            'Status Updated',
+            `Application status has been updated to "${newStatus}".`
+          );
+        }
       }
     } catch (err) {
-      alert('Failed to update status: ' + (err.response?.data?.message || err.message));
+      showError('Status Update Failed', err.response?.data?.message || err.message);
     } finally {
       setEvalSubmitting(false);
     }
@@ -120,9 +214,15 @@ export const AdminTutorApplications = () => {
 
   // Permanently Delete Application and Video Handler
   const handleDeleteApplication = async (id, applicantName) => {
-    if (!window.confirm(`Are you sure you want to permanently delete the application for "${applicantName}"? This will permanently delete their 3-minute video and uploaded CV from storage to free up disk space.`)) {
-      return;
-    }
+    const confirmed = await showConfirm({
+      title: 'Delete Application & Data?',
+      text: `Are you sure you want to permanently delete the application for "${applicantName}"? This will permanently delete their application record, uploaded documents, and files. This action cannot be undone.`,
+      confirmText: 'Yes, Delete Permanently',
+      cancelText: 'Cancel',
+      icon: 'warning'
+    });
+    if (!confirmed) return;
+
     try {
       setEvalSubmitting(true);
       const res = await api.delete(`/tutor-applications/${id}`);
@@ -131,10 +231,10 @@ export const AdminTutorApplications = () => {
         if (selectedApp?.id === id) {
           setSelectedApp(null);
         }
-        alert('Application and uploaded video permanently removed from storage.');
+        await showSuccess('Application Deleted', 'The teacher application and associated records have been permanently removed.');
       }
     } catch (err) {
-      alert('Failed to delete application: ' + (err.response?.data?.message || err.message));
+      showError('Delete Failed', err.response?.data?.message || err.message);
     } finally {
       setEvalSubmitting(false);
     }
@@ -433,48 +533,110 @@ export const AdminTutorApplications = () => {
               )}
 
               {/* 1. THE 3-MINUTE INTRODUCTORY VIDEO PLAYER */}
-              <div className="bg-slate-950 rounded-2xl p-4 sm:p-5 text-white space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs sm:text-sm font-extrabold flex items-center gap-2 text-purple-300">
+              <div className="bg-slate-950 rounded-2xl p-4 sm:p-5 text-white space-y-3 border border-slate-800">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center space-x-2">
                     <Video className="w-4 h-4 text-purple-400" />
-                    Applicant 3-Minute Introductory Video
-                  </h4>
-                  <span className="text-[11px] font-mono text-slate-400">
-                    {selectedApp.video_duration || 'Approx. 3 minutes'}
-                  </span>
+                    <h4 className="text-xs sm:text-sm font-extrabold text-purple-300">
+                      Applicant 3-Minute Introductory Video
+                    </h4>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-900/60 text-purple-300 border border-purple-700/50">
+                      In-App Player
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    {selectedApp.video_url && (
+                      <button
+                        type="button"
+                        onClick={() => setVideoPlayerVisible(!videoPlayerVisible)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title={videoPlayerVisible ? 'Hide / Leave Watching Video' : 'Open / Watch Video'}
+                      >
+                        {videoPlayerVisible ? (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5" />
+                            <span>Hide Video</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Watch Video</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    {selectedApp.video_url && (
+                      <a
+                        href={selectedApp.video_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                        title="Open in New Tab"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 {selectedApp.video_url ? (
-                  <div className="relative aspect-video rounded-xl overflow-hidden bg-black shadow-inner border border-slate-800 flex items-center justify-center">
-                    {selectedApp.video_url.includes('youtube.com') || selectedApp.video_url.includes('youtu.be') ? (
-                      <iframe
-                        src={selectedApp.video_url.replace('watch?v=', 'embed/')}
-                        title="Applicant Video"
-                        className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : selectedApp.video_url.includes('loom.com') ? (
-                      <iframe
-                        src={selectedApp.video_url.replace('/share/', '/embed/')}
-                        title="Applicant Video"
-                        className="w-full h-full border-0"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <video
-                        src={selectedApp.video_url}
-                        controls
-                        playsInline
-                        className="w-full h-full object-contain"
+                  videoPlayerVisible ? (
+                    (() => {
+                      const embedInfo = getEmbedVideoUrl(selectedApp.video_url);
+                      return (
+                        <div className="space-y-2 animate-in fade-in">
+                          <div className="relative aspect-video rounded-xl overflow-hidden bg-black shadow-inner border border-slate-800 flex items-center justify-center">
+                            {embedInfo.type === 'video' ? (
+                              <video
+                                src={embedInfo.src}
+                                controls
+                                playsInline
+                                className="w-full h-full object-contain"
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                            ) : (
+                              <iframe
+                                src={embedInfo.src}
+                                title="Applicant Video"
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-400">
+                            <span className="truncate max-w-xs font-mono">{selectedApp.video_url}</span>
+                            <button
+                              type="button"
+                              onClick={() => setVideoPlayerVisible(false)}
+                              className="text-purple-400 hover:text-purple-300 font-semibold cursor-pointer underline"
+                            >
+                              Leave watching video
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs text-slate-300">
+                      <span className="flex items-center gap-2">
+                        <Play className="w-4 h-4 text-purple-400" />
+                        Video player minimized.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setVideoPlayerVisible(true)}
+                        className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all text-xs cursor-pointer"
                       >
-                        Your browser does not support the video tag.
-                      </video>
-                    )}
-                  </div>
+                        Resume Watching Video
+                      </button>
+                    </div>
+                  )
                 ) : (
                   <div className="p-8 text-center text-slate-500 text-xs">
-                    No video file URL attached.
+                    No video link attached.
                   </div>
                 )}
 

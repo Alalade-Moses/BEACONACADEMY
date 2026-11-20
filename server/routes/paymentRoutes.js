@@ -5,7 +5,8 @@ import {
   submitProof,
   verifyPayment,
   rejectPayment,
-  sendPaymentInvoice
+  sendPaymentInvoice,
+  deletePayment
 } from '../controllers/paymentController.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
 
@@ -24,5 +25,6 @@ router.get('/', authenticate, authorize('superadmin', 'parent'), getPayments);
 router.put('/:id/verify', authenticate, authorize('superadmin'), verifyPayment);
 router.put('/:id/reject', authenticate, authorize('superadmin'), rejectPayment);
 router.post('/:id/send-invoice', authenticate, authorize('superadmin'), sendPaymentInvoice);
+router.delete('/:id', authenticate, authorize('superadmin'), deletePayment);
 
 export default router;

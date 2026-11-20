@@ -172,4 +172,32 @@ export const showPermissionBlockedAlert = ({ isMobile, onRetry }) => {
   });
 };
 
+/**
+ * Display Tutor Approval & Provisioned Account Confirmation modal with login credentials
+ */
+export const showTutorApprovedModal = ({ applicantName, email, tempPassword }) => {
+  return BrandSwal.fire({
+    icon: 'success',
+    title: 'Tutor Approved & Provisioned!',
+    iconColor: '#059669',
+    html: `
+      <div style="text-align: left; font-size: 13px; line-height: 1.6; color: #334155;">
+        <p style="margin-bottom: 8px;">Faculty account for <b>${applicantName || 'Educator'}</b> has been provisioned. An automatic congratulation email with login instructions has been dispatched to their email address.</p>
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px; padding: 14px; margin: 14px 0;">
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Login Email:</span>
+            <div style="font-weight: 700; color: #0f172a; font-size: 13px; word-break: break-all;">${email}</div>
+          </div>
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Temporary Password:</span>
+            <div style="font-family: monospace; font-size: 14px; font-weight: 800; color: #050167; background: #e0f2fe; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 4px; border: 1px solid #bae6fd;">${tempPassword}</div>
+          </div>
+        </div>
+        <p style="font-size: 11px; color: #64748b; margin: 0;">The tutor can immediately log in at <b>beaconbridgeacademics.co.uk/login</b> to view assigned classes and resources.</p>
+      </div>
+    `,
+    confirmButtonText: 'Done'
+  });
+};
+
 export default BrandSwal;
