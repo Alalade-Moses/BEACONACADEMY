@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SEO } from '../../components/common/SEO';
 import {
   GraduationCap,
   Video,
@@ -97,8 +98,27 @@ export const HowItWorksPage = () => {
     }
   ];
 
+  const howItWorksSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': 'https://beaconbridgeacademics.co.uk/how-it-works#webpage',
+    'url': 'https://beaconbridgeacademics.co.uk/how-it-works',
+    'name': 'How Beacon Bridge Academics Works: Virtual Classroom & Mentoring',
+    'publisher': {
+      '@type': 'EducationalOrganization',
+      '@id': 'https://beaconbridgeacademics.co.uk/#organization',
+      'name': 'Beacon Bridge Academics'
+    }
+  };
+
   return (
     <div className="bg-[#f0faff] text-[#001f3f]">
+      <SEO 
+        title="How It Works | Virtual Classroom & 1-to-1 Mentoring | Beacon Bridge"
+        description="Discover how Beacon Bridge Academics delivers results: from initial 20-minute diagnostic consultation to live interactive classroom lessons and weekly parent logs."
+        canonicalPath="/how-it-works"
+        schemaJson={howItWorksSchema}
+      />
 
       {/* ========================================================= */}
       {/* HERO BANNER                                               */}

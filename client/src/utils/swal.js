@@ -93,18 +93,39 @@ export const showNetworkError = ({ title = 'Network Connection Interrupted', tex
 
 /**
  * Display a confirmation prompt (returns Promise<boolean>)
+ * Supports either an options object or positional arguments (title, text, confirmText, cancelText, icon)
  */
-export const showConfirm = async ({ title, text, confirmText = 'Confirm', cancelText = 'Cancel', icon = 'question' }) => {
+export const showConfirm = async (optionsOrTitle, textParam, confirmTextParam, cancelTextParam, iconParam) => {
+  let title = 'Are you sure?';
+  let text = '';
+  let confirmText = 'Confirm';
+  let cancelText = 'Cancel';
+  let icon = 'question';
+
+  if (typeof optionsOrTitle === 'object' && optionsOrTitle !== null) {
+    title = optionsOrTitle.title || title;
+    text = optionsOrTitle.text || text;
+    confirmText = optionsOrTitle.confirmText || optionsOrTitle.confirmButtonText || confirmText;
+    cancelText = optionsOrTitle.cancelText || optionsOrTitle.cancelButtonText || cancelText;
+    icon = optionsOrTitle.icon || icon;
+  } else {
+    title = optionsOrTitle || title;
+    text = textParam || text;
+    confirmText = confirmTextParam || confirmText;
+    cancelText = cancelTextParam || cancelText;
+    icon = iconParam || icon;
+  }
+
   const result = await BrandSwal.fire({
     icon,
-    title: title || 'Are you sure?',
-    text: text || '',
+    title,
+    text,
     showCancelButton: true,
-    confirmButtonText,
-    cancelButtonText,
+    confirmButtonText: confirmText,
+    cancelButtonText: cancelText,
     iconColor: icon === 'warning' ? '#f59e0b' : '#050167'
   });
-  return result.isConfirmed;
+  return Boolean(result.isConfirmed);
 };
 
 /**

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { SEO } from '../../components/common/SEO';
 import api from '../../api/axios';
 import { SafeguardingPolicyDocument } from '../../components/safeguarding/SafeguardingPolicyDocument';
 import { showWarning, showSuccess, showError } from '../../utils/swal';
@@ -300,6 +301,11 @@ export const TeacherApplicationPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pt-24 pb-20">
+      <SEO 
+        title="Teach With Us | UK Curriculum Tutor Applications | Beacon Bridge"
+        description="Apply to join the Beacon Bridge Academics faculty. We are hiring qualified educators and subject specialists for GCSE, A-Level, and international curricula."
+        canonicalPath="/apply-to-teach"
+      />
       
       {/* Top Banner / Hero */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 text-center">

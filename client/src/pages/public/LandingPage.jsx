@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { SEO } from '../../components/common/SEO';
 import {
   GraduationCap,
   Video,
@@ -406,8 +407,43 @@ export const LandingPage = () => {
     }
   ];
 
+  const homeSchema = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'EducationalOrganization',
+        '@id': 'https://beaconbridgeacademics.co.uk/#organization',
+        'name': 'Beacon Bridge Academics',
+        'url': 'https://beaconbridgeacademics.co.uk',
+        'logo': 'https://beaconbridgeacademics.co.uk/logo.png',
+        'email': 'info@beaconbridgeacademics.co.uk',
+        'description': 'Premier online tutoring institution for UK GCSE, A-Level and international curricula with live virtual classrooms.',
+        'address': {
+          '@type': 'PostalAddress',
+          'addressLocality': 'London',
+          'addressCountry': 'GB'
+        }
+      },
+      {
+        '@type': 'WebSite',
+        '@id': 'https://beaconbridgeacademics.co.uk/#website',
+        'url': 'https://beaconbridgeacademics.co.uk',
+        'name': 'Beacon Bridge Academics',
+        'publisher': {
+          '@id': 'https://beaconbridgeacademics.co.uk/#organization'
+        }
+      }
+    ]
+  };
+
   return (
     <div className="bg-[#f0faff] text-[#001f3f]">
+      <SEO 
+        title="Online Tutoring UK | GCSE & A-Level Tutors | Beacon Bridge"
+        description="Online tutoring for GCSE, A-Level and international curricula. Learn with expert tutors through interactive virtual classrooms at Beacon Bridge Academics."
+        canonicalPath="/"
+        schemaJson={homeSchema}
+      />
 
       {/* ========================================================= */}
       {/* SECTION 1: HERO WITH DYNAMIC BACKGROUND CAROUSEL          */}

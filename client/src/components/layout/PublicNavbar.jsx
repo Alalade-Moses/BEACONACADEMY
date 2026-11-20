@@ -112,6 +112,12 @@ export const PublicNavbar = () => {
             >
               How It Works
             </Link>
+            <Link
+              to="/blog"
+              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+            >
+              Blog
+            </Link>
             <button
               type="button"
               onClick={() => scrollToSection('faq')}
@@ -119,6 +125,12 @@ export const PublicNavbar = () => {
             >
               FAQ
             </button>
+            <Link
+              to="/contact"
+              className="px-2 xl:px-3 py-1.5 rounded-lg hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer"
+            >
+              Contact
+            </Link>
             <Link
               to="/apply-to-teach"
               className="px-2 xl:px-3 py-1.5 rounded-lg text-emerald-700 hover:text-[#050167] hover:bg-[#40ffa7]/15 active:text-[#001f3f] active:scale-95 transition-all whitespace-nowrap cursor-pointer font-extrabold"
@@ -233,6 +245,20 @@ export const PublicNavbar = () => {
               className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
             >
               How It Works
+            </Link>
+            <Link
+              to="/blog"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
+            >
+              Academic Blog & Insights
+            </Link>
+            <Link
+              to="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95"
+            >
+              Contact Us
             </Link>
             <button
               type="button"

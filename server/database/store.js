@@ -815,7 +815,12 @@ export const store = {
     if (pool) {
       try {
         const res = await pool.query('SELECT * FROM profiles ORDER BY created_at ASC');
-        if (res.rows && res.rows.length > 0) return res.rows;
+        if (res.rows) {
+          // Merge PostgreSQL profiles with any memory profiles not yet in db
+          const pgEmails = new Set(res.rows.map(r => r.email.toLowerCase()));
+          const missing = (memoryData.profiles || []).filter(p => !pgEmails.has(p.email.toLowerCase()));
+          return [...res.rows, ...missing];
+        }
       } catch (e) {
         console.warn('[store] pg getProfiles fallback:', e.message);
       }
@@ -880,28 +885,95 @@ export const store = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+
+    if (pool) {
+      try {
+        await pool.query(`
+          INSERT INTO profiles (id, email, password_hash, full_name, role, avatar_url, phone, bio, status, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ON CONFLICT (email) DO UPDATE SET
+            password_hash = EXCLUDED.password_hash,
+            full_name = EXCLUDED.full_name,
+            role = EXCLUDED.role,
+            avatar_url = EXCLUDED.avatar_url,
+            phone = EXCLUDED.phone,
+            bio = EXCLUDED.bio,
+            status = EXCLUDED.status,
+            updated_at = EXCLUDED.updated_at
+        `, [
+          newProfile.id,
+          newProfile.email.toLowerCase().trim(),
+          newProfile.password_hash,
+          newProfile.full_name,
+          newProfile.role,
+          newProfile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(newProfile.full_name)}`,
+          newProfile.phone || '',
+          newProfile.bio || '',
+          newProfile.status || 'active',
+          newProfile.created_at,
+          newProfile.updated_at
+        ]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL createProfile notice:', dbErr.message);
+      }
+    }
+
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('profiles').insert([newProfile]).select().single();
       if (!error && data) return data;
     }
-    memoryData.profiles.push(newProfile);
+
+    const existingIdx = memoryData.profiles.findIndex(p => p.email.toLowerCase() === newProfile.email.toLowerCase());
+    if (existingIdx !== -1) {
+      memoryData.profiles[existingIdx] = newProfile;
+    } else {
+      memoryData.profiles.push(newProfile);
+    }
     return newProfile;
   },
 
   updateProfile: async (id, updates) => {
+    const updatedAt = new Date().toISOString();
+    if (pool) {
+      try {
+        const fields = [];
+        const values = [];
+        let i = 1;
+        for (const [key, val] of Object.entries(updates)) {
+          fields.push(`${key} = $${i}`);
+          values.push(val);
+          i++;
+        }
+        fields.push(`updated_at = $${i}`);
+        values.push(updatedAt);
+        i++;
+        values.push(id);
+        await pool.query(`UPDATE profiles SET ${fields.join(', ')} WHERE id = $${i - 1}`, values);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL updateProfile notice:', dbErr.message);
+      }
+    }
+
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select().single();
       if (!error && data) return data;
     }
     const idx = memoryData.profiles.findIndex(p => p.id === id);
     if (idx !== -1) {
-      memoryData.profiles[idx] = { ...memoryData.profiles[idx], ...updates, updated_at: new Date().toISOString() };
+      memoryData.profiles[idx] = { ...memoryData.profiles[idx], ...updates, updated_at: updatedAt };
       return memoryData.profiles[idx];
     }
     return null;
   },
 
   deleteProfile: async (id) => {
+    if (pool) {
+      try {
+        await pool.query('DELETE FROM profiles WHERE id = $1', [id]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL deleteProfile notice:', dbErr.message);
+      }
+    }
     if (isSupabaseConfigured) {
       await supabase.from('profiles').delete().eq('id', id);
     }

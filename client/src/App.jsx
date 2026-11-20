@@ -12,6 +12,11 @@ import { LandingPage } from './pages/public/LandingPage';
 import { AboutPage } from './pages/public/AboutPage';
 import { HowItWorksPage } from './pages/public/HowItWorksPage';
 import { CurriculumPage } from './pages/public/CurriculumPage';
+import { BlogPage } from './pages/public/BlogPage';
+import { ContactPage } from './pages/public/ContactPage';
+import { PrivacyPolicyPage } from './pages/public/PrivacyPolicyPage';
+import { TermsPage } from './pages/public/TermsPage';
+import { SecurityPolicyPage } from './pages/public/SecurityPolicyPage';
 import { LoginPage } from './pages/public/LoginPage';
 import { RegisterPage } from './pages/public/RegisterPage';
 import { PaymentProofPage } from './pages/public/PaymentProofPage';
@@ -73,6 +78,11 @@ export const App = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/book-consultation" element={<BookConsultationPage />} />
         <Route path="/consultation" element={<BookConsultationPage />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/security" element={<SecurityPolicyPage />} />
         <Route path="/payment-proof" element={<PaymentProofPage />} />
         <Route path="/apply-to-teach" element={<TeacherApplicationPage />} />
         <Route path="/tutor/apply" element={<TeacherApplicationPage />} />

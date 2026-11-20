@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bba-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#050167" />
+      <stop offset="100%" stop-color="#001633" />
+    </linearGradient>
+    <linearGradient id="mint-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#40ffa7" />
+      <stop offset="100%" stop-color="#2dd4bf" />
+    </linearGradient>
+  </defs>
+  <!-- Background Squircle -->
+  <rect width="64" height="64" rx="16" fill="url(#bba-grad)" />
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#40ffa7" stroke-opacity="0.35" stroke-width="1.5" />
+  
+  <!-- Stylized Monogram B with Beacon Bridge Arch -->
+  <path d="M19 14 H34 C41.5 14 47 18.2 47 24.5 C47 28.5 44.5 31.8 40.5 33.2 C45.5 34.8 48.5 38.8 48.5 43.8 C48.5 50.5 42.5 55 34.5 55 H19 V14 Z" fill="url(#mint-grad)" />
+  <!-- Inner counter 1 (Top loop) -->
+  <path d="M26.5 21 V28.5 H33 C36.2 28.5 38.5 27 38.5 24.8 C38.5 22.5 36.2 21 33 21 H26.5 Z" fill="#050167" />
+  <!-- Inner counter 2 (Bottom loop with arch) -->
+  <path d="M26.5 36 V48 H33.8 C37.5 48 40 46 40 42 C40 38 37.5 36 33.8 36 H26.5 Z" fill="#050167" />
+  <!-- Beacon Lighthouse Sparkle -->
+  <circle cx="49" cy="15" r="3.5" fill="#40ffa7" />
+</svg>

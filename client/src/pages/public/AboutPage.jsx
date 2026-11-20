@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { SEO } from '../../components/common/SEO';
 import {
   GraduationCap,
   ShieldCheck,
@@ -21,8 +22,29 @@ import {
 } from 'lucide-react';
 
 export const AboutPage = () => {
+  const aboutSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    '@id': 'https://beaconbridgeacademics.co.uk/about#aboutpage',
+    'url': 'https://beaconbridgeacademics.co.uk/about',
+    'name': 'About Beacon Bridge Academics',
+    'description': 'Online academic support company for students in the UK, US, Canada, and Australia, delivered by curriculum-trained educators.',
+    'mainEntity': {
+      '@type': 'EducationalOrganization',
+      '@id': 'https://beaconbridgeacademics.co.uk/#organization',
+      'name': 'Beacon Bridge Academics',
+      'url': 'https://beaconbridgeacademics.co.uk'
+    }
+  };
+
   return (
     <div className="bg-[#f0faff] text-[#001f3f]">
+      <SEO 
+        title="About Us | Curriculum Specialists & Mission | Beacon Bridge Academics"
+        description="Learn about Beacon Bridge Academics: our UK curriculum specialists, DBS-checked faculty, transparent parent oversight, and mission to help children thrive."
+        canonicalPath="/about"
+        schemaJson={aboutSchema}
+      />
       
       {/* ========================================================= */}
       {/* HERO BANNER: HERITAGE & MISSION                           */}

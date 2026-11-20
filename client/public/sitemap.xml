@@ -1,28 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://beaconbridgeacademics.co.uk/</loc>
-    <lastmod>2026-11-11</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
-    <loc>https://beaconbridgeacademics.co.uk/register</loc>
-    <lastmod>2026-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <loc>https://beaconbridgeacademics.co.uk/about</loc>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
-    <loc>https://beaconbridgeacademics.co.uk/payment-proof</loc>
-    <lastmod>2026-11-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://beaconbridgeacademics.co.uk/curriculum</loc>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
-    <loc>https://beaconbridgeacademics.co.uk/login</loc>
-    <lastmod>2026-11-11</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://beaconbridgeacademics.co.uk/how-it-works</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://beaconbridgeacademics.co.uk/book-consultation</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://beaconbridgeacademics.co.uk/apply-to-teach</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://beaconbridgeacademics.co.uk/blog</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://beaconbridgeacademics.co.uk/contact</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://beaconbridgeacademics.co.uk/privacy</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://beaconbridgeacademics.co.uk/terms</loc>
+    <lastmod>2026-11-20</lastmod>
+  </url>
+  <url>
+    <loc>https://beaconbridgeacademics.co.uk/security</loc>
+    <lastmod>2026-11-20</lastmod>
   </url>
 </urlset>

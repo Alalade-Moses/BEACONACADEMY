@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SEO } from '../../components/common/SEO';
 import api from '../../api/axios';
 import {
   Calendar,
@@ -273,6 +274,11 @@ export const BookConsultationPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
+      <SEO 
+        title="Book a Free 20-Min Consultation | Beacon Bridge Academics"
+        description="Book a complimentary 20-minute diagnostic consultation with Mr. Gideon Babs or our senior academic advisors to identify syllabus gaps and build an individualized tuition plan."
+        canonicalPath="/book-consultation"
+      />
       
       {/* Master Consultation Container Header */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden mb-10">

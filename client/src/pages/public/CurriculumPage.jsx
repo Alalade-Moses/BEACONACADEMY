@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SEO } from '../../components/common/SEO';
 import {
   GraduationCap,
   BookOpen,
@@ -234,8 +235,29 @@ export const CurriculumPage = () => {
     }
   ];
 
+  const curriculumSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    '@id': 'https://beaconbridgeacademics.co.uk/curriculum#service',
+    'url': 'https://beaconbridgeacademics.co.uk/curriculum',
+    'name': 'UK GCSE & A-Level Online Tutoring Services',
+    'provider': {
+      '@type': 'EducationalOrganization',
+      '@id': 'https://beaconbridgeacademics.co.uk/#organization',
+      'name': 'Beacon Bridge Academics'
+    },
+    'serviceType': 'Online Academic Tuition',
+    'areaServed': 'GB'
+  };
+
   return (
     <div className="bg-[#f0faff] text-[#001f3f]">
+      <SEO 
+        title="Curriculum & Exam Boards | GCSE & A-Level Tuition | Beacon Bridge"
+        description="Explore our curriculum offerings across AQA, Edexcel, OCR, Cambridge CIE, IB, and North American AP programs. Tailored 1-to-1 and small group tuition."
+        canonicalPath="/curriculum"
+        schemaJson={curriculumSchema}
+      />
 
       {/* ========================================================= */}
       {/* HERO BANNER                                               */}

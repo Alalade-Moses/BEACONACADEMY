@@ -123,12 +123,14 @@ export const PublicFooter = () => {
             <h4 className="text-white font-bold mb-4 tracking-wider uppercase text-xs">Other</h4>
             <ul className="space-y-2.5">
               <li><Link to="/about" className="hover:text-[#40ffa7] transition-colors">About Us</Link></li>
+              <li><Link to="/blog" className="hover:text-[#40ffa7] transition-colors">Academic Blog</Link></li>
+              <li><Link to="/contact" className="hover:text-[#40ffa7] transition-colors">Contact Us</Link></li>
               <li><Link to="/book-consultation" className="hover:text-[#40ffa7] transition-colors">Book a Free Consultation</Link></li>
               <li><Link to="/register" className="hover:text-[#40ffa7] transition-colors">Register with Us</Link></li>
+              <li><Link to="/security" className="hover:text-[#40ffa7] transition-colors">Security Policy</Link></li>
               <li><Link to="/payment-proof" className="hover:text-[#40ffa7] transition-colors">Tuition & Wire Account</Link></li>
               <li><Link to="/about#cancellation" className="hover:text-[#40ffa7] transition-colors">Lesson Cancellation Policy</Link></li>
               <li><Link to="/about#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</Link></li>
-              <li><Link to="/about#promise" className="hover:text-[#40ffa7] transition-colors">Our Promise to Parents</Link></li>
             </ul>
           </div>
 
@@ -138,11 +140,11 @@ export const PublicFooter = () => {
         <div className="pt-8 border-t border-[#050167]/60 flex flex-col sm:flex-row items-center justify-between text-xs text-[#f0faff]/60 gap-4">
           <p>&copy; {new Date().getFullYear()} Beacon Bridge Academics. All rights reserved.</p>
           <div className="flex items-center space-x-6 flex-wrap gap-y-2">
-            <a href="/#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</a>
-            <a href="/#safeguarding" className="hover:text-[#40ffa7] transition-colors">Parent Code of Conduct</a>
-            <Link to="/about#cancellation" className="hover:text-[#40ffa7] transition-colors">Cancellation Terms</Link>
-            <span className="hover:text-[#40ffa7] cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-[#40ffa7] cursor-pointer">Terms of Service</span>
+            <Link to="/about#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</Link>
+            <Link to="/terms" className="hover:text-[#40ffa7] transition-colors">Terms of Service</Link>
+            <Link to="/privacy" className="hover:text-[#40ffa7] transition-colors">Privacy Policy</Link>
+            <Link to="/security" className="hover:text-[#40ffa7] transition-colors">Security Policy</Link>
+            <Link to="/contact" className="hover:text-[#40ffa7] transition-colors">Contact</Link>
           </div>
         </div>
       </div>

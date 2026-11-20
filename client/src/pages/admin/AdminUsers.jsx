@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { showConfirm, showSuccess, showError } from '../../utils/swal';
 import {
   Users,
   Search,
@@ -118,13 +119,17 @@ export const AdminUsers = () => {
         if (currentUser?.id === editingUser.id && res.data.user && updateUser) {
           updateUser(res.data.user);
         }
+        await showSuccess('User Updated', 'User profile details successfully saved.');
       } else {
         await api.post('/users', formData);
+        await showSuccess('User Account Created', `Account for ${formData.full_name} (${formData.role}) created successfully.`);
       }
       setModalOpen(false);
-      fetchUsers();
+      await fetchUsers();
     } catch (err) {
-      setFormError(err.response?.data?.message || err.message || 'Action failed.');
+      const msg = err.response?.data?.message || err.message || 'Action failed.';
+      setFormError(msg);
+      showError('Action Failed', msg);
     } finally {
       setActionLoading(false);
     }
@@ -134,19 +139,29 @@ export const AdminUsers = () => {
     const newStatus = user.status === 'active' ? 'suspended' : 'active';
     try {
       await api.put(`/users/${user.id}`, { status: newStatus });
-      fetchUsers();
+      await showSuccess('Status Updated', `User status changed to ${newStatus}.`);
+      await fetchUsers();
     } catch (err) {
-      alert('Failed to update status');
+      showError('Status Update Failed', err.response?.data?.message || 'Failed to update status');
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to permanently delete this user? This cannot be undone.')) return;
+  const handleDeleteUser = async (userId, userName) => {
+    const confirmed = await showConfirm({
+      title: 'Delete User Account?',
+      text: `Are you sure you want to permanently delete the account for ${userName || 'this user'}? This action cannot be undone.`,
+      confirmText: 'Yes, Delete User',
+      cancelText: 'Cancel',
+      icon: 'warning'
+    });
+    if (!confirmed) return;
+
     try {
       await api.delete(`/users/${userId}`);
-      fetchUsers();
+      await showSuccess('User Deleted', 'User account permanently removed.');
+      await fetchUsers();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete user.');
+      showError('Delete Failed', err.response?.data?.message || 'Failed to delete user.');
     }
   };
 
@@ -290,7 +305,7 @@ export const AdminUsers = () => {
                         </button>
                         {u.role !== 'superadmin' && (
                           <button
-                            onClick={() => handleDeleteUser(u.id)}
+                            onClick={() => handleDeleteUser(u.id, u.full_name)}
                             title="Delete User"
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                           >

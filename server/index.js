@@ -107,6 +107,29 @@ app.use('/api/tutor-applications', tutorApplicationRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/consultations', consultationRoutes);
 
+// Explicit handlers for SEO crawlers & Search Console
+app.get('/sitemap.xml', (req, res) => {
+  const distSitemap = path.join(__dirname, '../client/dist/sitemap.xml');
+  const pubSitemap = path.join(__dirname, '../client/public/sitemap.xml');
+  const target = fs.existsSync(distSitemap) ? distSitemap : pubSitemap;
+  if (fs.existsSync(target)) {
+    res.type('application/xml');
+    return res.sendFile(target);
+  }
+  res.status(404).send('Sitemap not found');
+});
+
+app.get('/robots.txt', (req, res) => {
+  const distRobots = path.join(__dirname, '../client/dist/robots.txt');
+  const pubRobots = path.join(__dirname, '../client/public/robots.txt');
+  const target = fs.existsSync(distRobots) ? distRobots : pubRobots;
+  if (fs.existsSync(target)) {
+    res.type('text/plain');
+    return res.sendFile(target);
+  }
+  res.status(404).send('Robots.txt not found');
+});
+
 // Serve static frontend build if client/dist exists
 const clientDist = path.join(__dirname, '../client/dist');
 if (fs.existsSync(clientDist)) {
