@@ -72,6 +72,12 @@ const ICE_CONFIG = {
   iceCandidatePoolSize: 10
 };
 
+// Opus Forward Error Correction & High-Fidelity Audio Parameters (Google Meet Standard)
+const formatSDPForOpus = (sdp) => {
+  if (!sdp) return sdp;
+  return sdp.replace(/a=fmtp:(\d+) minptime=\d+/g, 'a=fmtp:$1 minptime=10;useinbandfec=1');
+};
+
 // Isolated Remote Media Components ensuring reliable play on Desktop & Mobile browsers
 const RemoteParticipantAudio = ({ stream, onAudioBlocked }) => {
   const audioRef = useRef(null);
@@ -100,25 +106,6 @@ const RemoteParticipantAudio = ({ stream, onAudioBlocked }) => {
     };
 
     tryPlay();
-
-    const handleTrackChange = () => {
-      if (audioEl.srcObject !== stream) {
-        audioEl.srcObject = stream;
-      }
-      tryPlay();
-    };
-
-    stream.addEventListener('addtrack', handleTrackChange);
-    stream.getAudioTracks().forEach(track => {
-      track.addEventListener('unmute', handleTrackChange);
-    });
-
-    return () => {
-      stream.removeEventListener('addtrack', handleTrackChange);
-      stream.getAudioTracks().forEach(track => {
-        track.removeEventListener('unmute', handleTrackChange);
-      });
-    };
   }, [stream, onAudioBlocked]);
 
   return <audio ref={audioRef} autoPlay playsInline style={{ position: 'fixed', top: -50, left: -50, opacity: 0.01, pointerEvents: 'none', width: '1px', height: '1px' }} />;
@@ -235,6 +222,7 @@ export const ClassroomPage = () => {
   const [remoteStreams, setRemoteStreams] = useState(new Map());
   const peerConnectionsRef = useRef(new Map()); // socketId -> RTCPeerConnection
   const pendingCandidatesRef = useRef(new Map()); // socketId -> RTCIceCandidate[]
+  const peerAudioElementsRef = useRef(new Map()); // socketId -> HTMLAudioElement (Dedicated native audio engine)
   const localScreenStreamRef = useRef(null);
   const screenVideoRef = useRef(null);
   const [screenSharerInfo, setScreenSharerInfo] = useState(null);
@@ -443,6 +431,14 @@ export const ClassroomPage = () => {
         try { pc.close(); } catch (e) {}
       });
       peerConnectionsRef.current.clear();
+      peerAudioElementsRef.current.forEach(audioEl => {
+        try {
+          audioEl.pause();
+          audioEl.srcObject = null;
+          audioEl.remove();
+        } catch (e) {}
+      });
+      peerAudioElementsRef.current.clear();
       setRemoteStreams(new Map());
       setLocalStream(null);
       setVideoActive(false);
@@ -553,55 +549,91 @@ export const ClassroomPage = () => {
 
     // Receive incoming remote tracks (Student sees Tutor / Tutor sees Student)
     pc.ontrack = (event) => {
+      const incomingStream = event.streams && event.streams[0] ? event.streams[0] : null;
+
+      // 1. Direct WebRTC Native Audio Engine (Bypasses React re-renders, continuous playback like Google Meet)
+      if (event.track.kind === 'audio') {
+        let audioEl = peerAudioElementsRef.current.get(targetSocketId);
+        if (!audioEl) {
+          audioEl = document.createElement('audio');
+          audioEl.id = `remote-audio-${targetSocketId}`;
+          audioEl.autoplay = true;
+          audioEl.playsInline = true;
+          audioEl.muted = false;
+          audioEl.volume = 1.0;
+          document.body.appendChild(audioEl);
+          peerAudioElementsRef.current.set(targetSocketId, audioEl);
+        }
+
+        const audioStream = incomingStream || new MediaStream([event.track]);
+        if (audioEl.srcObject !== audioStream) {
+          audioEl.srcObject = audioStream;
+        }
+
+        const playPromise = audioEl.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            if (err.name !== 'AbortError') {
+              console.warn('[Audio Engine] Autoplay blocked, awaiting tap:', err);
+              setAudioBlocked(true);
+            }
+          });
+        }
+
+        event.track.onunmute = () => {
+          if (audioEl && audioEl.paused) {
+            audioEl.play().catch(() => setAudioBlocked(true));
+          }
+          setRemoteStreams(prev => {
+            const existing = prev.get(targetSocketId);
+            if (!existing) return prev;
+            const next = new Map(prev);
+            next.set(targetSocketId, { ...existing, isMicActive: true });
+            return next;
+          });
+        };
+      }
+
+      // 2. State synchronization for UI (Video tiles, name tags, mic badges)
       setRemoteStreams(prev => {
         const next = new Map(prev);
         const existing = next.get(targetSocketId);
         let stream = existing?.stream;
         if (!stream) {
-          stream = event.streams && event.streams[0] ? event.streams[0] : new MediaStream();
+          stream = incomingStream || new MediaStream();
         }
         if (event.track) {
           if (!stream.getTracks().some(t => t.id === event.track.id)) {
             stream.addTrack(event.track);
           }
         }
-        // Always provide a fresh MediaStream clone so React triggers re-render for audio & video elements
-        const freshStream = new MediaStream(stream.getTracks());
-        const hasLiveVideo = freshStream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled) || freshStream.getVideoTracks().length > 0;
-        const hasLiveAudio = freshStream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled) || freshStream.getAudioTracks().length > 0;
+
+        const hasLiveVideo = stream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled);
+        const hasLiveAudio = stream.getAudioTracks().some(t => t.readyState === 'live' && t.enabled);
 
         next.set(targetSocketId, {
           socketId: targetSocketId,
           user: targetUser || existing?.user,
-          stream: freshStream,
+          stream: stream,
           isVideoActive: hasLiveVideo || (existing?.isVideoActive ?? false),
           isMicActive: hasLiveAudio || (existing?.isMicActive ?? false)
         });
         return next;
       });
-
-      if (event.track) {
-        event.track.onunmute = () => {
-          setRemoteStreams(prev => {
-            const existing = prev.get(targetSocketId);
-            if (!existing) return prev;
-            const next = new Map(prev);
-            const freshStream = new MediaStream(existing.stream.getTracks());
-            next.set(targetSocketId, {
-              ...existing,
-              stream: freshStream,
-              isVideoActive: true,
-              isMicActive: true
-            });
-            return next;
-          });
-        };
-      }
     };
 
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'closed' || pc.connectionState === 'failed') {
         peerConnectionsRef.current.delete(targetSocketId);
+        const audioEl = peerAudioElementsRef.current.get(targetSocketId);
+        if (audioEl) {
+          try {
+            audioEl.pause();
+            audioEl.srcObject = null;
+            audioEl.remove();
+          } catch (e) {}
+          peerAudioElementsRef.current.delete(targetSocketId);
+        }
         setRemoteStreams(prev => {
           const next = new Map(prev);
           next.delete(targetSocketId);
@@ -670,7 +702,12 @@ export const ClassroomPage = () => {
                 });
                 requestVideo = false;
               } catch (e4) {
-                throw e4;
+                try {
+                  stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                  requestVideo = false;
+                } catch (e5) {
+                  throw e5;
+                }
               }
             }
           }
@@ -688,9 +725,25 @@ export const ClassroomPage = () => {
           }
         }
       } else if (requestAudio) {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              channelCount: 1,
+              sampleRate: 48000
+            }
+          });
+        } catch (e1) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+            });
+          } catch (e2) {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          }
+        }
       }
 
       if (stream) {
@@ -781,42 +834,55 @@ export const ClassroomPage = () => {
     };
   }, [startMedia, stopAllMediaTracks]);
 
-  // Mobile & Desktop Audio Context Unlock: First touch, click, pointerdown or keypress anywhere unlocks audio
-  useEffect(() => {
-    const unlockAudio = () => {
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          const dummyCtx = new AudioCtx();
-          if (dummyCtx.state === 'suspended') {
-            dummyCtx.resume().catch(() => {});
-          }
+  // Mobile & Desktop Universal Audio Context & Native Pipeline Unlocker (Google Meet Standard)
+  const unlockAudioPipeline = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        if (!window.__bb_audioCtx) {
+          window.__bb_audioCtx = new AudioCtx();
         }
-      } catch (e) {}
-
-      const audios = document.querySelectorAll('audio');
-      audios.forEach(a => {
-        a.muted = false;
-        a.volume = 1.0;
-        if (a.srcObject) {
-          a.play().catch(() => {});
+        if (window.__bb_audioCtx.state === 'suspended') {
+          window.__bb_audioCtx.resume().catch(() => {});
         }
-      });
-      if (audioBlocked) {
-        setAudioBlocked(false);
       }
-    };
-    window.addEventListener('touchstart', unlockAudio, { passive: true });
-    window.addEventListener('click', unlockAudio, { passive: true });
-    window.addEventListener('pointerdown', unlockAudio, { passive: true });
-    window.addEventListener('keydown', unlockAudio, { passive: true });
+    } catch (e) {}
+
+    // 1. Play all dedicated native WebRTC audio elements
+    peerAudioElementsRef.current.forEach((audioEl) => {
+      if (audioEl && audioEl.srcObject) {
+        audioEl.muted = false;
+        audioEl.volume = 1.0;
+        audioEl.play().catch(() => {});
+      }
+    });
+
+    // 2. Play all document audio tags
+    document.querySelectorAll('audio').forEach(a => {
+      a.muted = false;
+      a.volume = 1.0;
+      if (a.srcObject) {
+        a.play().catch(() => {});
+      }
+    });
+
+    setAudioBlocked(false);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('touchstart', unlockAudioPipeline, { passive: true });
+    window.addEventListener('touchend', unlockAudioPipeline, { passive: true });
+    window.addEventListener('click', unlockAudioPipeline, { passive: true });
+    window.addEventListener('pointerdown', unlockAudioPipeline, { passive: true });
+    window.addEventListener('keydown', unlockAudioPipeline, { passive: true });
     return () => {
-      window.removeEventListener('touchstart', unlockAudio);
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('pointerdown', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudioPipeline);
+      window.removeEventListener('touchend', unlockAudioPipeline);
+      window.removeEventListener('click', unlockAudioPipeline);
+      window.removeEventListener('pointerdown', unlockAudioPipeline);
+      window.removeEventListener('keydown', unlockAudioPipeline);
     };
-  }, [audioBlocked]);
+  }, [unlockAudioPipeline]);
 
   // Bind localStream to video element safely and trigger play
   useEffect(() => {
@@ -988,6 +1054,7 @@ export const ClassroomPage = () => {
       try {
         const pc = createPeerConnection(socketId, joinedUser, true);
         const offer = await pc.createOffer();
+        if (offer.sdp) offer.sdp = formatSDPForOpus(offer.sdp);
         await pc.setLocalDescription(offer);
         socket.emit('webrtc_offer', {
           targetSocketId: socketId,
@@ -997,7 +1064,7 @@ export const ClassroomPage = () => {
             role: user?.role,
             avatar_url: user?.avatar_url
           },
-          offer,
+          offer: pc.localDescription,
           isScreen: Boolean(localScreenStreamRef.current)
         });
       } catch (err) {
@@ -1040,6 +1107,7 @@ export const ClassroomPage = () => {
         pendingCandidatesRef.current.delete(senderSocketId);
 
         const answer = await pc.createAnswer();
+        if (answer.sdp) answer.sdp = formatSDPForOpus(answer.sdp);
         await pc.setLocalDescription(answer);
         socket.emit('webrtc_answer', {
           targetSocketId: senderSocketId,
@@ -1126,8 +1194,17 @@ export const ClassroomPage = () => {
       if (socketId) {
         const pc = peerConnectionsRef.current.get(socketId);
         if (pc) {
-          pc.close();
+          try { pc.close(); } catch (e) {}
           peerConnectionsRef.current.delete(socketId);
+        }
+        const audioEl = peerAudioElementsRef.current.get(socketId);
+        if (audioEl) {
+          try {
+            audioEl.pause();
+            audioEl.srcObject = null;
+            audioEl.remove();
+          } catch (e) {}
+          peerAudioElementsRef.current.delete(socketId);
         }
         setRemoteStreams(prev => {
           const next = new Map(prev);
@@ -2749,17 +2826,14 @@ export const ClassroomPage = () => {
 
       {/* MOBILE AUTOPLAY AUDIO PERMISSION UNBLOCK BANNER */}
       {audioBlocked && (
-        <div 
-          onClick={() => {
-            const audios = document.querySelectorAll('audio');
-            audios.forEach(a => a.play().catch(() => {}));
-            setAudioBlocked(false);
-          }}
-          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-full shadow-2xl font-bold text-xs flex items-center space-x-2 cursor-pointer border-2 border-white animate-bounce"
+        <button
+          type="button"
+          onClick={unlockAudioPipeline}
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-6 py-3 rounded-full shadow-2xl font-black text-xs sm:text-sm flex items-center space-x-2.5 cursor-pointer border-2 border-white animate-bounce transition-transform"
         >
-          <Volume2 className="w-4 h-4 text-emerald-200" />
+          <Volume2 className="w-5 h-5 text-emerald-200 animate-pulse" />
           <span>Tap to Enable Classroom Audio 🔊</span>
-        </div>
+        </button>
       )}
 
       {/* TUTOR LAUNCH BAR (When class is scheduled) */}
