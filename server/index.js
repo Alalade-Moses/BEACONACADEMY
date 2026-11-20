@@ -29,6 +29,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import tutorApplicationRoutes from './routes/tutorApplicationRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import consultationRoutes from './routes/consultationRoutes.js';
+import blogRoutes from './routes/blogRoutes.js';
 import { store } from './database/store.js';
 import { startClassReminderScheduler } from './services/classReminderScheduler.js';
 
@@ -53,6 +54,9 @@ const io = new Server(server, {
   pingInterval: 25000,
   allowUpgrades: true
 });
+
+// Attach Socket.IO instance to Express app for real-time controllers
+app.set('io', io);
 
 // Middleware
 app.use(cors({ origin: '*' }));
@@ -106,6 +110,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/tutor-applications', tutorApplicationRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/consultations', consultationRoutes);
+app.use('/api/blog', blogRoutes);
 
 // Explicit handlers for SEO crawlers & Search Console
 app.get('/sitemap.xml', (req, res) => {

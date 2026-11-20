@@ -46,6 +46,32 @@ if (pool) {
         `, [SUPERADMIN_EMAIL, SUPERADMIN_HASH]);
         console.log(`🔐 [AUTH] Super Administrator account synchronized from environment (${SUPERADMIN_EMAIL}).`);
       }
+
+      // Ensure blog_posts table exists in PostgreSQL
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS blog_posts (
+          id VARCHAR(100) PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          slug VARCHAR(255) UNIQUE NOT NULL,
+          category VARCHAR(100) DEFAULT 'GCSE Mastery',
+          type VARCHAR(50) DEFAULT 'article',
+          excerpt TEXT,
+          content TEXT,
+          flyer_image_url TEXT,
+          author_name VARCHAR(255) DEFAULT 'Beacon Bridge Academics',
+          author_role VARCHAR(255) DEFAULT 'Curriculum Specialist',
+          read_time VARCHAR(50) DEFAULT '5 min read',
+          tags TEXT[] DEFAULT '{}',
+          status VARCHAR(50) DEFAULT 'published',
+          featured BOOLEAN DEFAULT false,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+        CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status);
+        CREATE INDEX IF NOT EXISTS idx_blog_posts_type ON blog_posts(type);
+      `);
+      console.log('📰 [BLOG] blog_posts table verified/created in PostgreSQL.');
     } catch (syncErr) {
       console.warn('⚠️ [AUTH] Superadmin sync notice:', syncErr.message);
     }
@@ -804,6 +830,80 @@ const memoryData = {
       status: 'confirmed',
       created_at: new Date('2026-02-01T10:00:00Z').toISOString(),
       updated_at: new Date('2026-02-01T10:00:00Z').toISOString()
+    }
+  ],
+  blogPosts: [
+    {
+      id: 'blog-001',
+      title: 'The GCSE Grade 9 Blueprint: How to Move from Grade 6 to Grade 9 in 90 Days',
+      slug: 'gcse-grade-9-revision-blueprint',
+      category: 'GCSE Mastery',
+      type: 'article',
+      excerpt: 'Exam boards reward synoptic application and precise mark scheme keywords. Discover the exact revision methodology proven by our UK curriculum specialists.',
+      content: `### Why Working Harder Isn't Working\nEvery year, thousands of capable GCSE students spend hundreds of hours highlighting textbooks and creating colour-coded revision cards, only to find their mock grades stuck at a 5 or 6. The problem isn't intelligence or effort — it is the recall trap.\n\n### Pillar 1: The Mark Scheme Reverse-Engineering\nExaminers grade up to 300 scripts an hour. They are searching for specific command verbs and trigger terminology. In Biology, stating "enzymes die" loses marks; you must write "the active site denatures and is no longer complementary to the substrate".\n\n### Pillar 2: Spaced Retrieval over Block Reading\nInstead of studying Chemistry for 4 straight hours on Sunday, study a core topic for 30 minutes, complete 3 timed past-paper questions without notes, and revisit weak areas 48 hours later.\n\n### Pillar 3: Examiner Commentary Analysis\nBeacon Bridge students regularly analyze official Examiner Reports to avoid the top 5 most common national pitfalls.`,
+      flyer_image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=450&fit=crop',
+      author_name: 'Dr. Sarah Jenkins',
+      author_role: 'AQA & Edexcel Specification Lead',
+      read_time: '6 min read',
+      tags: ['GCSE', 'Revision', 'AQA', 'Edexcel'],
+      status: 'published',
+      featured: true,
+      created_at: new Date('2026-11-18T10:00:00Z').toISOString(),
+      updated_at: new Date('2026-11-18T10:00:00Z').toISOString()
+    },
+    {
+      id: 'blog-002',
+      title: 'Cracking A-Level Pure Maths, Further Maths & STEP for Russell Group Entry',
+      slug: 'a-level-maths-step-oxbridge-success',
+      category: 'A-Level & University',
+      type: 'article',
+      excerpt: 'Moving from GCSE to A-Level Mathematics is widely cited as the biggest academic jump in UK education. Here is how top students master synoptic calculus.',
+      content: `### The Chasm Between GCSE and A-Level Maths\nAt GCSE, questions are often procedural. At A-Level, questions are multi-stage puzzles combining trigonometry, differentiation, and algebraic manipulation within a single 8-mark problem.\n\n### 1. Fluency with Algebraic Mechanics\nIf you spend cognitive energy on basic algebraic rearrangement, you have zero headspace left to plan the overarching proof.\n\n### 2. Synoptic Connections\nExam boards deliberately blend calculus with vectors and binomial series. Practice questions categorized by difficulty rather than by chapter topic.`,
+      flyer_image_url: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&h=450&fit=crop',
+      author_name: 'Dr. Jonathan Hayes',
+      author_role: 'Senior A-Level Pure Maths Lead (Oxford DPhil)',
+      read_time: '8 min read',
+      tags: ['A-Level', 'Maths', 'STEP', 'Russell Group'],
+      status: 'published',
+      featured: false,
+      created_at: new Date('2026-11-14T11:00:00Z').toISOString(),
+      updated_at: new Date('2026-11-14T11:00:00Z').toISOString()
+    },
+    {
+      id: 'blog-003',
+      title: 'Easter Intensive GCSE & A-Level Exam Preparation Bootcamp (Virtual Classroom)',
+      slug: 'easter-intensive-gcse-alevel-bootcamp-2027',
+      category: 'Announcements & Events',
+      type: 'flyer',
+      excerpt: 'Official Event Flyer: 5-Day Intensive Virtual Revision Bootcamp covering Mathematics, Sciences, and English Language. Limited to 8 students per seminar cohort.',
+      content: `### Easter Revision Bootcamp Overview\nJoin our curriculum specification leads for an intensive 5-day structured masterclass:\n- **Dates**: Monday 29 March – Friday 2 April 2027\n- **Target Years**: Year 11 (GCSE) & Year 13 (A-Level)\n- **Format**: Synchronized live virtual whiteboard sessions + individual mock exam diagnostics\n- **Faculty**: Former exam board markers and subject specialists\n\nSeats are strictly capped to ensure 1-on-1 interaction. Contact admissions or book a consultation to register your child.`,
+      flyer_image_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&h=630&fit=crop',
+      author_name: 'Mr. Gideon Babs',
+      author_role: 'Admissions Director',
+      read_time: 'Event Flyer',
+      tags: ['Event Flyer', 'Bootcamp', 'GCSE', 'A-Level'],
+      status: 'published',
+      featured: true,
+      created_at: new Date('2026-11-19T09:00:00Z').toISOString(),
+      updated_at: new Date('2026-11-19T09:00:00Z').toISOString()
+    },
+    {
+      id: 'blog-004',
+      title: 'The UK Parent’s Guide to Safe, DBS-Verified & Effective Online Tutoring',
+      slug: 'parent-guide-safe-effective-online-tuition',
+      category: 'Parent Guides',
+      type: 'article',
+      excerpt: 'How to verify tutor credentials, understand KCSIE safeguarding standards, and ensure your investment delivers measurable grade improvements.',
+      content: `### Safety in Online Education\nThe online tutoring market has grown exponentially, but not all platforms adhere to statutory standards. For parents, safeguarding must always be the foundation.\n\n### The 4 Non-Negotiables for Parents:\n1. Enhanced DBS on the Update Service.\n2. Strict In-Platform Video Classrooms.\n3. Direct Parent Progress Transparency.\n4. Curriculum-Trained Subject Leads.`,
+      flyer_image_url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&h=450&fit=crop',
+      author_name: 'Platform Safeguarding Lead',
+      author_role: 'Beacon Bridge Academic Oversight',
+      read_time: '5 min read',
+      tags: ['Safeguarding', 'Parent Guide', 'DBS'],
+      status: 'published',
+      featured: false,
+      created_at: new Date('2026-11-10T12:00:00Z').toISOString(),
+      updated_at: new Date('2026-11-10T12:00:00Z').toISOString()
     }
   ]
 };
@@ -2329,5 +2429,230 @@ export const store = {
       rec.updated_at = new Date().toISOString();
     }
     return rec;
+  },
+
+  // ============================================================================
+  // BLOG POSTS & FLYERS MANAGEMENT (Real-Time Synchronized)
+  // ============================================================================
+  getBlogPosts: async ({ category, type, status } = {}) => {
+    if (pool) {
+      try {
+        let query = 'SELECT * FROM blog_posts WHERE 1=1';
+        const params = [];
+
+        if (status && status !== 'all') {
+          params.push(status);
+          query += ` AND status = $${params.length}`;
+        }
+        if (category && category !== 'All Topics' && category !== 'all') {
+          params.push(category);
+          query += ` AND category = $${params.length}`;
+        }
+        if (type && type !== 'all') {
+          params.push(type);
+          query += ` AND type = $${params.length}`;
+        }
+
+        query += ' ORDER BY created_at DESC';
+        const { rows } = await pool.query(query, params);
+
+        if (rows && rows.length > 0) {
+          return rows;
+        }
+
+        // If table is newly created and empty, seed memory posts into PostgreSQL
+        if (!category && !type && (!status || status === 'published')) {
+          for (const post of (memoryData.blogPosts || [])) {
+            try {
+              await pool.query(`
+                INSERT INTO blog_posts (
+                  id, title, slug, category, type, excerpt, content, flyer_image_url,
+                  author_name, author_role, read_time, tags, status, featured, created_at, updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                ON CONFLICT (slug) DO NOTHING;
+              `, [
+                post.id, post.title, post.slug, post.category, post.type, post.excerpt,
+                post.content, post.flyer_image_url, post.author_name, post.author_role,
+                post.read_time, post.tags || [], post.status, post.featured, post.created_at, post.updated_at
+              ]);
+            } catch (seedErr) {
+              console.warn('PostgreSQL blog seed note:', seedErr.message);
+            }
+          }
+          const seeded = await pool.query('SELECT * FROM blog_posts ORDER BY created_at DESC');
+          if (seeded.rows && seeded.rows.length > 0) return seeded.rows;
+        }
+      } catch (err) {
+        console.warn('PostgreSQL getBlogPosts error, falling back to memory:', err.message);
+      }
+    }
+
+    // Memory Fallback
+    let posts = [...(memoryData.blogPosts || [])];
+    if (status && status !== 'all') {
+      posts = posts.filter(p => p.status === status);
+    }
+    if (category && category !== 'All Topics' && category !== 'all') {
+      posts = posts.filter(p => p.category.toLowerCase() === category.toLowerCase());
+    }
+    if (type && type !== 'all') {
+      posts = posts.filter(p => p.type === type);
+    }
+    return posts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  },
+
+  getBlogPostById: async (id) => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT * FROM blog_posts WHERE id = $1', [id]);
+        if (rows.length > 0) return rows[0];
+      } catch (err) {
+        console.warn('PostgreSQL getBlogPostById error:', err.message);
+      }
+    }
+    return (memoryData.blogPosts || []).find(p => p.id === id);
+  },
+
+  getBlogPostBySlug: async (slug) => {
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT * FROM blog_posts WHERE slug = $1', [slug]);
+        if (rows.length > 0) return rows[0];
+      } catch (err) {
+        console.warn('PostgreSQL getBlogPostBySlug error:', err.message);
+      }
+    }
+    return (memoryData.blogPosts || []).find(p => p.slug === slug);
+  },
+
+  createBlogPost: async (data) => {
+    const id = data.id || `blog-${uuidv4()}`;
+    const slugBase = (data.slug || data.title || 'post')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
+    const slug = slugBase || `post-${Date.now()}`;
+
+    const newPost = {
+      id,
+      title: data.title,
+      slug,
+      category: data.category || 'GCSE Mastery',
+      type: data.type || 'article', // 'article' | 'flyer'
+      excerpt: data.excerpt || '',
+      content: data.content || '',
+      flyer_image_url: data.flyer_image_url || '',
+      author_name: data.author_name || 'Beacon Bridge Academics',
+      author_role: data.author_role || 'Curriculum Specialist',
+      read_time: data.read_time || (data.type === 'flyer' ? 'Event Notice' : '5 min read'),
+      tags: Array.isArray(data.tags) ? data.tags : (data.tags ? data.tags.split(',').map(t => t.trim()) : []),
+      status: data.status || 'published',
+      featured: !!data.featured,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (pool) {
+      try {
+        const insertSql = `
+          INSERT INTO blog_posts (
+            id, title, slug, category, type, excerpt, content, flyer_image_url,
+            author_name, author_role, read_time, tags, status, featured, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+          RETURNING *;
+        `;
+        const { rows } = await pool.query(insertSql, [
+          newPost.id, newPost.title, newPost.slug, newPost.category, newPost.type,
+          newPost.excerpt, newPost.content, newPost.flyer_image_url, newPost.author_name,
+          newPost.author_role, newPost.read_time, newPost.tags, newPost.status,
+          newPost.featured, newPost.created_at, newPost.updated_at
+        ]);
+        if (rows.length > 0) {
+          if (!memoryData.blogPosts) memoryData.blogPosts = [];
+          memoryData.blogPosts.unshift(rows[0]);
+          return rows[0];
+        }
+      } catch (err) {
+        console.warn('PostgreSQL createBlogPost error, using memory fallback:', err.message);
+      }
+    }
+
+    if (!memoryData.blogPosts) memoryData.blogPosts = [];
+    memoryData.blogPosts.unshift(newPost);
+    return newPost;
+  },
+
+  updateBlogPost: async (id, data) => {
+    const updatedAt = new Date().toISOString();
+
+    if (pool) {
+      try {
+        const updateSql = `
+          UPDATE blog_posts SET
+            title = COALESCE($2, title),
+            slug = COALESCE($3, slug),
+            category = COALESCE($4, category),
+            type = COALESCE($5, type),
+            excerpt = COALESCE($6, excerpt),
+            content = COALESCE($7, content),
+            flyer_image_url = COALESCE($8, flyer_image_url),
+            author_name = COALESCE($9, author_name),
+            author_role = COALESCE($10, author_role),
+            read_time = COALESCE($11, read_time),
+            tags = COALESCE($12, tags),
+            status = COALESCE($13, status),
+            featured = COALESCE($14, featured),
+            updated_at = $15
+          WHERE id = $1
+          RETURNING *;
+        `;
+        const { rows } = await pool.query(updateSql, [
+          id,
+          data.title,
+          data.slug,
+          data.category,
+          data.type,
+          data.excerpt,
+          data.content,
+          data.flyer_image_url,
+          data.author_name,
+          data.author_role,
+          data.read_time,
+          data.tags,
+          data.status,
+          data.featured,
+          updatedAt
+        ]);
+        if (rows.length > 0) {
+          const index = (memoryData.blogPosts || []).findIndex(p => p.id === id);
+          if (index !== -1) memoryData.blogPosts[index] = rows[0];
+          return rows[0];
+        }
+      } catch (err) {
+        console.warn('PostgreSQL updateBlogPost error:', err.message);
+      }
+    }
+
+    const post = (memoryData.blogPosts || []).find(p => p.id === id);
+    if (post) {
+      Object.assign(post, data, { updated_at: updatedAt });
+      return post;
+    }
+    return null;
+  },
+
+  deleteBlogPost: async (id) => {
+    if (pool) {
+      try {
+        await pool.query('DELETE FROM blog_posts WHERE id = $1', [id]);
+      } catch (err) {
+        console.warn('PostgreSQL deleteBlogPost error:', err.message);
+      }
+    }
+    const idx = (memoryData.blogPosts || []).findIndex(p => p.id === id);
+    if (idx !== -1) {
+      memoryData.blogPosts.splice(idx, 1);
+    }
+    return { success: true, id };
   }
 };

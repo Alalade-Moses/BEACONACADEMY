@@ -335,6 +335,33 @@ CREATE INDEX IF NOT EXISTS idx_consultations_email ON consultations(email);
 CREATE INDEX IF NOT EXISTS idx_consultations_date ON consultations(consultation_date);
 
 -- ==============================================================================
+-- BLOG POSTS & EVENT FLYERS TABLE
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS blog_posts (
+    id VARCHAR(100) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    category VARCHAR(100) DEFAULT 'GCSE Mastery',
+    type VARCHAR(50) DEFAULT 'article', -- 'article' | 'flyer'
+    excerpt TEXT,
+    content TEXT,
+    flyer_image_url TEXT,
+    author_name VARCHAR(255) DEFAULT 'Beacon Bridge Academics',
+    author_role VARCHAR(255) DEFAULT 'Curriculum Specialist',
+    read_time VARCHAR(50) DEFAULT '5 min read',
+    tags TEXT[] DEFAULT '{}',
+    status VARCHAR(50) DEFAULT 'published', -- 'published' | 'draft'
+    featured BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_category ON blog_posts(category);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_type ON blog_posts(type);
+
+-- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES (Supabase Compatibility Guard)
 -- ==============================================================================
 DO $$ 

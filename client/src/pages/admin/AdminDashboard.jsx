@@ -72,7 +72,7 @@ export const AdminDashboard = () => {
     <div className="space-y-8">
       
       {/* Top Banner */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-brand-950 text-white relative overflow-hidden shadow-xl">
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-brand-950 text-white relative overflow-hidden shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 text-brand-300 text-xs font-semibold mb-3 border border-white/10">
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -82,6 +82,14 @@ export const AdminDashboard = () => {
           <p className="mt-2 text-slate-300 text-sm leading-relaxed">
             Monitor real-time active classes, audit logs, enrolled students, tutor activities, and platform health globally.
           </p>
+        </div>
+        <div className="relative z-10 shrink-0 flex flex-wrap gap-2.5">
+          <Link
+            to="/admin/blog"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all hover:scale-105 active:scale-95"
+          >
+            <span>📰 Post Blog & Flyers</span>
+          </Link>
         </div>
       </div>
 

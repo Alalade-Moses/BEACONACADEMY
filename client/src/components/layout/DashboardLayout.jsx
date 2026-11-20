@@ -31,7 +31,8 @@ import {
   ShieldCheck,
   User,
   Edit2,
-  Trash2
+  Trash2,
+  Newspaper
 } from 'lucide-react';
 
 export const DashboardLayout = () => {
@@ -116,6 +117,7 @@ export const DashboardLayout = () => {
           { name: 'Courses & Programs', path: '/admin/courses', icon: BookOpen },
           { name: 'Classes & Monitoring', path: '/admin/classes', icon: Video },
           { name: 'Announcements', path: '/admin/announcements', icon: Bell },
+          { name: 'Blog & Flyers', path: '/admin/blog', icon: Newspaper },
           { name: 'Audit & Security Logs', path: '/admin/audit-logs', icon: Activity },
           { name: 'Platform Settings', path: '/admin/settings', icon: Settings },
         ];

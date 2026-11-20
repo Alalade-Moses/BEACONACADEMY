@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../../api/axios';
+import { useSocket } from '../../context/SocketContext';
 import { SEO } from '../../components/common/SEO';
 import { 
   BookOpen, 
@@ -14,152 +16,211 @@ import {
   Share2, 
   X, 
   Award,
-  GraduationCap
+  GraduationCap,
+  Megaphone,
+  FileText,
+  Radio,
+  ExternalLink,
+  ZoomIn
 } from 'lucide-react';
 
-const ARTICLES = [
+const CATEGORIES = [
+  'All Topics',
+  'GCSE Mastery',
+  'A-Level & University',
+  'Exam Techniques',
+  'Parent Guides',
+  'Announcements & Events'
+];
+
+const FALLBACK_ARTICLES = [
   {
-    id: 'gcse-grade-9-blueprint',
+    id: 'blog-001',
     slug: 'gcse-grade-9-revision-blueprint',
     title: 'The GCSE Grade 9 Blueprint: How to Move from Grade 6 to Grade 9 in 90 Days',
     excerpt: 'Exam boards reward synoptic application and precise mark scheme keywords. Discover the exact revision methodology proven by our UK curriculum specialists.',
     category: 'GCSE Mastery',
-    readTime: '6 min read',
-    date: '18 Nov 2026',
-    author: 'Dr. Sarah Jenkins',
-    role: 'AQA & Edexcel Specification Lead',
-    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=450&fit=crop',
+    type: 'article',
+    read_time: '6 min read',
+    created_at: '2026-11-18T10:00:00Z',
+    author_name: 'Dr. Sarah Jenkins',
+    author_role: 'AQA & Edexcel Specification Lead',
+    flyer_image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=450&fit=crop',
     content: `
       ### Why Working Harder Isn't Working
       Every year, thousands of capable GCSE students spend hundreds of hours highlighting textbooks and creating colour-coded revision cards, only to find their mock grades stuck at a 5 or 6. 
-      
-      The problem isn't intelligence or effort — it is the **recall trap**. GCSE exams set by AQA, Edexcel, and OCR are not memory tests; they are **mark-scheme decoding exercises**.
+      The problem isn't intelligence or effort — it is the recall trap. GCSE exams set by AQA, Edexcel, and OCR are mark-scheme decoding exercises.
       
       ### Pillar 1: The Mark Scheme Reverse-Engineering
-      Examiners grade up to 300 scripts an hour. They are searching for specific command verbs and trigger terminology:
-      - **In Biology**: Stating "enzymes die" loses marks. You must write "the active site denatures and is no longer complementary to the substrate".
-      - **In English Literature**: Avoid lengthy plot summaries. Every analytical paragraph must link the linguistic device directly to the writer's overarching social thesis.
+      Examiners grade up to 300 scripts an hour searching for specific command verbs and trigger terminology. In Biology, stating "enzymes die" loses marks; you must write "the active site denatures and is no longer complementary to the substrate".
       
       ### Pillar 2: Spaced Retrieval over Block Reading
-      Instead of studying Chemistry for 4 straight hours on Sunday:
-      1. Study a core topic for 30 minutes.
-      2. Complete 3 timed past-paper questions without notes.
-      3. Revisit the weak areas 48 hours later.
+      Instead of studying Chemistry for 4 straight hours on Sunday, study a core topic for 30 minutes, complete 3 timed past-paper questions without notes, and revisit weak areas 48 hours later.
       
       ### Pillar 3: Examiner Commentary Analysis
-      Beacon Bridge students regularly analyze official Examiner Reports. Seeing the top 5 most common errors made nationally prevents you from dropping the 4 to 8 boundary marks that separate a Grade 7 from a Grade 9.
+      Beacon Bridge students regularly analyze official Examiner Reports to avoid the top 5 most common national pitfalls.
     `
   },
   {
-    id: 'a-level-maths-step-oxbridge',
+    id: 'blog-002',
     slug: 'a-level-maths-step-oxbridge-success',
     title: 'Cracking A-Level Pure Maths, Further Maths & STEP for Russell Group Entry',
     excerpt: 'Moving from GCSE to A-Level Mathematics is widely cited as the biggest academic jump in UK education. Here is how top students master synoptic calculus.',
     category: 'A-Level & University',
-    readTime: '8 min read',
-    date: '14 Nov 2026',
-    author: 'Dr. Jonathan Hayes',
-    role: 'Senior A-Level Pure Maths Lead (Oxford DPhil)',
-    image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&h=450&fit=crop',
+    type: 'article',
+    read_time: '8 min read',
+    created_at: '2026-11-14T11:00:00Z',
+    author_name: 'Dr. Jonathan Hayes',
+    author_role: 'Senior A-Level Pure Maths Lead (Oxford DPhil)',
+    flyer_image_url: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&h=450&fit=crop',
     content: `
       ### The Chasm Between GCSE and A-Level Maths
-      At GCSE, questions are often procedural: you identify a formula, substitute variables, and calculate an answer. At A-Level, questions are **multi-stage puzzles** combining trigonometry, differentiation, and algebraic manipulation within a single 8-mark problem.
+      At GCSE, questions are procedural. At A-Level, questions are multi-stage puzzles combining trigonometry, differentiation, and algebraic manipulation within a single 8-mark problem.
       
       ### 1. Fluency with Algebraic Mechanics
-      If you spend cognitive energy on basic algebraic rearrangement or fraction manipulation, you have zero headspace left to plan the overarching proof. Dedicate 20 minutes daily to raw algebraic drills until it becomes second nature.
+      Dedicate 20 minutes daily to raw algebraic drills until manipulating fractions, binomial series, and quadratic substitutions becomes second nature.
       
       ### 2. Synoptic Connections
-      Exam boards (especially Edexcel Paper 1 & 2) deliberately blend calculus with vectors and binomial series. Practice questions categorized by difficulty rather than by chapter topic.
-      
-      ### 3. Early STEP & MAT Introduction
-      Even if you are not applying for Cambridge or Oxford, attempting STEP I foundation questions trains your brain to tackle non-standard mathematical problems with resilience and creative logic.
+      Exam boards deliberately blend calculus with vectors and coordinate geometry. Practice questions categorized by difficulty rather than by single chapters.
     `
   },
   {
-    id: 'parent-guide-online-tuition-safety',
+    id: 'blog-003',
+    slug: 'easter-intensive-gcse-alevel-bootcamp-2027',
+    title: 'Easter Intensive GCSE & A-Level Exam Preparation Bootcamp (Live Virtual Classroom)',
+    excerpt: 'Official Event Flyer: 5-Day Intensive Virtual Revision Bootcamp covering Mathematics, Sciences, and English. Strictly limited to 8 students per seminar cohort.',
+    category: 'Announcements & Events',
+    type: 'flyer',
+    read_time: 'Event Flyer',
+    created_at: '2026-11-19T09:00:00Z',
+    author_name: 'Mr. Gideon Babs',
+    author_role: 'Admissions Director',
+    flyer_image_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&h=630&fit=crop',
+    content: `
+      ### Easter Revision Bootcamp Overview
+      Join our curriculum specification leads for an intensive 5-day structured masterclass:
+      - **Dates**: Monday 29 March – Friday 2 April 2027
+      - **Target Years**: Year 11 (GCSE) & Year 13 (A-Level)
+      - **Format**: Synchronized live virtual whiteboard sessions + individual mock exam diagnostics
+      - **Faculty**: Former exam board markers and subject specialists
+      
+      Seats are strictly capped to ensure 1-on-1 interaction. Contact admissions or book a consultation to register your child.
+    `
+  },
+  {
+    id: 'blog-004',
     slug: 'parent-guide-safe-effective-online-tuition',
     title: 'The UK Parent’s Guide to Safe, DBS-Verified & Effective Online Tutoring',
     excerpt: 'How to verify tutor credentials, understand KCSIE safeguarding standards, and ensure your investment delivers measurable grade improvements.',
     category: 'Parent Guides',
-    readTime: '5 min read',
-    date: '10 Nov 2026',
-    author: 'Platform Safeguarding Lead',
-    role: 'Beacon Bridge Academic Oversight',
-    image: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&h=450&fit=crop',
+    type: 'article',
+    read_time: '5 min read',
+    created_at: '2026-11-10T12:00:00Z',
+    author_name: 'Platform Safeguarding Lead',
+    author_role: 'Beacon Bridge Academic Oversight',
+    flyer_image_url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&h=450&fit=crop',
     content: `
       ### Safety in Online Education
-      The online tutoring market has grown exponentially, but not all platforms adhere to statutory standards. For parents, safeguarding must always be the foundation of any academic engagement.
+      The online tutoring market has grown exponentially, but not all platforms adhere to statutory standards. For parents, safeguarding must always be the foundation.
       
       ### The 4 Non-Negotiables for Parents:
-      1. **Enhanced DBS on the Update Service**: Ensure your tutor has an active, officially verified Enhanced Disclosure and Barring Service check.
-      2. **Strict In-Platform Video Classrooms**: Private sessions should never take place on unmonitored personal social apps. Dedicated classrooms ensure lesson logs and safety monitoring.
-      3. **Direct Parent Progress Transparency**: You should receive detailed session notes, attendance timestamps, and homework completion logs after every lesson.
-      4. **Curriculum-Trained Subject Leads**: A university student might know their subject, but a curriculum-trained educator knows the specific marking criteria of AQA, Edexcel, and OCR.
-    `
-  },
-  {
-    id: 'ks2-sats-secondary-transition',
-    slug: 'ks2-sats-secondary-transition-academic-dip',
-    title: 'Navigating the KS2 to KS3 Transition: Preventing the Year 7 Academic Dip',
-    excerpt: 'Why students often lose confidence between Year 6 SATs and Year 7, and how targeted foundation mentoring keeps academic momentum high.',
-    category: 'Exam Techniques',
-    readTime: '6 min read',
-    date: '05 Nov 2026',
-    author: 'Gideon Babs',
-    role: 'Academic Director & Admissions Advisor',
-    image: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&h=450&fit=crop',
-    content: `
-      ### The Hidden Year 7 Dip
-      In Year 6, children are in a close-knit primary environment with one dedicated class teacher who knows their exact strengths and learning style. In Year 7, they transition to 12 different teachers, multiple classrooms, and heavy independent homework demands.
-      
-      Studies show up to 35% of children experience a temporary stall in reading and numeracy progress during this shift.
-      
-      ### Keeping Confidence Intact
-      - **Focus on Core Foundations**: Strong mental arithmetic, fractions, and grammatical sentence mechanics provide the resilience needed for complex secondary topics.
-      - **Establish Independent Study Routines**: Teach structured time-management tools early so homework is a calm, predictable part of the evening.
-      - **Encourage Questions**: Cultivate an environment where asking for clarification is seen as strength, not failure.
-    `
-  },
-  {
-    id: 'igcse-vs-gcse-international-students',
-    slug: 'igcse-vs-gcse-guide-international-families',
-    title: 'IGCSE vs GCSE: The Complete Guide for UK & Overseas Families',
-    excerpt: 'Comparing Cambridge Assessment (CIE), Edexcel International, and UK domestic exams. Which provides the smoothest route to top global universities?',
-    category: 'A-Level & University',
-    readTime: '7 min read',
-    date: '01 Nov 2026',
-    author: 'Dr. Tariq Al-Mansoor',
-    role: 'Head of International Curricula',
-    image: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=800&h=450&fit=crop',
-    content: `
-      ### Demystifying International GCSEs
-      For families moving between the UK, Canada, the Middle East, or Asia, deciding between traditional GCSEs and Cambridge IGCSEs is a critical strategic decision.
-      
-      ### Key Differences:
-      - **Coursework vs Final Exam**: Standard GCSEs have almost entirely phased out coursework in core subjects, relying on terminal linear exams. Some IGCSE specifications still offer practical portfolio options.
-      - **Global Recognition**: Both GCSE and IGCSE qualifications are treated with complete parity by UK Russell Group universities, UCAS, and North American admissions officers.
-      - **Syllabus Breadth**: IGCSE Science and Mathematics often introduce advanced concepts slightly earlier, which provides excellent preparation for the IB Diploma and UK A-Levels.
+      1. Enhanced DBS on the Update Service.
+      2. Strict In-Platform Video Classrooms.
+      3. Direct Parent Progress Transparency.
+      4. Curriculum-Trained Subject Leads.
     `
   }
 ];
 
-const CATEGORIES = ['All Topics', 'GCSE Mastery', 'A-Level & University', 'Exam Techniques', 'Parent Guides'];
-
 export const BlogPage = () => {
+  const { socket } = useSocket();
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'article' | 'flyer'
   const [selectedCategory, setSelectedCategory] = useState('All Topics');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeArticle, setActiveArticle] = useState(null);
+  
+  // Modals
+  const [activeItem, setActiveItem] = useState(null); // article reading modal
+  const [activeFlyer, setActiveFlyer] = useState(null); // flyer lightbox modal
+  
+  // Real-Time Notification Badge
+  const [realtimeNotice, setRealtimeNotice] = useState(null);
 
-  const filteredArticles = useMemo(() => {
-    return ARTICLES.filter((article) => {
-      const matchesCategory = selectedCategory === 'All Topics' || article.category === selectedCategory;
+  const fetchLiveBlog = async () => {
+    try {
+      const res = await api.get('/blog');
+      if (res.data.success && res.data.posts && res.data.posts.length > 0) {
+        setPosts(res.data.posts);
+      } else {
+        setPosts(FALLBACK_ARTICLES);
+      }
+    } catch (err) {
+      console.warn('Backend blog fetch failed, using fallback articles:', err.message);
+      setPosts(FALLBACK_ARTICLES);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveBlog();
+  }, []);
+
+  // Socket.IO Real-Time Listener
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleRealtimeChange = (data) => {
+      fetchLiveBlog();
+      const actionText = data?.action === 'create' ? 'A new post was just published live!' : 'The blog was just updated!';
+      setRealtimeNotice(actionText);
+      setTimeout(() => setRealtimeNotice(null), 4000);
+    };
+
+    socket.on('blog:changed', handleRealtimeChange);
+    socket.on('blog:created', handleRealtimeChange);
+    socket.on('blog:updated', handleRealtimeChange);
+    socket.on('blog:deleted', handleRealtimeChange);
+
+    return () => {
+      socket.off('blog:changed', handleRealtimeChange);
+      socket.off('blog:created', handleRealtimeChange);
+      socket.off('blog:updated', handleRealtimeChange);
+      socket.off('blog:deleted', handleRealtimeChange);
+    };
+  }, [socket]);
+
+  // Open modal if URL has a hash matching a slug
+  useEffect(() => {
+    if (window.location.hash && posts.length > 0) {
+      const slug = window.location.hash.replace('#', '');
+      const match = posts.find(p => p.slug === slug);
+      if (match) {
+        if (match.type === 'flyer') {
+          setActiveFlyer(match);
+        } else {
+          setActiveItem(match);
+        }
+      }
+    }
+  }, [posts]);
+
+  // Filtered Items
+  const filteredPosts = useMemo(() => {
+    return posts.filter((post) => {
+      const matchesType = typeFilter === 'all' || post.type === typeFilter;
+      const matchesCategory = selectedCategory === 'All Topics' || post.category?.toLowerCase() === selectedCategory.toLowerCase();
       const matchesSearch = searchQuery === '' || 
-        article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        article.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        article.author.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+        post.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.excerpt?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.author_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesType && matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [posts, typeFilter, selectedCategory, searchQuery]);
+
+  const articleCount = posts.filter(p => p.type === 'article').length;
+  const flyerCount = posts.filter(p => p.type === 'flyer').length;
 
   // Schema for Educational Blog & Articles
   const blogSchema = {
@@ -167,23 +228,23 @@ export const BlogPage = () => {
     '@type': 'Blog',
     '@id': 'https://beaconbridgeacademics.co.uk/blog#blog',
     'url': 'https://beaconbridgeacademics.co.uk/blog',
-    'name': 'Beacon Bridge Academics Educational Insights & Exam Guidance',
-    'description': 'Expert academic insights, GCSE & A-Level revision strategies, and safeguarding guidance from UK curriculum specialists.',
+    'name': 'Beacon Bridge Academics Educational Insights & Event Flyers',
+    'description': 'Expert academic insights, GCSE & A-Level revision blueprints, and event flyers from UK curriculum specialists.',
     'publisher': {
       '@type': 'EducationalOrganization',
       '@id': 'https://beaconbridgeacademics.co.uk/#organization',
       'name': 'Beacon Bridge Academics',
       'url': 'https://beaconbridgeacademics.co.uk'
     },
-    'blogPost': ARTICLES.map((art) => ({
+    'blogPost': posts.map((art) => ({
       '@type': 'BlogPosting',
       'headline': art.title,
       'description': art.excerpt,
       'author': {
         '@type': 'Person',
-        'name': art.author
+        'name': art.author_name
       },
-      'datePublished': '2026-11-15',
+      'datePublished': art.created_at,
       'url': `https://beaconbridgeacademics.co.uk/blog#${art.slug}`
     }))
   };
@@ -191,25 +252,41 @@ export const BlogPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 pt-24 pb-20">
       <SEO 
-        title="UK Tutoring & Exam Insights Blog | GCSE & A-Level Guides"
-        description="Expert revision blueprints, A-Level study techniques, and parent tuition advice written by verified UK curriculum teachers at Beacon Bridge Academics."
+        title="UK Tutoring & Exam Insights Blog | GCSE, A-Level Guides & Flyers"
+        description="Expert revision blueprints, A-Level study techniques, event flyers, and parent tuition advice written by verified UK curriculum teachers at Beacon Bridge Academics."
         canonicalPath="/blog"
         schemaJson={blogSchema}
       />
+
+      {/* Floating Real-Time Update Toast */}
+      {realtimeNotice && (
+        <div className="fixed top-24 right-4 z-50 animate-in slide-in-from-top-4 duration-300">
+          <div className="bg-[#050167] text-[#40ffa7] px-4 py-2.5 rounded-2xl shadow-2xl border border-[#40ffa7]/30 flex items-center gap-2 text-xs font-bold">
+            <Radio className="w-4 h-4 animate-pulse text-[#40ffa7]" />
+            <span>{realtimeNotice}</span>
+          </div>
+        </div>
+      )}
 
       {/* Hero Header */}
       <section className="bg-gradient-to-br from-[#001f3f] via-[#050167] to-[#001633] text-white py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(#40ffa7_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
         <div className="max-w-6xl mx-auto relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-5">
+          
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-5">
             <Sparkles className="w-3.5 h-3.5" />
-            Beacon Bridge Academic Journal
+            <span>Beacon Bridge Academic Journal & Live Notices</span>
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#40ffa7] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#40ffa7]"></span>
+            </span>
           </div>
+
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight max-w-3xl mx-auto leading-tight">
-            Academic Insights, Revision Blueprints & Exam Strategies
+            Academic Insights, Revision Blueprints & Event Flyers
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-200 max-w-2xl mx-auto font-normal">
-            Written by former exam board markers, Oxford/Cambridge graduates, and senior UK educators to help students excel and parents stay informed.
+            Written and curated by former exam board markers, Oxford/Cambridge graduates, and senior UK educators to keep students excel and parents informed.
           </p>
 
           {/* Search Bar */}
@@ -217,7 +294,7 @@ export const BlogPage = () => {
             <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input 
               type="text"
-              placeholder="Search topics (e.g. GCSE Biology, A-Level Maths, Safeguarding)..."
+              placeholder="Search topics or event flyers (e.g. GCSE Biology, A-Level Maths, Bootcamp)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/95 text-slate-900 placeholder-slate-500 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#40ffa7] shadow-xl"
@@ -226,9 +303,57 @@ export const BlogPage = () => {
         </div>
       </section>
 
-      {/* Category Pills */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-        <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-none">
+      {/* Main Filter Toolbar */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-4">
+        
+        {/* Type Switcher Tabs */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+          <div className="flex items-center gap-2 p-1 bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <button
+              onClick={() => setTypeFilter('all')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                typeFilter === 'all'
+                  ? 'bg-[#050167] text-[#40ffa7] shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>All Publications</span>
+              <span className="text-[10px] opacity-75">({posts.length})</span>
+            </button>
+
+            <button
+              onClick={() => setTypeFilter('article')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                typeFilter === 'article'
+                  ? 'bg-[#050167] text-[#40ffa7] shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Articles ({articleCount})</span>
+            </button>
+
+            <button
+              onClick={() => setTypeFilter('flyer')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                typeFilter === 'flyer'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-purple-700'
+              }`}
+            >
+              <Megaphone className="w-3.5 h-3.5" />
+              <span>Event Flyers ({flyerCount})</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Real-Time Sync Active</span>
+          </div>
+        </div>
+
+        {/* Category Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
@@ -243,17 +368,23 @@ export const BlogPage = () => {
             </button>
           ))}
         </div>
+
       </div>
 
-      {/* Articles Grid */}
+      {/* Publications Grid */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        {filteredArticles.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-24 bg-white rounded-3xl border border-slate-200">
+            <div className="w-8 h-8 border-3 border-[#050167] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-xs font-bold text-slate-500">Loading publications...</p>
+          </div>
+        ) : filteredPosts.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8">
             <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-800">No articles found</h3>
+            <h3 className="text-lg font-bold text-slate-800">No publications found</h3>
             <p className="text-slate-500 text-sm mt-1">Try refining your search query or choosing another topic category.</p>
             <button
-              onClick={() => { setSelectedCategory('All Topics'); setSearchQuery(''); }}
+              onClick={() => { setSelectedCategory('All Topics'); setTypeFilter('all'); setSearchQuery(''); }}
               className="mt-4 px-4 py-2 bg-[#050167] text-white rounded-xl text-xs font-bold hover:bg-[#001f3f]"
             >
               Reset Filters
@@ -261,64 +392,97 @@ export const BlogPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredArticles.map((article) => (
-              <article 
-                key={article.id}
-                className="bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group hover:-translate-y-1"
-              >
-                <div className="relative h-48 overflow-hidden bg-slate-100">
-                  <img 
-                    src={article.image} 
-                    alt={article.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                    loading="lazy"
-                  />
-                  <span className="absolute top-3 left-3 bg-[#050167]/90 backdrop-blur-md text-[#40ffa7] text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-[#40ffa7]/30">
-                    {article.category}
-                  </span>
-                </div>
+            {filteredPosts.map((item) => {
+              const isFlyer = item.type === 'flyer';
 
-                <div className="p-6 flex-1 flex flex-col justify-between">
+              return (
+                <article 
+                  key={item.id}
+                  className={`bg-white rounded-3xl overflow-hidden border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1 ${
+                    isFlyer ? 'border-purple-200 ring-2 ring-purple-500/10' : 'border-slate-200/80'
+                  }`}
+                >
                   <div>
-                    <div className="flex items-center gap-3 text-xs text-slate-500 mb-3 font-medium">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        {article.date}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        {article.readTime}
-                      </span>
-                    </div>
-
-                    <h2 className="text-lg font-bold text-slate-900 group-hover:text-[#050167] transition-colors leading-snug line-clamp-2">
-                      {article.title}
-                    </h2>
-
-                    <p className="mt-2.5 text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
-                      {article.excerpt}
-                    </p>
-                  </div>
-
-                  <div className="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">{article.author}</p>
-                      <p className="text-[10px] text-slate-500">{article.role}</p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveArticle(article)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-[#40ffa7]/20 text-[#050167] font-bold text-xs transition-colors group/btn"
+                    {/* Media Header (Flyer or Cover Image) */}
+                    <div 
+                      onClick={() => isFlyer ? setActiveFlyer(item) : setActiveItem(item)}
+                      className="relative h-52 overflow-hidden bg-slate-900 cursor-pointer"
                     >
-                      <span>Read</span>
-                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
-                    </button>
+                      <img 
+                        src={item.flyer_image_url || 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&fit=crop'} 
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-95 group-hover:opacity-100" 
+                        loading="lazy"
+                      />
+
+                      {/* Type Badge */}
+                      <span className={`absolute top-3 left-3 text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md ${
+                        isFlyer 
+                          ? 'bg-purple-600 text-white border border-purple-400/50' 
+                          : 'bg-[#050167]/90 backdrop-blur-md text-[#40ffa7] border border-[#40ffa7]/30'
+                      }`}>
+                        {isFlyer ? '📢 Event Flyer' : item.category}
+                      </span>
+
+                      {/* Quick Inspect Hover Pill */}
+                      <div className="absolute inset-0 bg-[#050167]/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="px-3 py-1.5 rounded-xl bg-white text-[#050167] font-extrabold text-xs shadow-lg flex items-center gap-1.5 transform scale-95 group-hover:scale-100 transition-transform">
+                          <ZoomIn className="w-3.5 h-3.5" />
+                          <span>{isFlyer ? 'Inspect Flyer' : 'Read Article'}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="flex items-center gap-3 text-xs text-slate-500 mb-3 font-medium">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          {new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          {item.read_time || (isFlyer ? 'Event Notice' : '5 min read')}
+                        </span>
+                      </div>
+
+                      <h2 
+                        onClick={() => isFlyer ? setActiveFlyer(item) : setActiveItem(item)}
+                        className="text-lg font-bold text-slate-900 group-hover:text-[#050167] transition-colors leading-snug line-clamp-2 cursor-pointer"
+                      >
+                        {item.title}
+                      </h2>
+
+                      <p className="mt-2.5 text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                        {item.excerpt || (item.content ? item.content.substring(0, 110) + '...' : '')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+
+                  <div className="p-6 pt-0">
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-slate-900">{item.author_name}</p>
+                        <p className="text-[10px] text-slate-500">{item.author_role}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => isFlyer ? setActiveFlyer(item) : setActiveItem(item)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-colors group/btn ${
+                          isFlyer 
+                            ? 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                            : 'bg-slate-50 hover:bg-[#40ffa7]/20 text-[#050167]'
+                        }`}
+                      >
+                        <span>{isFlyer ? 'View Flyer' : 'Read'}</span>
+                        <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </main>
@@ -347,12 +511,100 @@ export const BlogPage = () => {
         </div>
       </section>
 
-      {/* Full Article Reading Modal */}
-      {activeArticle && (
+      {/* ============================================================== */}
+      {/* 1. HIGH-RESOLUTION EVENT FLYER LIGHTBOX MODAL                   */}
+      {/* ============================================================== */}
+      {activeFlyer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 flex flex-col md:flex-row overflow-hidden relative">
+            
+            <button
+              onClick={() => setActiveFlyer(null)}
+              className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-900/60 hover:bg-slate-900 text-white transition-colors"
+              aria-label="Close flyer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Flyer Image Left Column */}
+            <div className="md:w-1/2 bg-slate-950 flex items-center justify-center relative min-h-[300px] md:min-h-full">
+              <img
+                src={activeFlyer.flyer_image_url}
+                alt={activeFlyer.title}
+                className="w-full h-full object-contain max-h-[85vh]"
+              />
+              <span className="absolute top-4 left-4 bg-purple-600 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-lg">
+                Official Event Flyer
+              </span>
+            </div>
+
+            {/* Flyer Information Right Column */}
+            <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between bg-white">
+              <div>
+                <span className="inline-block bg-purple-100 text-purple-700 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">
+                  {activeFlyer.category || 'Special Notice'}
+                </span>
+
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+                  {activeFlyer.title}
+                </h2>
+
+                <div className="flex items-center gap-3 text-xs text-slate-500 mt-3 pb-4 border-b border-slate-100">
+                  <span>Posted by: <strong>{activeFlyer.author_name}</strong></span>
+                  <span>•</span>
+                  <span>{new Date(activeFlyer.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                </div>
+
+                <div className="mt-4 prose prose-slate text-sm text-slate-700 leading-relaxed max-h-[40vh] overflow-y-auto pr-2">
+                  {(activeFlyer.content || activeFlyer.excerpt).trim().split('\n\n').map((paragraph, idx) => {
+                    const trimmed = paragraph.trim();
+                    if (trimmed.startsWith('### ')) {
+                      return <h3 key={idx} className="text-sm font-bold text-slate-900 mt-3 mb-1">{trimmed.replace('### ', '')}</h3>;
+                    }
+                    if (trimmed.startsWith('- ')) {
+                      return (
+                        <ul key={idx} className="list-disc pl-4 space-y-1 text-xs">
+                          {trimmed.split('\n').map((li, lIdx) => (
+                            <li key={lIdx}>{li.replace(/^- /, '')}</li>
+                          ))}
+                        </ul>
+                      );
+                    }
+                    return <p key={idx} className="text-xs sm:text-sm text-slate-600 mb-2">{trimmed}</p>;
+                  })}
+                </div>
+              </div>
+
+              {/* Flyer Booking Action */}
+              <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+                <Link
+                  to="/book-consultation"
+                  onClick={() => setActiveFlyer(null)}
+                  className="w-full py-3 rounded-2xl bg-[#050167] hover:bg-[#001f3f] text-[#40ffa7] font-black text-xs transition-all shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>Book Free Consultation Regarding This Event</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+
+                <p className="text-[11px] text-center text-slate-400">
+                  Questions? Email us directly at info@beaconbridgeacademics.co.uk
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 2. FULL ARTICLE READING MODAL                                   */}
+      {/* ============================================================== */}
+      {activeItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 p-6 sm:p-10 relative">
             <button
-              onClick={() => setActiveArticle(null)}
+              onClick={() => setActiveItem(null)}
               className="absolute top-6 right-6 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
               aria-label="Close article"
             >
@@ -360,31 +612,31 @@ export const BlogPage = () => {
             </button>
 
             <span className="inline-block bg-[#050167]/10 text-[#050167] text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">
-              {activeArticle.category}
+              {activeItem.category}
             </span>
 
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
-              {activeArticle.title}
+              {activeItem.title}
             </h2>
 
             <div className="flex items-center gap-4 text-xs text-slate-500 mt-4 pb-6 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-[#050167] text-[#40ffa7] font-bold flex items-center justify-center text-xs">
-                  {activeArticle.author.charAt(0)}
+                  {activeItem.author_name?.charAt(0) || 'B'}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900">{activeArticle.author}</p>
-                  <p className="text-[10px]">{activeArticle.role}</p>
+                  <p className="font-bold text-slate-900">{activeItem.author_name}</p>
+                  <p className="text-[10px]">{activeItem.author_role}</p>
                 </div>
               </div>
               <span>•</span>
-              <span>{activeArticle.date}</span>
+              <span>{new Date(activeItem.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               <span>•</span>
-              <span>{activeArticle.readTime}</span>
+              <span>{activeItem.read_time || '5 min read'}</span>
             </div>
 
             <div className="mt-6 prose prose-slate max-w-none text-slate-700 leading-relaxed space-y-4">
-              {activeArticle.content.trim().split('\n\n').map((paragraph, idx) => {
+              {activeItem.content?.trim().split('\n\n').map((paragraph, idx) => {
                 const trimmed = paragraph.trim();
                 if (trimmed.startsWith('### ')) {
                   return (
@@ -409,7 +661,7 @@ export const BlogPage = () => {
               </div>
               <Link
                 to="/book-consultation"
-                onClick={() => setActiveArticle(null)}
+                onClick={() => setActiveItem(null)}
                 className="px-4 py-2.5 bg-[#050167] text-[#40ffa7] font-bold text-xs rounded-xl hover:bg-[#001f3f] transition-all whitespace-nowrap"
               >
                 Book Free Consultation
@@ -418,6 +670,7 @@ export const BlogPage = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

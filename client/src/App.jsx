@@ -33,6 +33,7 @@ import { AdminClasses } from './pages/admin/AdminClasses';
 import { AdminAnnouncements } from './pages/admin/AdminAnnouncements';
 import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
 import { AdminSettings } from './pages/admin/AdminSettings';
+import { AdminBlog } from './pages/admin/AdminBlog';
 
 // Tutor Portal Pages
 import { TutorDashboard } from './pages/tutor/TutorDashboard';
@@ -115,6 +116,7 @@ export const App = () => {
         <Route path="courses" element={<AdminCourses />} />
         <Route path="classes" element={<AdminClasses />} />
         <Route path="announcements" element={<AdminAnnouncements />} />
+        <Route path="blog" element={<AdminBlog />} />
         <Route path="audit-logs" element={<AdminAuditLogs />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
