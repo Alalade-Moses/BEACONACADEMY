@@ -33,105 +33,6 @@ const CATEGORIES = [
   'Announcements & Events'
 ];
 
-const FALLBACK_ARTICLES = [
-  {
-    id: 'blog-001',
-    slug: 'gcse-grade-9-revision-blueprint',
-    title: 'The GCSE Grade 9 Blueprint: How to Move from Grade 6 to Grade 9 in 90 Days',
-    excerpt: 'Exam boards reward synoptic application and precise mark scheme keywords. Discover the exact revision methodology proven by our UK curriculum specialists.',
-    category: 'GCSE Mastery',
-    type: 'article',
-    read_time: '6 min read',
-    created_at: '2026-11-18T10:00:00Z',
-    author_name: 'Dr. Sarah Jenkins',
-    author_role: 'AQA & Edexcel Specification Lead',
-    flyer_image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=450&fit=crop',
-    content: `
-      ### Why Working Harder Isn't Working
-      Every year, thousands of capable GCSE students spend hundreds of hours highlighting textbooks and creating colour-coded revision cards, only to find their mock grades stuck at a 5 or 6. 
-      The problem isn't intelligence or effort — it is the recall trap. GCSE exams set by AQA, Edexcel, and OCR are mark-scheme decoding exercises.
-      
-      ### Pillar 1: The Mark Scheme Reverse-Engineering
-      Examiners grade up to 300 scripts an hour searching for specific command verbs and trigger terminology. In Biology, stating "enzymes die" loses marks; you must write "the active site denatures and is no longer complementary to the substrate".
-      
-      ### Pillar 2: Spaced Retrieval over Block Reading
-      Instead of studying Chemistry for 4 straight hours on Sunday, study a core topic for 30 minutes, complete 3 timed past-paper questions without notes, and revisit weak areas 48 hours later.
-      
-      ### Pillar 3: Examiner Commentary Analysis
-      Beacon Bridge students regularly analyze official Examiner Reports to avoid the top 5 most common national pitfalls.
-    `
-  },
-  {
-    id: 'blog-002',
-    slug: 'a-level-maths-step-oxbridge-success',
-    title: 'Cracking A-Level Pure Maths, Further Maths & STEP for Russell Group Entry',
-    excerpt: 'Moving from GCSE to A-Level Mathematics is widely cited as the biggest academic jump in UK education. Here is how top students master synoptic calculus.',
-    category: 'A-Level & University',
-    type: 'article',
-    read_time: '8 min read',
-    created_at: '2026-11-14T11:00:00Z',
-    author_name: 'Dr. Jonathan Hayes',
-    author_role: 'Senior A-Level Pure Maths Lead (Oxford DPhil)',
-    flyer_image_url: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&h=450&fit=crop',
-    content: `
-      ### The Chasm Between GCSE and A-Level Maths
-      At GCSE, questions are procedural. At A-Level, questions are multi-stage puzzles combining trigonometry, differentiation, and algebraic manipulation within a single 8-mark problem.
-      
-      ### 1. Fluency with Algebraic Mechanics
-      Dedicate 20 minutes daily to raw algebraic drills until manipulating fractions, binomial series, and quadratic substitutions becomes second nature.
-      
-      ### 2. Synoptic Connections
-      Exam boards deliberately blend calculus with vectors and coordinate geometry. Practice questions categorized by difficulty rather than by single chapters.
-    `
-  },
-  {
-    id: 'blog-003',
-    slug: 'easter-intensive-gcse-alevel-bootcamp-2027',
-    title: 'Easter Intensive GCSE & A-Level Exam Preparation Bootcamp (Live Virtual Classroom)',
-    excerpt: 'Official Event Flyer: 5-Day Intensive Virtual Revision Bootcamp covering Mathematics, Sciences, and English. Strictly limited to 8 students per seminar cohort.',
-    category: 'Announcements & Events',
-    type: 'flyer',
-    read_time: 'Event Flyer',
-    created_at: '2026-11-19T09:00:00Z',
-    author_name: 'Mr. Gideon Babs',
-    author_role: 'Admissions Director',
-    flyer_image_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&h=630&fit=crop',
-    content: `
-      ### Easter Revision Bootcamp Overview
-      Join our curriculum specification leads for an intensive 5-day structured masterclass:
-      - **Dates**: Monday 29 March – Friday 2 April 2027
-      - **Target Years**: Year 11 (GCSE) & Year 13 (A-Level)
-      - **Format**: Synchronized live virtual whiteboard sessions + individual mock exam diagnostics
-      - **Faculty**: Former exam board markers and subject specialists
-      
-      Seats are strictly capped to ensure 1-on-1 interaction. Contact admissions or book a consultation to register your child.
-    `
-  },
-  {
-    id: 'blog-004',
-    slug: 'parent-guide-safe-effective-online-tuition',
-    title: 'The UK Parent’s Guide to Safe, DBS-Verified & Effective Online Tutoring',
-    excerpt: 'How to verify tutor credentials, understand KCSIE safeguarding standards, and ensure your investment delivers measurable grade improvements.',
-    category: 'Parent Guides',
-    type: 'article',
-    read_time: '5 min read',
-    created_at: '2026-11-10T12:00:00Z',
-    author_name: 'Platform Safeguarding Lead',
-    author_role: 'Beacon Bridge Academic Oversight',
-    flyer_image_url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&h=450&fit=crop',
-    content: `
-      ### Safety in Online Education
-      The online tutoring market has grown exponentially, but not all platforms adhere to statutory standards. For parents, safeguarding must always be the foundation.
-      
-      ### The 4 Non-Negotiables for Parents:
-      1. Enhanced DBS on the Update Service.
-      2. Strict In-Platform Video Classrooms.
-      3. Direct Parent Progress Transparency.
-      4. Curriculum-Trained Subject Leads.
-    `
-  }
-];
-
 export const BlogPage = () => {
   const socket = useSocket();
   const [posts, setPosts] = useState([]);
@@ -150,14 +51,14 @@ export const BlogPage = () => {
   const fetchLiveBlog = async () => {
     try {
       const res = await api.get('/blog');
-      if (res.data.success && res.data.posts && res.data.posts.length > 0) {
+      if (res.data?.success && Array.isArray(res.data?.posts)) {
         setPosts(res.data.posts);
       } else {
-        setPosts(FALLBACK_ARTICLES);
+        setPosts([]);
       }
     } catch (err) {
-      console.warn('Backend blog fetch failed, using fallback articles:', err.message);
-      setPosts(FALLBACK_ARTICLES);
+      console.warn('Backend blog fetch returned no posts or error:', err.message);
+      setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -378,14 +279,24 @@ export const BlogPage = () => {
             <div className="w-8 h-8 border-3 border-[#050167] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-xs font-bold text-slate-500">Loading publications...</p>
           </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-sm max-w-xl mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-[#050167]/10 flex items-center justify-center mx-auto mb-4 text-[#050167]">
+              <BookOpen className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-[#001f3f]">No Publications Yet</h3>
+            <p className="text-slate-600 text-sm mt-2 leading-relaxed">
+              Our academic faculty will be publishing curriculum revision blueprints, GCSE &amp; A-Level exam techniques, and upcoming seminar flyers here soon.
+            </p>
+          </div>
         ) : filteredPosts.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8">
+          <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 max-w-lg mx-auto">
             <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-800">No publications found</h3>
+            <h3 className="text-lg font-bold text-slate-800">No matching publications found</h3>
             <p className="text-slate-500 text-sm mt-1">Try refining your search query or choosing another topic category.</p>
             <button
               onClick={() => { setSelectedCategory('All Topics'); setTypeFilter('all'); setSearchQuery(''); }}
-              className="mt-4 px-4 py-2 bg-[#050167] text-white rounded-xl text-xs font-bold hover:bg-[#001f3f]"
+              className="mt-4 px-4 py-2 bg-[#050167] text-white rounded-xl text-xs font-bold hover:bg-[#001f3f] transition-all"
             >
               Reset Filters
             </button>

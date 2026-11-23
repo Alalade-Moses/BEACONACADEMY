@@ -150,6 +150,11 @@ if (fs.existsSync(clientDist)) {
     ) {
       return next();
     }
+    const cleanPath = req.path.replace(/^\//, '');
+    const specificHtml = path.join(clientDist, cleanPath, 'index.html');
+    if (cleanPath && fs.existsSync(specificHtml)) {
+      return res.sendFile(specificHtml);
+    }
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 }

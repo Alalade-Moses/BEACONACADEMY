@@ -14,6 +14,54 @@
       "destination": "https://beaconbridge-server-production.up.railway.app/slides/:match*"
     },
     {
+      "source": "/about",
+      "destination": "/about/index.html"
+    },
+    {
+      "source": "/curriculum",
+      "destination": "/curriculum/index.html"
+    },
+    {
+      "source": "/how-it-works",
+      "destination": "/how-it-works/index.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/contact/index.html"
+    },
+    {
+      "source": "/book-consultation",
+      "destination": "/book-consultation/index.html"
+    },
+    {
+      "source": "/consultation",
+      "destination": "/consultation/index.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog/index.html"
+    },
+    {
+      "source": "/apply-to-teach",
+      "destination": "/apply-to-teach/index.html"
+    },
+    {
+      "source": "/tutor/apply",
+      "destination": "/tutor/apply/index.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy/index.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms/index.html"
+    },
+    {
+      "source": "/security",
+      "destination": "/security/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
