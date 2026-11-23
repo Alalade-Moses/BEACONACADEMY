@@ -25,7 +25,7 @@ const ADVISOR = {
   name: 'Mr. Gideon Babs',
   title: 'Head of Academic Advisory & Admissions Director',
   qualifications: 'Lead Academic Strategist & Senior Curriculum Specialist, 12+ Yrs UK Curriculum Lead',
-  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=240&auto=format&fit=crop&q=80',
+  avatar: '/advisor.jpg',
   bio: 'Specialist in diagnosing learning bottlenecks, exam board timing techniques (AQA, Edexcel, OCR), and structuring high-yield revision roadmaps for GCSE and A-Level students.'
 };
 
@@ -346,7 +346,7 @@ export const BookConsultationPage = () => {
               <img 
                 src={ADVISOR.avatar} 
                 alt={ADVISOR.name} 
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-[#40ffa7] shadow-md shrink-0" 
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover object-top border-2 border-[#40ffa7] shadow-md shrink-0" 
               />
               <div>
                 <h3 className="font-extrabold text-slate-900 text-lg leading-tight">{ADVISOR.name}</h3>

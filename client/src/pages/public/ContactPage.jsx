@@ -151,7 +151,17 @@ export const ContactPage = () => {
               <span className="inline-block bg-[#40ffa7]/20 text-[#40ffa7] text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3">
                 Free Diagnostic
               </span>
-              <h3 className="text-lg font-bold">Prefer a 1-to-1 Conversation?</h3>
+              <div className="flex items-center space-x-3 mb-3">
+                <img
+                  src="/advisor.jpg"
+                  alt="Mr. Gideon Babs"
+                  className="w-12 h-12 rounded-xl object-cover object-top border-2 border-[#40ffa7] shadow-sm shrink-0"
+                />
+                <div>
+                  <h3 className="text-base font-bold">Mr. Gideon Babs</h3>
+                  <p className="text-[11px] text-[#40ffa7] font-semibold">Head of Academic Advisory</p>
+                </div>
+              </div>
               <p className="mt-2 text-xs text-slate-200 leading-relaxed">
                 Book a dedicated 20-minute video consultation with Mr. Gideon Babs to diagnose your child's learning strengths and exam hurdles.
               </p>

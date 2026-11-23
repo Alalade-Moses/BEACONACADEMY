@@ -490,17 +490,24 @@ export const BlogPage = () => {
       {/* Free Academic Consultation Banner */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
         <div className="bg-gradient-to-r from-[#050167] to-[#001f3f] rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="max-w-xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-3">
-              <Award className="w-3.5 h-3.5" />
-              Tailored UK Mentoring
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Unlock Your Child's True Academic Potential
-            </h2>
-            <p className="mt-2 text-slate-200 text-sm leading-relaxed">
-              Book a complimentary 20-minute diagnostic consultation with Mr. Gideon Babs or our senior academic advisors to identify syllabus gaps and build an individualized tuition plan.
-            </p>
+          <div className="flex items-start gap-5 max-w-xl">
+            <img
+              src="/advisor.jpg"
+              alt="Mr. Gideon Babs"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover object-top border-2 border-[#40ffa7] shadow-xl shrink-0 hidden sm:block"
+            />
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-3">
+                <Award className="w-3.5 h-3.5" />
+                Tailored UK Mentoring
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Unlock Your Child's True Academic Potential
+              </h2>
+              <p className="mt-2 text-slate-200 text-sm leading-relaxed">
+                Book a complimentary 20-minute diagnostic consultation with Mr. Gideon Babs or our senior academic advisors to identify syllabus gaps and build an individualized tuition plan.
+              </p>
+            </div>
           </div>
           <Link
             to="/book-consultation"
