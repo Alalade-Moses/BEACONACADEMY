@@ -832,80 +832,7 @@ const memoryData = {
       updated_at: new Date('2026-02-01T10:00:00Z').toISOString()
     }
   ],
-  blogPosts: [
-    {
-      id: 'blog-001',
-      title: 'The GCSE Grade 9 Blueprint: How to Move from Grade 6 to Grade 9 in 90 Days',
-      slug: 'gcse-grade-9-revision-blueprint',
-      category: 'GCSE Mastery',
-      type: 'article',
-      excerpt: 'Exam boards reward synoptic application and precise mark scheme keywords. Discover the exact revision methodology proven by our UK curriculum specialists.',
-      content: `### Why Working Harder Isn't Working\nEvery year, thousands of capable GCSE students spend hundreds of hours highlighting textbooks and creating colour-coded revision cards, only to find their mock grades stuck at a 5 or 6. The problem isn't intelligence or effort — it is the recall trap.\n\n### Pillar 1: The Mark Scheme Reverse-Engineering\nExaminers grade up to 300 scripts an hour. They are searching for specific command verbs and trigger terminology. In Biology, stating "enzymes die" loses marks; you must write "the active site denatures and is no longer complementary to the substrate".\n\n### Pillar 2: Spaced Retrieval over Block Reading\nInstead of studying Chemistry for 4 straight hours on Sunday, study a core topic for 30 minutes, complete 3 timed past-paper questions without notes, and revisit weak areas 48 hours later.\n\n### Pillar 3: Examiner Commentary Analysis\nBeacon Bridge students regularly analyze official Examiner Reports to avoid the top 5 most common national pitfalls.`,
-      flyer_image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=450&fit=crop',
-      author_name: 'Dr. Sarah Jenkins',
-      author_role: 'AQA & Edexcel Specification Lead',
-      read_time: '6 min read',
-      tags: ['GCSE', 'Revision', 'AQA', 'Edexcel'],
-      status: 'published',
-      featured: true,
-      created_at: new Date('2026-11-18T10:00:00Z').toISOString(),
-      updated_at: new Date('2026-11-18T10:00:00Z').toISOString()
-    },
-    {
-      id: 'blog-002',
-      title: 'Cracking A-Level Pure Maths, Further Maths & STEP for Russell Group Entry',
-      slug: 'a-level-maths-step-oxbridge-success',
-      category: 'A-Level & University',
-      type: 'article',
-      excerpt: 'Moving from GCSE to A-Level Mathematics is widely cited as the biggest academic jump in UK education. Here is how top students master synoptic calculus.',
-      content: `### The Chasm Between GCSE and A-Level Maths\nAt GCSE, questions are often procedural. At A-Level, questions are multi-stage puzzles combining trigonometry, differentiation, and algebraic manipulation within a single 8-mark problem.\n\n### 1. Fluency with Algebraic Mechanics\nIf you spend cognitive energy on basic algebraic rearrangement, you have zero headspace left to plan the overarching proof.\n\n### 2. Synoptic Connections\nExam boards deliberately blend calculus with vectors and binomial series. Practice questions categorized by difficulty rather than by chapter topic.`,
-      flyer_image_url: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&h=450&fit=crop',
-      author_name: 'Dr. Jonathan Hayes',
-      author_role: 'Senior A-Level Pure Maths Lead (Oxford DPhil)',
-      read_time: '8 min read',
-      tags: ['A-Level', 'Maths', 'STEP', 'Russell Group'],
-      status: 'published',
-      featured: false,
-      created_at: new Date('2026-11-14T11:00:00Z').toISOString(),
-      updated_at: new Date('2026-11-14T11:00:00Z').toISOString()
-    },
-    {
-      id: 'blog-003',
-      title: 'Easter Intensive GCSE & A-Level Exam Preparation Bootcamp (Virtual Classroom)',
-      slug: 'easter-intensive-gcse-alevel-bootcamp-2027',
-      category: 'Announcements & Events',
-      type: 'flyer',
-      excerpt: 'Official Event Flyer: 5-Day Intensive Virtual Revision Bootcamp covering Mathematics, Sciences, and English Language. Limited to 8 students per seminar cohort.',
-      content: `### Easter Revision Bootcamp Overview\nJoin our curriculum specification leads for an intensive 5-day structured masterclass:\n- **Dates**: Monday 29 March – Friday 2 April 2027\n- **Target Years**: Year 11 (GCSE) & Year 13 (A-Level)\n- **Format**: Synchronized live virtual whiteboard sessions + individual mock exam diagnostics\n- **Faculty**: Former exam board markers and subject specialists\n\nSeats are strictly capped to ensure 1-on-1 interaction. Contact admissions or book a consultation to register your child.`,
-      flyer_image_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&h=630&fit=crop',
-      author_name: 'Mr. Gideon Babs',
-      author_role: 'Admissions Director',
-      read_time: 'Event Flyer',
-      tags: ['Event Flyer', 'Bootcamp', 'GCSE', 'A-Level'],
-      status: 'published',
-      featured: true,
-      created_at: new Date('2026-11-19T09:00:00Z').toISOString(),
-      updated_at: new Date('2026-11-19T09:00:00Z').toISOString()
-    },
-    {
-      id: 'blog-004',
-      title: 'The UK Parent’s Guide to Safe, DBS-Verified & Effective Online Tutoring',
-      slug: 'parent-guide-safe-effective-online-tuition',
-      category: 'Parent Guides',
-      type: 'article',
-      excerpt: 'How to verify tutor credentials, understand KCSIE safeguarding standards, and ensure your investment delivers measurable grade improvements.',
-      content: `### Safety in Online Education\nThe online tutoring market has grown exponentially, but not all platforms adhere to statutory standards. For parents, safeguarding must always be the foundation.\n\n### The 4 Non-Negotiables for Parents:\n1. Enhanced DBS on the Update Service.\n2. Strict In-Platform Video Classrooms.\n3. Direct Parent Progress Transparency.\n4. Curriculum-Trained Subject Leads.`,
-      flyer_image_url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&h=450&fit=crop',
-      author_name: 'Platform Safeguarding Lead',
-      author_role: 'Beacon Bridge Academic Oversight',
-      read_time: '5 min read',
-      tags: ['Safeguarding', 'Parent Guide', 'DBS'],
-      status: 'published',
-      featured: false,
-      created_at: new Date('2026-11-10T12:00:00Z').toISOString(),
-      updated_at: new Date('2026-11-10T12:00:00Z').toISOString()
-    }
-  ]
+  blogPosts: []
 };
 
 // Unified Data Repository Interface
@@ -2456,32 +2383,7 @@ export const store = {
         query += ' ORDER BY created_at DESC';
         const { rows } = await pool.query(query, params);
 
-        if (rows && rows.length > 0) {
-          return rows;
-        }
-
-        // If table is newly created and empty, seed memory posts into PostgreSQL
-        if (!category && !type && (!status || status === 'published')) {
-          for (const post of (memoryData.blogPosts || [])) {
-            try {
-              await pool.query(`
-                INSERT INTO blog_posts (
-                  id, title, slug, category, type, excerpt, content, flyer_image_url,
-                  author_name, author_role, read_time, tags, status, featured, created_at, updated_at
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-                ON CONFLICT (slug) DO NOTHING;
-              `, [
-                post.id, post.title, post.slug, post.category, post.type, post.excerpt,
-                post.content, post.flyer_image_url, post.author_name, post.author_role,
-                post.read_time, post.tags || [], post.status, post.featured, post.created_at, post.updated_at
-              ]);
-            } catch (seedErr) {
-              console.warn('PostgreSQL blog seed note:', seedErr.message);
-            }
-          }
-          const seeded = await pool.query('SELECT * FROM blog_posts ORDER BY created_at DESC');
-          if (seeded.rows && seeded.rows.length > 0) return seeded.rows;
-        }
+        return rows || [];
       } catch (err) {
         console.warn('PostgreSQL getBlogPosts error, falling back to memory:', err.message);
       }

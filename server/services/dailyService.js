@@ -86,7 +86,6 @@ class DailyService {
           enable_chat: true,
           enable_screenshare: true,
           enable_knocking: false,
-          enable_recording: 'cloud',
           start_video_off: false,
           start_audio_off: false,
           exp: expTimestamp,
@@ -155,7 +154,6 @@ class DailyService {
           user_id: String(user.id || 'usr-anonymous'),
           is_owner: Boolean(isOwner),
           enable_screenshare: true,
-          enable_recording: isOwner ? 'cloud' : false,
           exp: expTimestamp
         }
       };

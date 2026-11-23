@@ -44,10 +44,12 @@ export const getRoomAccess = async (req, res) => {
     const roomResult = await dailyService.createOrGetRoom(roomId);
 
     if (!roomResult.configured || !roomResult.url) {
-      return res.status(500).json({
-        success: false,
+      console.warn('[dailyController] Daily room notice:', roomResult.error);
+      return res.status(200).json({
+        success: true,
         configured: false,
-        message: roomResult.error || 'Failed to initialize Daily video room'
+        fallback: true,
+        message: roomResult.error || 'Daily room initializing. Using WebRTC fallback.'
       });
     }
 
@@ -66,9 +68,11 @@ export const getRoomAccess = async (req, res) => {
     });
   } catch (error) {
     console.error('[dailyController] getRoomAccess error:', error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || 'Internal server error acquiring classroom room access'
+    return res.status(200).json({
+      success: true,
+      configured: false,
+      fallback: true,
+      message: error.message || 'Daily room error. Falling back to WebRTC.'
     });
   }
 };
