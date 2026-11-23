@@ -30,6 +30,7 @@ import tutorApplicationRoutes from './routes/tutorApplicationRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import consultationRoutes from './routes/consultationRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
+import dailyRoutes from './routes/dailyRoutes.js';
 import { store } from './database/store.js';
 import { startClassReminderScheduler } from './services/classReminderScheduler.js';
 
@@ -111,6 +112,7 @@ app.use('/api/tutor-applications', tutorApplicationRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/consultations', consultationRoutes);
 app.use('/api/blog', blogRoutes);
+app.use('/api/daily', dailyRoutes);
 
 // Explicit handlers for SEO crawlers & Search Console
 app.get('/sitemap.xml', (req, res) => {
