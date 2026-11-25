@@ -319,5 +319,28 @@ export const PAGE_SEO = {
         '@id': `${BASE_URL}/#organization`
       }
     }
+  },
+  '/ielts-registration': {
+    title: 'IELTS Registration | Academic & UKVI Exam Preparation | Beacon Bridge Academics',
+    description: 'Register for IELTS Academic & UKVI exam preparation at Beacon Bridge Academics. Expert coaching, £1,000/month, structured study plan, payment proof upload.',
+    canonicalPath: '/ielts-registration',
+    robots: 'index, follow',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'Course',
+      '@id': `${BASE_URL}/ielts-registration#course`,
+      'url': `${BASE_URL}/ielts-registration`,
+      'name': 'IELTS Academic & UKVI Exam Preparation',
+      'description': 'Intensive IELTS preparation programme covering all four skills: Listening, Reading, Writing and Speaking. Available as Academic or UKVI track.',
+      'provider': {
+        '@id': `${BASE_URL}/#organization`
+      },
+      'offers': {
+        '@type': 'Offer',
+        'price': '1000',
+        'priceCurrency': 'GBP',
+        'availability': 'https://schema.org/InStock'
+      }
+    }
   }
 };

@@ -72,6 +72,30 @@ if (pool) {
         CREATE INDEX IF NOT EXISTS idx_blog_posts_type ON blog_posts(type);
       `);
       console.log('📰 [BLOG] blog_posts table verified/created in PostgreSQL.');
+
+      // Sync updated course pricing and titles to PostgreSQL on startup
+      for (const c of memoryData.courses) {
+        try {
+          await pool.query(`
+            INSERT INTO courses (id, title, slug, description, category_id, tutor_id, thumbnail_url, level, price, currency, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ON CONFLICT (id) DO UPDATE SET
+              title = EXCLUDED.title,
+              slug = EXCLUDED.slug,
+              description = EXCLUDED.description,
+              level = EXCLUDED.level,
+              price = EXCLUDED.price,
+              updated_at = NOW();
+          `, [
+            c.id, c.title, c.slug, c.description, c.category_id, c.tutor_id,
+            c.thumbnail_url, c.level, c.price, c.currency || 'GBP', c.status || 'published'
+          ]);
+        } catch (cErr) {
+          // Ignore FK or unique slug collision notes softly
+          console.warn(`[COURSES SYNC NOTICE] ${c.slug}:`, cErr.message);
+        }
+      }
+      console.log('📚 [COURSES] PostgreSQL courses & updated pricing synced.');
     } catch (syncErr) {
       console.warn('⚠️ [AUTH] Superadmin sync notice:', syncErr.message);
     }
@@ -234,7 +258,7 @@ const memoryData = {
     },
     {
       id: '10000000-0000-0000-0000-000000000005',
-      name: 'Key Stage 3 Foundations (Years 7–9)',
+      name: 'Key Stage 3 Foundations (Year 7–9)',
       slug: 'ks3',
       description: 'Strengthening academic confidence and closing foundational subject gaps before starting GCSEs.',
       icon: 'Compass',
@@ -245,7 +269,7 @@ const memoryData = {
       id: '10000000-0000-0000-0000-000000000006',
       name: 'Technology & Digital Arts',
       slug: 'tech-digital-arts',
-      description: 'Industry-standard accredited programs in Software Development (Frontend & Backend) and Professional Graphic Design.',
+      description: 'Industry-standard accredited programs in Coding (Software Development) and Professional Graphics Design.',
       icon: 'Code',
       is_active: true,
       created_at: new Date().toISOString()
@@ -254,15 +278,35 @@ const memoryData = {
 
   courses: [
     {
+      id: '20000000-0000-0000-0000-000000000009',
+      title: 'Key Stage 2 Foundation & SATs (Year 3–6)',
+      slug: 'ks2-foundation-sats',
+      description: 'Primary Numeracy, English Reading & Writing, and 11+ / SATs mastery for Year 3–6 students.',
+      category_id: '10000000-0000-0000-0000-000000000005',
+      tutor_id: '00000000-0000-0000-0000-000000000002',
+      thumbnail_url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600',
+      level: 'KS2 (Year 3–6)',
+      price: 149.00,
+      discount_from: 199.00,
+      pricing_type: 'monthly',
+      currency: 'GBP',
+      default_subjects: ['KS2 Mathematics & Arithmetic', 'KS2 English Reading & Comprehension', 'KS2 SPaG & Creative Writing'],
+      status: 'published',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
       id: '20000000-0000-0000-0000-000000000001',
       title: 'GCSE 5-Subject Core Bundle (Maths, English, Chem, Bio, Physics)',
       slug: 'gcse-5-subject-core-bundle',
-      description: 'All 5 core subjects: Mathematics, English Language & Literature, Chemistry, Biology, and Physics. Customisable with opt-out subject exceptions.',
+      description: 'All 5 core subjects: Mathematics, English Language & Literature, Chemistry, Biology, and Physics. (£299/month or £40/hour per subject Year 7–11).',
       category_id: '10000000-0000-0000-0000-000000000001',
       tutor_id: '00000000-0000-0000-0000-000000000002',
       thumbnail_url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=600',
-      level: 'GCSE (Years 10–11)',
+      level: 'GCSE (Year 10–11)',
       price: 299.00,
+      discount_from: 380.00,
+      hourly_rate: 40.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       default_subjects: ['Mathematics', 'English Language & Literature', 'Chemistry', 'Biology', 'Physics'],
@@ -275,12 +319,14 @@ const memoryData = {
       id: '20000000-0000-0000-0000-000000000002',
       title: 'UK A-Level 3-Subject Specialist Program',
       slug: 'uk-a-level-3-subject-program',
-      description: 'Choose your 3 A-Level subjects from Mathematics, Further Maths, English Literature, Chemistry, Physics, Biology, Economics, History, and Computer Science.',
+      description: 'Choose your 3 A-Level subjects from Mathematics, Further Maths, English Literature, Chemistry, Physics, Biology, Economics, History, and Computer Science. (£320/month or £45/hour).',
       category_id: '10000000-0000-0000-0000-000000000002',
       tutor_id: '00000000-0000-0000-0000-000000000003',
       thumbnail_url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600',
-      level: 'A-Level (Years 12–13)',
-      price: 349.00,
+      level: 'A-Level (Year 12–13)',
+      price: 320.00,
+      discount_from: 399.00,
+      hourly_rate: 45.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       subject_selection_required: true,
@@ -305,12 +351,14 @@ const memoryData = {
       id: '20000000-0000-0000-0000-000000000003',
       title: 'Canada Senior Secondary & AP Program (Grade 11/12)',
       slug: 'canada-senior-secondary-program',
-      description: 'Choose 3 courses: Advanced Functions (MHF4U), Calculus & Vectors (MCV4U), English (ENG4U), Chemistry (SCH4U), Physics (SPH4U), Biology (SBI4U), World Issues (CGW4U).',
+      description: 'Choose 3 courses: Advanced Functions (MHF4U), Calculus & Vectors (MCV4U), English (ENG4U), Chemistry (SCH4U), Physics (SPH4U), Biology (SBI4U), World Issues (CGW4U). (£320/month).',
       category_id: '10000000-0000-0000-0000-000000000003',
       tutor_id: '00000000-0000-0000-0000-000000000002',
       thumbnail_url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600',
       level: 'Canada Grade 11–12',
-      price: 349.00,
+      price: 320.00,
+      discount_from: 399.00,
+      hourly_rate: 45.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       subject_selection_required: true,
@@ -337,7 +385,9 @@ const memoryData = {
       tutor_id: '00000000-0000-0000-0000-000000000003',
       thumbnail_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600',
       level: 'US High School / AP',
-      price: 349.00,
+      price: 320.00,
+      discount_from: 399.00,
+      hourly_rate: 45.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       subject_selection_required: true,
@@ -358,14 +408,16 @@ const memoryData = {
     },
     {
       id: '20000000-0000-0000-0000-000000000005',
-      title: 'Key Stage 3 Foundation Bridge (Years 7–9)',
+      title: 'Key Stage 3 Foundation Bridge (Year 7–9)',
       slug: 'ks3-foundation-bridge',
-      description: 'Closing foundational curriculum gaps across KS3 Maths, English, and Combined Science to prepare students for GCSE readiness.',
+      description: 'Closing foundational curriculum gaps across KS3 Maths, English, and Combined Science to prepare students for GCSE readiness. (£249/month or £40/hour).',
       category_id: '10000000-0000-0000-0000-000000000005',
       tutor_id: '00000000-0000-0000-0000-000000000002',
       thumbnail_url: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=600',
-      level: 'KS3 (Years 7–9)',
+      level: 'KS3 (Year 7–9)',
       price: 249.00,
+      discount_from: 299.00,
+      hourly_rate: 40.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       status: 'published',
@@ -374,48 +426,52 @@ const memoryData = {
     },
     {
       id: '20000000-0000-0000-0000-000000000006',
-      title: 'SOFTWARE DEVELOPMENT',
+      title: 'Coding (Software Development)',
       slug: 'software-development',
-      description: 'Industry-standard Software Development program. Choose between Frontend Development (£300/mo) or Backend Development (£420/mo).',
+      description: 'Industry-standard Coding (Software Development) program at £340/month (£35/hour). Choose Frontend or Backend specialization.',
       category_id: '10000000-0000-0000-0000-000000000006',
       tutor_id: '00000000-0000-0000-0000-000000000003',
       thumbnail_url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600',
       level: 'Professional / Tech',
-      price: 300.00,
+      price: 340.00,
+      discount_from: 420.00,
+      hourly_rate: 35.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       has_subtracks: true,
       subtracks: [
         {
           id: 'frontend',
-          name: 'Frontend Development',
-          price: 300.00,
-          description: 'HTML5, CSS3, Modern JavaScript ES6+, React, Tailwind CSS, Responsive Web Design & Web APIs',
+          name: 'Frontend Coding (React & UI)',
+          price: 340.00,
+          description: 'HTML5, CSS3, Modern JavaScript ES6+, React, Tailwind CSS, Responsive Web Design & Web APIs (£340/month or £35/hour)',
           subjects: ['HTML5 & Responsive CSS', 'Modern JavaScript (ES6+)', 'React Architecture & State', 'Tailwind CSS & UI Components', 'REST API Integration']
         },
         {
           id: 'backend',
-          name: 'Backend Development',
-          price: 420.00,
-          description: 'Node.js, Express, RESTful APIs, Relational (PostgreSQL) & NoSQL (MongoDB), Authentication, Security & Cloud Deployment',
+          name: 'Backend Coding (Node.js & Databases)',
+          price: 340.00,
+          description: 'Node.js, Express, RESTful APIs, Relational (PostgreSQL) & NoSQL (MongoDB), Authentication & Cloud Deployment (£340/month or £35/hour)',
           subjects: ['Node.js & Express Framework', 'RESTful API Engineering', 'PostgreSQL & Database Design', 'MongoDB & ORM Modeling', 'JWT Auth & Server Security']
         }
       ],
-      default_subjects: ['Frontend Development (£300.00/mo)', 'Backend Development (£420.00/mo)'],
+      default_subjects: ['Frontend Coding (£340/month · £35/hr)', 'Backend Coding (£340/month · £35/hr)'],
       status: 'published',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
     {
       id: '20000000-0000-0000-0000-000000000007',
-      title: 'GRAPHICS DESIGN',
+      title: 'Graphics Design',
       slug: 'graphics-design',
-      description: 'Comprehensive Visual & Graphic Design: Figma UI/UX prototyping, brand identity, typography, Adobe Photoshop/Illustrator, and portfolio development.',
+      description: 'Comprehensive Visual & Graphics Design (£200/month or £20/hour): Figma UI/UX prototyping, brand identity, typography, Adobe Photoshop/Illustrator, and portfolio development.',
       category_id: '10000000-0000-0000-0000-000000000006',
       tutor_id: '00000000-0000-0000-0000-000000000002',
       thumbnail_url: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=600',
       level: 'Creative / Digital Arts',
-      price: 300.00,
+      price: 200.00,
+      discount_from: 260.00,
+      hourly_rate: 20.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       has_subtracks: false,
@@ -428,12 +484,13 @@ const memoryData = {
       id: '20000000-0000-0000-0000-000000000008',
       title: 'IELTS Academic & UKVI Exam Preparation',
       slug: 'ielts-academic-exam-preparation',
-      description: 'Target Band 7.5+ for UK University & Visa (UKVI) admissions. Intensive coaching in IELTS Academic Writing (Task 1 & 2), Speaking fluency, Reading speed, and Listening under exam conditions.',
+      description: 'Target Band 7.5+ for UK University & Visa (UKVI) admissions (£1,000/month). Intensive 1-to-1 coaching in IELTS Academic Writing (Task 1 & 2), Speaking fluency, Reading speed, and Listening.',
       category_id: '10000000-0000-0000-0000-000000000001',
       tutor_id: '00000000-0000-0000-0000-000000000003',
       thumbnail_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600',
       level: 'English Language Proficiency (IELTS)',
-      price: 300.00,
+      price: 1000.00,
+      discount_from: 1250.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       has_subtracks: false,
@@ -1641,6 +1698,85 @@ export const store = {
     };
   },
 
+  registerIelts: async ({ candidate, ielts_track, target_band, exam_date, focus_modules, payment_proof_url, bank_reference, amount }) => {
+    const existingCandidate = await store.getProfileByEmail(candidate.email);
+    if (existingCandidate && existingCandidate.status === 'pending_verification') {
+      const existingPayment = memoryData.payments.find(p => p.student_id === existingCandidate.id);
+      if (existingPayment) {
+        if (payment_proof_url) existingPayment.proof_url = payment_proof_url;
+        if (bank_reference) existingPayment.bank_reference = bank_reference;
+        if (amount) existingPayment.amount = parseFloat(amount);
+        existingPayment.admin_notes = `IELTS Candidate proof updated. Track: ${ielts_track}. Bank Ref: ${bank_reference || existingPayment.bank_reference}.`;
+      }
+      return { student: existingCandidate, payment: existingPayment || null, idempotent: true };
+    }
+    if (existingCandidate) throw new Error(`Candidate email '${candidate.email}' is already registered.`);
+
+    if (!candidate.password) throw new Error('Password is required.');
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(candidate.password, salt);
+
+    const ieltsCourseId = '20000000-0000-0000-0000-000000000008';
+    const trackLabel = ielts_track || 'IELTS Academic';
+    const modulesStr = Array.isArray(focus_modules) && focus_modules.length > 0 ? focus_modules.join(', ') : 'All 4 IELTS Modules';
+    const bandStr = target_band ? `Target Band ${target_band}` : 'Target Band 7.5+';
+
+    const studentProfile = await store.createProfile({
+      email: candidate.email,
+      password_hash,
+      full_name: candidate.full_name,
+      role: 'student',
+      phone: candidate.phone || '',
+      bio: `Program: ${trackLabel} (£1,000/month) | ${bandStr} | Focus: ${modulesStr}${exam_date ? ` | Exam Date: ${exam_date}` : ''}`,
+      status: 'pending_verification',
+      avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(candidate.full_name)}`
+    });
+
+    const paymentRecord = {
+      id: uuidv4(),
+      parent_id: studentProfile.id,
+      student_id: studentProfile.id,
+      course_id: ieltsCourseId,
+      course_track: trackLabel,
+      course_name: `IELTS Academic & UKVI Exam Preparation (${trackLabel})`,
+      amount: parseFloat(amount) || 1000.00,
+      currency: 'GBP',
+      selected_subjects: focus_modules || ['Speaking', 'Writing Task 1 & 2', 'Reading', 'Listening'],
+      bank_reference: bank_reference || `IELTS-${Date.now().toString(36).toUpperCase()}`,
+      proof_url: payment_proof_url || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600',
+      status: 'pending',
+      admin_notes: `IELTS Candidate: ${candidate.full_name} (${trackLabel}, ${bandStr}). Monthly £1,000 GBP awaiting verification.`,
+      verified_by: null,
+      created_at: new Date().toISOString(),
+      verified_at: null
+    };
+    memoryData.payments.unshift(paymentRecord);
+
+    await store.createEnrollment({
+      course_id: ieltsCourseId,
+      course_track: trackLabel,
+      student_id: studentProfile.id,
+      status: 'enrolled',
+      progress_pct: 0
+    });
+
+    const admins = memoryData.profiles.filter(p => p.role === 'superadmin');
+    for (const admin of admins) {
+      await store.createNotification({
+        user_id: admin.id,
+        title: 'New IELTS Candidate Registration',
+        message: `IELTS registration: ${candidate.full_name} (${trackLabel}, ${bandStr}). Monthly tuition £${paymentRecord.amount} GBP. Verification required.`,
+        type: 'payment',
+        link: '/admin/payments'
+      });
+    }
+
+    return {
+      student: studentProfile,
+      payment: paymentRecord
+    };
+  },
+
   // Payments & Verification
   getPayments: async () => {
     return memoryData.payments.map(p => {
@@ -1750,7 +1886,7 @@ export const store = {
       }
     }
 
-    if (payment.parent_id) {
+    if (payment.parent_id && payment.parent_id !== payment.student_id) {
       try {
         await store.createNotification({
           user_id: payment.parent_id,

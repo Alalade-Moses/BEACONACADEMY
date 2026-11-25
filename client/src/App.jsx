@@ -22,6 +22,7 @@ import { RegisterPage } from './pages/public/RegisterPage';
 import { PaymentProofPage } from './pages/public/PaymentProofPage';
 import { TeacherApplicationPage } from './pages/public/TeacherApplicationPage';
 import { BookConsultationPage } from './pages/public/BookConsultationPage';
+import { IeltsRegisterPage } from './pages/public/IeltsRegisterPage';
 
 // Admin Portal Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -87,6 +88,8 @@ export const App = () => {
         <Route path="/payment-proof" element={<PaymentProofPage />} />
         <Route path="/apply-to-teach" element={<TeacherApplicationPage />} />
         <Route path="/tutor/apply" element={<TeacherApplicationPage />} />
+        <Route path="/ielts-registration" element={<IeltsRegisterPage />} />
+        <Route path="/register/ielts" element={<IeltsRegisterPage />} />
       </Route>
 
       {/* Live Virtual Classroom (Full Stage) */}

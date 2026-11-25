@@ -182,6 +182,88 @@ export const AboutPage = () => {
       </section>
 
       {/* ========================================================= */}
+      {/* CLASSROOM GALLERY — 6 IMAGES                              */}
+      {/* ========================================================= */}
+      <section className="py-16 sm:py-20 bg-white border-b border-[#050167]/10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167] text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-3 shadow-sm">
+              <Users className="w-3.5 h-3.5 text-[#40ffa7]" />
+              <span>Inside Our Classrooms</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-[#001f3f] tracking-tight">
+              Real Sessions. Real Students. Real Results.
+            </h2>
+            <p className="mt-3 text-[#001f3f]/75 text-sm sm:text-base">
+              A glimpse into the interactive, structured learning environments we build for every student.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                src: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80',
+                alt: '1-to-1 Maths tutoring session',
+                label: '1-to-1 Maths Tutoring',
+                badge: 'GCSE · A-Level'
+              },
+              {
+                src: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80',
+                alt: 'Science virtual lab session',
+                label: 'Science Virtual Lab',
+                badge: 'KS3 · GCSE'
+              },
+              {
+                src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80',
+                alt: 'Small group GCSE seminar',
+                label: 'GCSE Group Seminar',
+                badge: 'Year 10–11'
+              },
+              {
+                src: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80',
+                alt: 'A-Level mentorship session',
+                label: 'A-Level Mentorship',
+                badge: 'Year 12–13'
+              },
+              {
+                src: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80',
+                alt: 'KS2 primary reading class',
+                label: 'KS2 Primary Reading',
+                badge: 'Year 3–6'
+              },
+              {
+                src: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80',
+                alt: 'IELTS writing and speaking preparation',
+                label: 'IELTS Writing & Speaking',
+                badge: 'Academic · UKVI'
+              }
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-[#050167]/10 aspect-video"
+              >
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/85 via-[#001f3f]/20 to-transparent" />
+                <div className="absolute top-3 right-3">
+                  <span className="px-2.5 py-1 rounded-full bg-[#40ffa7]/90 text-[#001f3f] text-[10px] font-black uppercase tracking-wider">
+                    {item.badge}
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <span className="text-white font-extrabold text-sm block">{item.label}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================= */}
       {/* WHAT MAKES BEACON BRIDGE ACADEMICS DIFFERENT              */}
       {/* ========================================================= */}
       <section className="py-20 sm:py-28 bg-[#f0faff] border-b border-[#050167]/10">

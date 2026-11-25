@@ -235,10 +235,10 @@ export const ContactPage = () => {
                       onChange={(e) => setForm({ ...form, curriculum: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#050167] text-sm text-slate-900 bg-white"
                     >
-                      <option value="KS2">Primary & KS2 (Years 3-6 / SATs)</option>
-                      <option value="KS3">Key Stage 3 (Years 7-9)</option>
-                      <option value="GCSE">GCSE / IGCSE (Years 10-11)</option>
-                      <option value="A-Level">A-Level / Further Maths (Years 12-13)</option>
+                      <option value="KS2">Primary & KS2 (Year 3-6 / SATs)</option>
+                      <option value="KS3">Key Stage 3 (Year 7-9)</option>
+                      <option value="GCSE">GCSE / IGCSE (Year 10-11)</option>
+                      <option value="A-Level">A-Level / Further Maths (Year 12-13)</option>
                       <option value="North American">US / Canadian High School & AP</option>
                       <option value="Professional">Coding & Software Development</option>
                     </select>

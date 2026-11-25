@@ -21,7 +21,8 @@ function prerenderSeoPages() {
   const allRoutes = {
     ...PAGE_SEO,
     '/consultation': PAGE_SEO['/book-consultation'],
-    '/tutor/apply': PAGE_SEO['/apply-to-teach']
+    '/tutor/apply': PAGE_SEO['/apply-to-teach'],
+    '/register/ielts': PAGE_SEO['/ielts-registration']
   };
 
   for (const [route, config] of Object.entries(allRoutes)) {

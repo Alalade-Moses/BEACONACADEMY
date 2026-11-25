@@ -30,7 +30,7 @@ export const AdminCourses = () => {
     description: '',
     category_id: '',
     tutor_id: '',
-    level: 'GCSE (Years 10–11)',
+    level: 'GCSE (Year 10–11)',
     price: '299',
     thumbnail_url: '',
     status: 'published'
@@ -69,7 +69,7 @@ export const AdminCourses = () => {
       description: '',
       category_id: categories[0]?.id || '',
       tutor_id: tutors[0]?.id || '',
-      level: 'GCSE (Years 10–11)',
+      level: 'GCSE (Year 10–11)',
       price: '299',
       thumbnail_url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600',
       status: 'published'
@@ -81,9 +81,9 @@ export const AdminCourses = () => {
   const openEditModal = (c) => {
     setEditingCourse(c);
     const standardLevels = [
-      'GCSE (Years 10–11)',
-      'A-Level (Years 12–13)',
-      'Key Stage 3 (Years 7–9)',
+      'GCSE (Year 10–11)',
+      'A-Level (Year 12–13)',
+      'Key Stage 3 (Year 7–9)',
       'Canada Grade 11–12',
       'US High School / AP',
       'Professional / Tech',
@@ -100,7 +100,7 @@ export const AdminCourses = () => {
       description: c.description,
       category_id: c.category_id || '',
       tutor_id: c.tutor_id || '',
-      level: isCustom ? 'Custom' : (c.level || 'GCSE (Years 10–11)'),
+      level: isCustom ? 'Custom' : (c.level || 'GCSE (Year 10–11)'),
       price: String(c.price || 0),
       thumbnail_url: c.thumbnail_url || '',
       status: c.status || 'published'
@@ -371,9 +371,9 @@ export const AdminCourses = () => {
                     onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
-                    <option value="GCSE (Years 10–11)">GCSE (Years 10–11)</option>
-                    <option value="A-Level (Years 12–13)">A-Level (Years 12–13)</option>
-                    <option value="Key Stage 3 (Years 7–9)">Key Stage 3 (Years 7–9)</option>
+                    <option value="GCSE (Year 10–11)">GCSE (Year 10–11)</option>
+                    <option value="A-Level (Year 12–13)">A-Level (Year 12–13)</option>
+                    <option value="Key Stage 3 (Year 7–9)">Key Stage 3 (Year 7–9)</option>
                     <option value="Canada Grade 11–12">Canada Grade 11–12</option>
                     <option value="US High School / AP">US High School / AP</option>
                     <option value="Professional / Tech">Professional / Tech</option>

@@ -68,15 +68,15 @@ const CONSULTATION_SCHEDULE = [
 ];
 
 const CURRICULUM_OPTIONS = [
-  'Key Stage 2 / KS2 (Years 3–6 / Primary)',
+  'Key Stage 2 / KS2 (Year 3–6 / Primary)',
   '11+ / 13+ Grammar & Independent School Entrance',
-  'Key Stage 3 (Years 7–9)',
-  'GCSE / IGCSE (Years 10–11)',
-  'A-Levels / Sixth Form (Years 12–13)',
+  'Key Stage 3 (Year 7–9)',
+  'GCSE / IGCSE (Year 10–11)',
+  'A-Levels / Sixth Form (Year 12–13)',
   'IELTS Academic & General Training',
   'Canadian High School (OSSD Grade 12)',
   'US High School & AP Courses',
-  'Software Development & Tech Coding Track',
+  'Coding (Software Development) & Tech Track',
   'Other / Custom Curriculum'
 ];
 
@@ -102,7 +102,7 @@ export const BookConsultationPage = () => {
     student_name: '',
     email: '',
     phone: '',
-    curriculum: 'Key Stage 2 / KS2 (Years 3–6 / Primary)',
+    curriculum: 'Key Stage 2 / KS2 (Year 3–6 / Primary)',
     subjects: 'Mathematics & English',
     exam_board: 'A-Level (AQA / Edexcel / OCR / Cambridge CIE)',
     current_grade: 'Working at Expected Standard',
@@ -280,44 +280,55 @@ export const BookConsultationPage = () => {
         canonicalPath="/book-consultation"
       />
       
-      {/* Master Consultation Container Header */}
+      {/* Master Consultation Container Header — Animated Motion Background */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden mb-10">
-        <div className="w-full bg-gradient-to-b from-[#f0faff] to-slate-50 border-b border-[#050167]/10 px-6 py-6 sm:py-7 flex items-center justify-center rounded-t-3xl">
-          <Link to="/" className="inline-block group">
-            <img 
-              src="/logo.png" 
-              alt="Beacon Bridge Academics" 
-              className="h-16 sm:h-20 w-auto max-w-[280px] sm:max-w-xs object-contain transition-transform group-hover:scale-105" 
-            />
-          </Link>
-        </div>
-        
-        <div className="p-6 sm:p-10 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#40ffa7]/20 text-[#001f3f] text-xs font-black uppercase tracking-wider mb-3 border border-[#40ffa7]/40">
-            <Sparkles className="w-3.5 h-3.5 text-[#050167]" />
-            <span>Complimentary 1-on-1 Academic Consultation</span>
+        <div className="relative w-full overflow-hidden rounded-t-3xl">
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#001f3f] via-[#050167] to-[#001f3f]" />
+          {/* Animated orbs */}
+          <div className="absolute top-[-30%] left-[-10%] w-80 h-80 bg-[#40ffa7]/25 rounded-full blur-[90px] animate-pulse" />
+          <div className="absolute bottom-[-30%] right-[-10%] w-96 h-96 bg-[#2563eb]/30 rounded-full blur-[110px] animate-pulse" style={{animationDelay:'1s'}} />
+          <div className="absolute top-[10%] right-[20%] w-48 h-48 bg-[#40ffa7]/15 rounded-full blur-[60px] animate-pulse" style={{animationDelay:'2s'}} />
+          <div className="absolute bottom-[5%] left-[25%] w-56 h-56 bg-[#050167]/40 rounded-full blur-[80px] animate-pulse" style={{animationDelay:'0.5s'}} />
+          {/* Mesh grid overlay */}
+          <div className="absolute inset-0 opacity-10" style={{backgroundImage:'linear-gradient(rgba(64,255,167,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(64,255,167,0.3) 1px,transparent 1px)',backgroundSize:'40px 40px'}} />
+          {/* Logo */}
+          <div className="relative z-10 px-6 py-6 sm:py-7 flex items-center justify-center border-b border-white/10">
+            <Link to="/" className="inline-block group">
+              <img
+                src="/logo.png"
+                alt="Beacon Bridge Academics"
+                className="h-16 sm:h-20 w-auto max-w-[280px] sm:max-w-xs object-contain transition-transform group-hover:scale-105 drop-shadow-2xl"
+              />
+            </Link>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#001f3f] tracking-tight leading-tight">
-            Book a 1-on-1 Consultation
-          </h1>
-          <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Discuss your child&apos;s academic targets, diagnostic exam assessments, and bespoke study plans with our Senior Faculty Advisor before enrolment.
-          </p>
-
-          {/* Trust Pills */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-bold text-slate-700">
-            <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
-              <Clock className="w-3.5 h-3.5 text-emerald-600" />
-              20-Minute Bespoke Assessment
-            </span>
-            <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
-              <Award className="w-3.5 h-3.5 text-emerald-600" />
-              Oxbridge & Imperial Mentorship
-            </span>
-            <span className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              Enhanced DBS Safeguarded
-            </span>
+          {/* Hero text */}
+          <div className="relative z-10 p-6 sm:p-10 text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] text-xs font-black uppercase tracking-wider mb-3 border border-[#40ffa7]/40 backdrop-blur-sm">
+              <Sparkles className="w-3.5 h-3.5 text-[#40ffa7]" />
+              <span>Complimentary 1-on-1 Academic Consultation</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+              Book a 1-on-1 Consultation
+            </h1>
+            <p className="mt-3 text-sm sm:text-base text-[#f0faff]/80 max-w-2xl mx-auto leading-relaxed">
+              Discuss your child&apos;s academic targets, diagnostic exam assessments, and bespoke study plans with our Senior Faculty Advisor before enrolment.
+            </p>
+            {/* Trust Pills */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-bold text-white">
+              <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/20 shadow-sm">
+                <Clock className="w-3.5 h-3.5 text-[#40ffa7]" />
+                20-Minute Bespoke Assessment
+              </span>
+              <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/20 shadow-sm">
+                <Award className="w-3.5 h-3.5 text-[#40ffa7]" />
+                Oxbridge &amp; Imperial Mentorship
+              </span>
+              <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/20 shadow-sm">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#40ffa7]" />
+                Enhanced DBS Safeguarded
+              </span>
+            </div>
           </div>
         </div>
       </div>

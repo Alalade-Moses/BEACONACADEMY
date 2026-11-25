@@ -192,6 +192,54 @@ export const registerJoint = async (req, res, next) => {
   }
 };
 
+export const registerIelts = async (req, res, next) => {
+  try {
+    const { candidate, ielts_track, target_band, exam_date, focus_modules, payment_proof_url, bank_reference, amount } = req.body;
+
+    if (!candidate || !candidate.email || !candidate.password || !candidate.full_name) {
+      return res.status(400).json({ success: false, message: 'Candidate full name, email, and password are required.' });
+    }
+
+    const result = await store.registerIelts({
+      candidate,
+      ielts_track,
+      target_band,
+      exam_date,
+      focus_modules,
+      payment_proof_url,
+      bank_reference,
+      amount: amount || 1000.00
+    });
+
+    (async () => {
+      try {
+        if (payment_proof_url && result.payment) {
+          await sendPaymentProofAdminAlert({
+            payment: result.payment,
+            student: result.student,
+            parent: result.student
+          });
+        }
+      } catch (emailErr) {
+        console.warn('[IELTS Registration Email Warning]', emailErr.message);
+      }
+    })();
+
+    res.status(201).json({
+      success: true,
+      message: 'IELTS registration & payment proof submitted successfully! Once verified by our bursar team, log in to access your IELTS Virtual Classroom Dashboard.',
+      data: {
+        student_id: result.student.id,
+        payment_id: result.payment.id,
+        bank_reference: result.payment.bank_reference,
+        status: 'pending_verification'
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getMe = async (req, res) => {
   const { password_hash, ...safeUser } = req.user;
   res.status(200).json({

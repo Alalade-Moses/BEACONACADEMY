@@ -121,28 +121,68 @@ export const HowItWorksPage = () => {
       />
 
       {/* ========================================================= */}
-      {/* HERO BANNER                                               */}
+      {/* HERO BANNER — Split Layout with Image                     */}
       {/* ========================================================= */}
-      <section className="relative py-20 sm:py-28 bg-[#001f3f] text-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f] via-[#050167]/80 to-[#001f3f] z-0" />
-        <div className="absolute top-1/4 right-10 w-96 h-96 bg-[#40ffa7]/15 rounded-full blur-[140px] pointer-events-none" />
+      <section className="relative py-16 sm:py-20 bg-[#001f3f] text-white overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#001f3f] via-[#050167]/90 to-[#001f3f] z-0" />
+        <div className="absolute top-0 left-0 w-full h-full opacity-10" style={{backgroundImage:'linear-gradient(rgba(64,255,167,0.4) 1px,transparent 1px),linear-gradient(90deg,rgba(64,255,167,0.4) 1px,transparent 1px)',backgroundSize:'50px 50px'}} />
+        <div className="absolute top-[-20%] right-[-5%] w-[500px] h-[500px] bg-[#40ffa7]/15 rounded-full blur-[150px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-80 h-80 bg-[#2563eb]/20 rounded-full blur-[120px] pointer-events-none" />
 
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-[#40ffa7]/20 border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-4 backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5 text-[#40ffa7]" />
-            <span>Onboarding Architecture</span>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Text */}
+            <div>
+              <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-[#40ffa7]/20 border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-5 backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5 text-[#40ffa7]" />
+                <span>Onboarding Architecture</span>
+              </div>
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
+                How Beacon Bridge{' '}
+                <span className="bg-gradient-to-r from-white via-[#f0faff] to-[#40ffa7] bg-clip-text text-transparent">
+                  Academics Works
+                </span>
+              </h1>
+              <p className="mt-6 text-base sm:text-xl text-[#f0faff]/85 max-w-xl leading-relaxed font-normal">
+                A transparent, safe, and family-first journey from registration to your child&apos;s first live lesson — in four simple steps.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                {['Family Registration','Free Consultation','Teacher Matching','Live Classes'].map((step, i) => (
+                  <span key={i} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-sm font-bold text-white">
+                    <span className="w-5 h-5 rounded-full bg-[#40ffa7] text-[#001f3f] flex items-center justify-center text-[10px] font-black">{i+1}</span>
+                    {step}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {/* Right: Hero Image */}
+            <div className="relative">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/30 aspect-4/3">
+                <img
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80"
+                  alt="Students learning in a Beacon Bridge online session"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/70 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md rounded-2xl p-3.5 border border-slate-200 shadow-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#001f3f] flex items-center justify-center shrink-0">
+                      <Monitor className="w-4 h-4 text-[#40ffa7]" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-black text-[#001f3f] block">Live Interactive Classroom</span>
+                      <span className="text-[11px] text-slate-500">Real-time tutoring · Recorded · Parent-visible</span>
+                    </div>
+                    <span className="ml-auto px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black border border-emerald-200">LIVE</span>
+                  </div>
+                </div>
+              </div>
+              {/* Floating badge */}
+              <div className="absolute -top-4 -right-4 bg-[#40ffa7] text-[#001f3f] rounded-2xl px-4 py-2 shadow-xl font-black text-sm">
+                100% Online
+              </div>
+            </div>
           </div>
-          
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight max-w-4xl mx-auto">
-            How Beacon Bridge{' '}
-            <span className="bg-gradient-to-r from-white via-[#f0faff] to-[#40ffa7] bg-clip-text text-transparent">
-              Academics Works
-            </span>
-          </h1>
-
-          <p className="mt-6 text-base sm:text-xl text-[#f0faff]/85 max-w-2xl mx-auto leading-relaxed font-normal">
-            A transparent, safe, and family-first journey from start to finish.
-          </p>
         </div>
       </section>
 
@@ -179,6 +219,9 @@ export const HowItWorksPage = () => {
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-[#050167] mb-2.5">Register as a family</h3>
+                  <div className="rounded-xl overflow-hidden mb-3 aspect-video">
+                    <img src="https://images.unsplash.com/photo-1491308056676-205b7c9a7dc1?auto=format&fit=crop&w=600&q=80" alt="Family registration" className="w-full h-full object-cover" loading="lazy" />
+                  </div>
                   <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed">
                     A parent completes one registration form for themselves and their child, together. This keeps every account accurate, safeguarded, and properly linked from day one.
                   </p>
@@ -201,6 +244,9 @@ export const HowItWorksPage = () => {
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-[#050167] mb-2.5">Speak to a teacher first</h3>
+                  <div className="rounded-xl overflow-hidden mb-3 aspect-video">
+                    <img src="https://images.unsplash.com/photo-1573164574572-cb89e39749b4?auto=format&fit=crop&w=600&q=80" alt="1-on-1 academic consultation" className="w-full h-full object-cover" loading="lazy" />
+                  </div>
                   <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed">
                     Before lessons begin, you have a 1-on-1 consultation with an academic lead. You discuss your child's goals, their difficulties, and their specific exam board.
                   </p>
@@ -223,6 +269,9 @@ export const HowItWorksPage = () => {
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-[#050167] mb-2.5">Get set up</h3>
+                  <div className="rounded-xl overflow-hidden mb-3 aspect-video">
+                    <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80" alt="Teacher matching and onboarding" className="w-full h-full object-cover" loading="lazy" />
+                  </div>
                   <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed">
                     Our team completes your onboarding and confirms your plan, and your child is matched with a dedicated UK teacher who knows their exact curriculum.
                   </p>
@@ -245,6 +294,9 @@ export const HowItWorksPage = () => {
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-[#050167] mb-2.5">Learn live & track progress</h3>
+                  <div className="rounded-xl overflow-hidden mb-3 aspect-video">
+                    <img src="https://images.unsplash.com/photo-1588702547919-26089e690ecc?auto=format&fit=crop&w=600&q=80" alt="Live virtual classroom lesson" className="w-full h-full object-cover" loading="lazy" />
+                  </div>
                   <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed">
                     Lessons take place in our live classroom. You follow attendance, homework submissions, and milestone reports directly from your parent account.
                   </p>

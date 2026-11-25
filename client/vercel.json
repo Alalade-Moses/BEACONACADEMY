@@ -62,6 +62,14 @@
       "destination": "/security/index.html"
     },
     {
+      "source": "/ielts-registration",
+      "destination": "/ielts-registration/index.html"
+    },
+    {
+      "source": "/register/ielts",
+      "destination": "/ielts-registration/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
