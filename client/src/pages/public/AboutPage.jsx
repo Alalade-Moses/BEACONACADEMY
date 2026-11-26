@@ -129,7 +129,7 @@ export const AboutPage = () => {
           className="absolute inset-0 w-full h-full object-cover object-center z-0"
           style={{ animation: 'aboutHeroZoom 18s ease-in-out infinite' }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/80 via-[#050167]/62 to-[#001f3f]/75 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/80 via-[#050167]/60 to-[#001f3f]/75 z-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/35 z-0" />
         <div className="absolute top-1/4 left-10 w-96 h-96 bg-[#40ffa7]/15 rounded-full blur-[140px] pointer-events-none z-0" />
 

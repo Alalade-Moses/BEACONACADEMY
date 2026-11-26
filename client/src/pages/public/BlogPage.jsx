@@ -151,7 +151,7 @@ export const BlogPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-24 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20">
       <SEO 
         title="UK Tutoring & Exam Insights Blog | GCSE, A-Level Guides & Flyers"
         description="Expert revision blueprints, A-Level study techniques, event flyers, and parent tuition advice written by verified UK curriculum teachers at Beacon Bridge Academics."
@@ -176,7 +176,7 @@ export const BlogPage = () => {
           alt="Beacon Bridge Academics study journal, library books and revision notes"
           className="absolute inset-0 w-full h-full object-cover object-center z-0"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/78 via-[#050167]/60 to-[#001f3f]/75 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/80 via-[#050167]/65 to-[#001f3f]/75 z-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/30 z-0" />
         <div className="max-w-6xl mx-auto relative z-10 text-center">
           

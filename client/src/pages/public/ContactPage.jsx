@@ -74,7 +74,7 @@ export const ContactPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-24 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20">
       <SEO 
         title="Contact Us | Beacon Bridge Academics Online Tutoring"
         description="Get in touch with Beacon Bridge Academics. Speak with our UK academic advisors, book a free diagnostic consultation, or ask questions about our GCSE & A-Level tuition."
@@ -83,14 +83,7 @@ export const ContactPage = () => {
       />
 
       {/* Header */}
-      <section className="bg-[#001f3f] text-white py-20 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
-        <img
-          src="/pages/contact-hero.jpg"
-          alt="Beacon Bridge Academics admissions advisors and support team"
-          className="absolute inset-0 w-full h-full object-cover object-center z-0"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/82 via-[#050167]/65 to-[#001f3f]/78 z-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/30 z-0" />
+      <section className="bg-gradient-to-br from-[#001f3f] via-[#050167] to-[#001633] text-white py-16 sm:py-20 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
         <div className="max-w-4xl mx-auto relative z-10">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-4">
             <MessageSquare className="w-3.5 h-3.5" />
