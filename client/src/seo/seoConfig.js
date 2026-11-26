@@ -342,5 +342,37 @@ export const PAGE_SEO = {
         'availability': 'https://schema.org/InStock'
       }
     }
+  },
+  '/register': {
+    title: 'Register with Us | Student & Parent Portal | Beacon Bridge Academics',
+    description: 'Joint parent-student registration for KS2, KS3, GCSE, UK A-Level, Canada Grade 11–12, Coding (Software Development), and Graphics Design.',
+    canonicalPath: '/register',
+    robots: 'index, follow',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${BASE_URL}/register#webpage`,
+      'url': `${BASE_URL}/register`,
+      'name': 'Register with Us | Beacon Bridge Academics',
+      'publisher': {
+        '@id': `${BASE_URL}/#organization`
+      }
+    }
+  },
+  '/payment-proof': {
+    title: 'Payment Proof Submission | Beacon Bridge Academics',
+    description: 'Submit or update your monthly tuition bank transfer reference and receipt slip for Beacon Bridge Academics verification.',
+    canonicalPath: '/payment-proof',
+    robots: 'noindex, follow',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': `${BASE_URL}/payment-proof#webpage`,
+      'url': `${BASE_URL}/payment-proof`,
+      'name': 'Payment Proof Submission | Beacon Bridge Academics',
+      'publisher': {
+        '@id': `${BASE_URL}/#organization`
+      }
+    }
   }
 };

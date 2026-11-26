@@ -31,72 +31,182 @@ export const CurriculumPage = () => {
   // 1. Stages Data
   const stages = [
     {
+      id: 'ks2',
+      badge: 'Year 3 to 6',
+      title: 'KS2 Primary Tutoring Online',
+      subtitle: '£149/month • Foundational numeracy, reading comprehension & SATs readiness',
+      monthlyPrice: '£149/month',
+      discountFrom: '£199/month',
+      savingsTag: 'Save £50/mo',
+      hourlyNote: null,
+      description: 'Warm, structured primary learning for Year 3 to Year 6 pupils. We rebuild core arithmetic confidence, reading fluency, spelling, punctuation & grammar (SPaG), and Year 6 SATs / 11+ exam readiness.',
+      features: ['KS2 Mathematics & core times tables mastery', 'Reading comprehension, SPaG & structured writing', 'Year 6 SATs & 11+ grammar entrance preparation']
+    },
+    {
       id: 'gcse',
-      badge: 'Years 10 & 11',
+      badge: 'Year 10 & 11',
       title: 'GCSE Tutoring Online',
-      subtitle: 'Targeted specification revision & exam technique',
-      description: 'Whether your child is aiming to secure a grade 4, push for a 7, or retake an exam, our teachers work through the specification with them, topic by topic, using past-paper practice and clear feedback.',
-      features: ['AQA, Edexcel, OCR, and WJEC focus', 'Command-word dissection & timing strategies', 'Step-by-step past paper walkthroughs']
+      subtitle: '£299/month (5-Subject Bundle) | £40/hour per subject (Year 7–11)',
+      monthlyPrice: '£299/month',
+      discountFrom: '£380/month',
+      savingsTag: 'Save £81/mo',
+      hourlyNote: '£40/hour per subject (Year 7–11)',
+      description: 'Whether your child is aiming to secure a grade 4, push for a 7–9, or retake an exam, our teachers work through the specification with them, topic by topic, using past-paper practice and clear feedback.',
+      features: ['AQA, Edexcel, OCR, and WJEC focus', 'Command-word dissection & timing strategies', 'Flexible 5-subject bundle (£299/month) or £40/hour per subject']
     },
     {
       id: 'alevel',
-      badge: 'Years 12 & 13',
+      badge: 'Year 12 & 13',
       title: 'A-Level Tutoring Online',
-      subtitle: 'Deep content mastery & independent critical thinking',
-      description: 'A-Level means deeper content, longer papers and far more independent study. We help students build the habits and the understanding to cope with the step up.',
+      subtitle: '£320/month (Same as Canada Grade 11–12) | £45/hour per A-Level subject',
+      monthlyPrice: '£320/month',
+      discountFrom: '£399/month',
+      savingsTag: 'Save £79/mo',
+      hourlyNote: '£45/hour per A-Level subject',
+      description: 'A-Level means deeper content, longer papers and far more independent study. We help students build the habits and the understanding to cope with the step up at £320/month or £45/hour.',
       features: ['Advanced essay structuring & analytical frameworks', 'Complex synoptic paper navigation', 'University & UCAS grade requirement prep']
     },
     {
       id: 'ks3',
-      badge: 'Years 7 to 9',
+      badge: 'Year 7 to 9',
       title: 'KS3 Academic Support',
-      subtitle: 'Early foundational strength before GCSEs',
-      description: 'Strong foundations in Years 7 to 9 make GCSEs far easier. We help children close gaps early, before they grow into serious secondary school roadblocks.',
-      features: ['Core numeracy & algebraic fluency', 'Reading comprehension & structured writing', 'Rebuilding confidence before mock exams']
+      subtitle: '£249/month | £40/hour per subject (Year 7–11)',
+      monthlyPrice: '£249/month',
+      discountFrom: '£299/month',
+      savingsTag: 'Save £50/mo',
+      hourlyNote: '£40/hour per subject (Year 7–11)',
+      description: 'Strong foundations in Year 7 to 9 make GCSEs far easier. We help children close gaps early, before they grow into serious secondary school roadblocks.',
+      features: ['Core numeracy & algebraic fluency', 'Reading comprehension & structured writing', 'Rebuilding confidence before GCSE & mock exams']
     },
     {
-      id: 'homeschool',
-      badge: 'Home Education',
-      title: 'Homeschooled Students',
-      subtitle: 'Structured curricula & specialist subject knowledge',
-      description: 'If you teach at home, our teachers can provide structure, specialist subject knowledge and an exam-board focus for GCSEs and A-Levels.',
-      features: ['Structured lesson plans aligned to exam boards', 'Regular formal assessments & mock grading', 'Independent parent reports & attendance tracking']
-    },
-    {
-      id: 'international',
-      badge: 'International Moves',
-      title: 'Families Moving Between School Systems',
-      subtitle: 'Smooth transition across UK, US, Canada & Australia',
-      description: 'Moving to or from the UK? Year groups, subjects and exam styles differ between the UK, US, Canada and Australia. Our teachers help your child bridge the gap without losing confidence.',
-      features: ['Cross-curriculum alignment & mapping', 'Terminology and exam format translation', 'Pacing matched to the new country’s academic calendar']
+      id: 'canada',
+      badge: 'Canada Grade 11–12',
+      title: 'Canada Grade 11–12 & US AP Mastery',
+      subtitle: '£320/month (Same rate as UK A-Level) | £45/hour per subject',
+      monthlyPrice: '£320/month',
+      discountFrom: '£399/month',
+      savingsTag: 'Save £79/mo',
+      hourlyNote: '£45/hour per subject',
+      description: 'Moving across school systems or preparing for Ontario (OSSD Grade 11–12) and US AP university admissions? Our specialist educators align pacing to your exact syllabus and calendar.',
+      features: ['Ontario (MHF4U, MCV4U, SCH4U, ENG4U) & US AP', 'Cross-curriculum alignment & exam format coaching', 'Full weekly progress logs for international families']
     },
     {
       id: 'software',
-      badge: 'Technology Track',
-      title: 'Software Development & Web Engineering',
-      subtitle: 'Frontend Engineering (£300/mo) & Backend Systems (£420/mo)',
-      description: 'Industry-standard modern software engineering tracks. Students build real-world responsive web applications, relational databases, REST APIs, and full-stack software architecture with expert code reviews.',
-      features: ['Frontend Track (£300/mo): HTML5, CSS3, Modern JavaScript, React.js & Tailwind CSS', 'Backend Track (£420/mo): Node.js, Express, PostgreSQL, WebSockets & Cloud DevOps', 'Direct portfolio building & live hands-on coding']
+      badge: 'Coding Track',
+      title: 'Coding (Software Development)',
+      subtitle: '£340/month | £35/hour — Frontend & Backend Web Engineering',
+      monthlyPrice: '£340/month',
+      discountFrom: '£420/month',
+      savingsTag: 'Save £80/mo',
+      hourlyNote: '£35/hour coding coaching',
+      description: 'Industry-standard Coding (Software Development) tracks at £340/month (£35/hour). Students build real-world responsive web applications, relational databases, REST APIs, and full-stack software architecture.',
+      features: ['Frontend Coding (£340/month · £35/hr): HTML5, CSS3, Modern JavaScript, React.js & Tailwind CSS', 'Backend Coding (£340/month · £35/hr): Node.js, Express, PostgreSQL, REST APIs & Cloud DevOps', 'Direct portfolio building & live hands-on coding']
     },
     {
       id: 'graphics',
       badge: 'Digital Arts',
-      title: 'Professional Graphic Design & UI/UX',
-      subtitle: 'Visual identity, UI/UX prototyping & creative portfolio (£300/mo)',
-      description: 'Master industry-standard visual design workflows. Students learn brand identity, typography, Figma UI/UX prototyping, vector illustration in Illustrator, and Photoshop digital artistry.',
+      title: 'Graphics Design & UI/UX Studio',
+      subtitle: '£200/month | £20/hour — Visual identity, UI/UX prototyping & portfolio',
+      monthlyPrice: '£200/month',
+      discountFrom: '£260/month',
+      savingsTag: 'Save £60/mo',
+      hourlyNote: '£20/hour studio coaching',
+      description: 'Master industry-standard visual design workflows at £200/month (£20/hour). Students learn brand identity, typography, Figma UI/UX prototyping, vector illustration in Illustrator, and Photoshop digital artistry.',
       features: ['Figma interactive UI/UX prototyping & wireframing', 'Brand identity, typography, color theory & design systems', 'Adobe Illustrator & Photoshop production workflows']
     },
     {
       id: 'ielts',
       badge: 'Language Proficiency',
       title: 'IELTS Academic & UKVI Exam Preparation',
-      subtitle: 'Target Band 7.5+ for UK University & Visa (UKVI) Entry (£300/mo)',
-      description: 'Comprehensive preparation for the International English Language Testing System. Master all four components: Speaking fluency, Academic Writing (Task 1 data analysis & Task 2 argument essays), Reading speed, and Listening under exam conditions.',
+      subtitle: '£1,000/month • Target Band 7.5+ for UK University & Visa (UKVI) Entry',
+      monthlyPrice: '£1,000/month',
+      discountFrom: '£1,250/month',
+      savingsTag: 'Save £250/mo',
+      hourlyNote: 'Dedicated Candidate Portal & Classroom',
+      ctaPath: '/ielts-registration',
+      description: 'Comprehensive £1,000/month intensive preparation for the International English Language Testing System, with a dedicated IELTS registration portal and Student Virtual Classroom Dashboard where tutors conduct live sessions.',
       features: [
-        'Academic Writing Task 1 (graphs/processes) & Task 2 (discursive essays) grading against official rubrics',
+        'Academic Writing Task 1 (graphs/processes) & Task 2 essays graded against official rubrics',
         '1-on-1 Speaking mock interviews with live pronunciation & lexical resource coaching',
-        'Speed-reading techniques for complex academic texts and listening distractor elimination'
+        'Speed-reading techniques and listening distractor elimination under exam timing'
       ]
+    }
+  ];
+
+  // Program Pricing Directory for Curriculum Cards
+  const programPricingCards = [
+    {
+      title: 'Key Stage 2 (KS2)',
+      level: 'Primary · Year 3–6',
+      discountFrom: '£199/month',
+      savings: 'Save £50',
+      price: '£149',
+      hourly: 'Full Primary Package',
+      to: '/register'
+    },
+    {
+      title: 'Key Stage 3 (KS3)',
+      level: 'Secondary · Year 7–9',
+      discountFrom: '£299/month',
+      savings: 'Save £50',
+      price: '£249',
+      hourly: '£40/hour per subject (Year 7–11)',
+      to: '/register'
+    },
+    {
+      title: 'GCSE 5-Subject Core',
+      level: 'GCSE · Year 10–11',
+      discountFrom: '£380/month',
+      savings: 'Save £81',
+      price: '£299',
+      hourly: '£40/hour per subject (Year 7–11)',
+      to: '/register'
+    },
+    {
+      title: 'UK A-Level 3-Subject',
+      level: 'Sixth Form · Year 12–13',
+      discountFrom: '£399/month',
+      savings: 'Save £79',
+      price: '£320',
+      hourly: '£45/hour per A-Level subject',
+      to: '/register'
+    },
+    {
+      title: 'Canada Grade 11–12 & US AP',
+      level: 'International · Grade 11–12',
+      discountFrom: '£399/month',
+      savings: 'Save £79',
+      price: '£320',
+      hourly: '£45/hour per subject',
+      to: '/register'
+    },
+    {
+      title: 'Coding (Software Development)',
+      level: 'Frontend & Backend Tracks',
+      discountFrom: '£420/month',
+      savings: 'Save £80',
+      price: '£340',
+      hourly: '£35/hour coaching',
+      to: '/register'
+    },
+    {
+      title: 'Graphics Design',
+      level: 'Figma · Illustrator · Photoshop',
+      discountFrom: '£260/month',
+      savings: 'Save £60',
+      price: '£200',
+      hourly: '£20/hour studio coaching',
+      to: '/register'
+    },
+    {
+      title: 'IELTS Academic & UKVI',
+      level: 'Dedicated Candidate Dashboard',
+      discountFrom: '£1,250/month',
+      savings: 'Save £250',
+      price: '£1,000',
+      hourly: '1-on-1 Exam Preparation',
+      to: '/ielts-registration',
+      isIelts: true
     }
   ];
 
@@ -163,57 +273,57 @@ export const CurriculumPage = () => {
     },
     {
       title: "KS3 Maths & English",
-      category: "Years 7 to 9",
-      desc: "Closing learning gaps early, developing algebra fluency, and building reading stamina before GCSEs.",
+      category: "Year 7 to 9",
+      desc: "Closing learning gaps early, developing algebra fluency, and building reading stamina before GCSEs. (£249/month · £40/hour Year 7–11).",
       icon: BookOpen,
       color: "from-amber-600 to-orange-700",
       boards: "UK National Curriculum",
-      tag: "Foundation Strength"
+      tag: "£249/mo · £40/hr"
     },
     {
       title: "Key Stage 2 (KS2) Primary",
-      category: "Years 3 to 6",
-      desc: "Warm, confidence-building numeracy, phonics, reading comprehension, and Year 6 SATs preparation.",
+      category: "Year 3 to 6",
+      desc: "Warm, confidence-building numeracy, phonics, reading comprehension, and Year 6 SATs preparation (£149/month).",
       icon: Sparkles,
       color: "from-yellow-500 to-amber-600",
       boards: "Primary SATs",
-      tag: "Confidence Rebuilding"
+      tag: "£149/month"
     },
     {
       title: "A-Level Specialist Tutoring",
-      category: "Years 12 & 13",
-      desc: "Advanced calculus, synoptic chemistry, mechanics, and extended essay critique for UCAS & Russell Group offers.",
+      category: "Year 12 & 13",
+      desc: "Advanced calculus, synoptic chemistry, mechanics, and extended essay critique for UCAS offers (£320/month · £45/hour).",
       icon: GraduationCap,
       color: "from-purple-600 to-indigo-800",
       boards: "OCR · AQA · Edexcel",
-      tag: "A* Coaching"
+      tag: "£320/mo · £45/hr"
     },
     {
       title: "IELTS Academic & UKVI",
       category: "University & Visa",
-      desc: "Meticulous Task 1 & 2 essay evaluation, fluency coaching, and mock interview sittings targeting Band 7.5+.",
+      desc: "Meticulous Task 1 & 2 essay evaluation, fluency coaching, and mock interview sittings targeting Band 7.5+ (£1,000/month).",
       icon: Globe2,
       color: "from-teal-600 to-cyan-700",
-      boards: "British Council Rubric",
-      tag: "Band 7.5 - 8.5"
+      boards: "Dedicated IELTS Portal",
+      tag: "£1,000/month"
     },
     {
-      title: "Software Development Track",
+      title: "Coding (Software Development)",
       category: "Applied Engineering",
-      desc: "Modern industry coding in HTML5, CSS3, React, Node.js, and PostgreSQL with live hands-on projects.",
+      desc: "Modern industry coding in HTML5, CSS3, React, Node.js, and PostgreSQL with live hands-on projects (£340/month · £35/hour).",
       icon: Code2,
       color: "from-sky-600 to-blue-700",
       boards: "Frontend & Backend",
-      tag: "Portfolio Track"
+      tag: "£340/mo · £35/hr"
     },
     {
-      title: "Graphic Design & UI/UX",
+      title: "Graphics Design & UI/UX",
       category: "Creative Technology",
-      desc: "Figma wireframing, interactive prototyping, brand systems, and production design workflows.",
+      desc: "Figma wireframing, interactive prototyping, brand systems, and Adobe production design workflows (£200/month · £20/hour).",
       icon: Palette,
       color: "from-fuchsia-600 to-pink-700",
       boards: "Figma & Adobe",
-      tag: "Design Systems"
+      tag: "£200/mo · £20/hr"
     },
     {
       title: "Homeschool Syllabus Support",
@@ -275,7 +385,7 @@ export const CurriculumPage = () => {
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight max-w-4xl mx-auto">
             Online Tutoring for Every Stage:{' '}
             <span className="bg-gradient-to-r from-white via-[#f0faff] to-[#40ffa7] bg-clip-text text-transparent">
-              KS3, GCSE & A-Level
+              KS2, KS3, GCSE &amp; A-Level
             </span>
           </h1>
 
@@ -324,14 +434,23 @@ export const CurriculumPage = () => {
             {/* Stage Body */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-7 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#050167]/10 text-[#050167] text-xs font-bold uppercase tracking-wider">
-                  <Award className="w-3.5 h-3.5 text-[#050167]" />
-                  <span>{stages[stagesSlide].badge}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#050167]/10 text-[#050167] text-xs font-bold uppercase tracking-wider">
+                    <Award className="w-3.5 h-3.5 text-[#050167]" />
+                    <span>{stages[stagesSlide].badge}</span>
+                  </div>
+                  {stages[stagesSlide].discountFrom && (
+                    <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-black">
+                      <span className="line-through text-slate-500 mr-1.5 font-semibold">{stages[stagesSlide].discountFrom}</span>
+                      {stages[stagesSlide].savingsTag}
+                    </span>
+                  )}
                 </div>
+
                 <h3 className="text-2xl sm:text-3xl font-black text-[#050167]">
                   {stages[stagesSlide].title}
                 </h3>
-                <p className="text-sm font-bold text-[#001f3f]/70">
+                <p className="text-sm font-bold text-[#001f3f]/75">
                   {stages[stagesSlide].subtitle}
                 </p>
                 <p className="text-[#001f3f]/80 text-sm sm:text-base leading-relaxed">
@@ -349,7 +468,7 @@ export const CurriculumPage = () => {
 
                 <div className="pt-6">
                   <Link
-                    to="/register"
+                    to={stages[stagesSlide].ctaPath || '/register'}
                     className="inline-flex items-center space-x-2 px-8 py-4 rounded-2xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-sm shadow-xl shadow-[#40ffa7]/30 transition-all hover:-translate-y-0.5 active:scale-95 cursor-pointer"
                   >
                     <span>Enrol for {stages[stagesSlide].title}</span>
@@ -365,12 +484,34 @@ export const CurriculumPage = () => {
                 <div className="flex items-center justify-between pb-3 border-b border-white/10">
                   <span className="text-xs text-[#40ffa7] font-bold uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#40ffa7]" />
-                    Why Our Approach Works
+                    Tuition &amp; Fee Summary
                   </span>
                   <span className="text-[10px] bg-white/10 px-2.5 py-0.5 rounded-full text-white/80 font-mono">
-                    UK SPEC READY
+                    {stages[stagesSlide].badge}
                   </span>
                 </div>
+
+                {/* Highlighted Monthly & Per-Hour Tuition Card */}
+                {stages[stagesSlide].monthlyPrice && (
+                  <div className="p-4 rounded-2xl bg-white/10 border border-[#40ffa7]/30">
+                    {stages[stagesSlide].discountFrom && (
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="line-through text-slate-300">Standard {stages[stagesSlide].discountFrom}</span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#40ffa7] text-[#001f3f] font-black text-[10px]">
+                          {stages[stagesSlide].savingsTag}
+                        </span>
+                      </div>
+                    )}
+                    <div className="text-2xl sm:text-3xl font-black text-white">
+                      {stages[stagesSlide].monthlyPrice}
+                    </div>
+                    {stages[stagesSlide].hourlyNote && (
+                      <div className="text-xs font-bold text-[#40ffa7] mt-1">
+                        Or {stages[stagesSlide].hourlyNote}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <h4 className="text-xl font-bold text-white leading-snug">
                   Exam Technique + Subject Fluency
@@ -396,6 +537,79 @@ export const CurriculumPage = () => {
               </div>
             </div>
 
+          </div>
+
+          {/* Transparent Program Fees & Discount Cards */}
+          <div className="mt-16">
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <span className="text-xs font-bold text-[#050167] uppercase tracking-wider block mb-2">
+                Transparent Pricing &amp; Scholarships
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-black text-[#001f3f] tracking-tight">
+                Monthly Tuition &amp; Hourly Coaching Rates
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {programPricingCards.map((prog, idx) => (
+                <div
+                  key={idx}
+                  className={`rounded-3xl p-6 border flex flex-col justify-between transition-all hover:-translate-y-1 hover:shadow-xl ${
+                    prog.isIelts
+                      ? 'bg-gradient-to-br from-[#050167] to-[#001f3f] text-white border-[#40ffa7]/40'
+                      : 'bg-white text-[#001f3f] border-[#050167]/15 shadow-sm'
+                  }`}
+                >
+                  <div>
+                    {/* Discount Price on Top */}
+                    <div className={`flex items-center justify-between pb-3 mb-3 border-b ${prog.isIelts ? 'border-white/15' : 'border-slate-100'}`}>
+                      <span className={`text-xs font-bold line-through ${prog.isIelts ? 'text-slate-300' : 'text-slate-400'}`}>
+                        Was {prog.discountFrom}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#40ffa7] text-[#001f3f] text-[10px] font-black uppercase">
+                        {prog.savings}
+                      </span>
+                    </div>
+
+                    <span className={`text-[11px] font-bold uppercase tracking-wider block mb-1 ${prog.isIelts ? 'text-[#40ffa7]' : 'text-[#050167]'}`}>
+                      {prog.level}
+                    </span>
+                    <h4 className={`text-lg font-extrabold leading-snug mb-3 ${prog.isIelts ? 'text-white' : 'text-[#001f3f]'}`}>
+                      {prog.title}
+                    </h4>
+
+                    <div className="mb-3">
+                      <span className={`text-3xl font-black ${prog.isIelts ? 'text-[#40ffa7]' : 'text-[#050167]'}`}>
+                        {prog.price}
+                      </span>
+                      <span className={`text-xs font-bold ml-1 ${prog.isIelts ? 'text-slate-200' : 'text-slate-500'}`}>
+                        / month
+                      </span>
+                    </div>
+
+                    <div className={`text-xs font-bold px-3 py-1.5 rounded-xl inline-block mb-4 ${
+                      prog.isIelts
+                        ? 'bg-white/10 text-white border border-white/15'
+                        : 'bg-[#f0faff] text-[#050167] border border-[#050167]/15'
+                    }`}>
+                      {prog.hourly}
+                    </div>
+                  </div>
+
+                  <Link
+                    to={prog.to}
+                    className={`w-full py-2.5 px-4 rounded-xl font-black text-xs text-center flex items-center justify-center gap-1.5 transition-all ${
+                      prog.isIelts
+                        ? 'bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f]'
+                        : 'bg-[#050167] hover:bg-[#001f3f] text-white'
+                    }`}
+                  >
+                    <span>{prog.isIelts ? 'IELTS Registration' : 'Enrol Now'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
 
         </div>

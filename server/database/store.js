@@ -180,7 +180,7 @@ const memoryData = {
       role: 'student',
       avatar_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150',
       phone: '+44 7700 900620',
-      bio: 'Software Development Student enrolled in Frontend Development Track (£300/mo).',
+      bio: 'Coding (Software Development) Student enrolled in Frontend Coding Track (£340/month).',
       status: 'active',
       created_at: new Date('2026-02-01T10:00:00Z').toISOString(),
       updated_at: new Date().toISOString()
@@ -577,8 +577,8 @@ const memoryData = {
       id: '30000000-0000-0000-0000-000000000004',
       course_id: '20000000-0000-0000-0000-000000000006',
       tutor_id: '00000000-0000-0000-0000-000000000003',
-      title: 'Software Development: Full-Stack Architecture, REST APIs & React Workshop',
-      description: 'Hands-on live engineering session: building responsive frontend UIs and backend microservices with real-time code reviews.',
+      title: 'Coding (Software Development): Full-Stack Architecture, REST APIs & React Workshop',
+      description: 'Hands-on live coding session: building responsive frontend UIs and backend microservices with real-time code reviews.',
       scheduled_at: new Date(Date.now() + 1800000).toISOString(),
       duration_minutes: 90,
       status: 'scheduled',
@@ -600,6 +600,21 @@ const memoryData = {
       meeting_room_id: 'ROOM-GRAPHICS-LIVE',
       presentation_url: '/slides/sample-presentation.pdf',
       presentation_pages: 5,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: '30000000-0000-0000-0000-000000000006',
+      course_id: '20000000-0000-0000-0000-000000000008',
+      tutor_id: '00000000-0000-0000-0000-000000000003',
+      title: 'IELTS Academic & UKVI: Writing Task 2 & Live Speaking Mock Clinic',
+      description: 'Interactive IELTS Band 7.5–8.5 seminar covering Academic Writing Task 1 & 2 rubrics and 1-on-1 Speaking fluency feedback.',
+      scheduled_at: new Date(Date.now() + 5400000).toISOString(),
+      duration_minutes: 60,
+      status: 'scheduled',
+      meeting_room_id: 'ROOM-IELTS-LIVE',
+      presentation_url: '/slides/sample-presentation.pdf',
+      presentation_pages: 6,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
@@ -729,15 +744,15 @@ const memoryData = {
       parent_id: '00000000-0000-0000-0000-000000000007',
       student_id: '00000000-0000-0000-0000-000000000006',
       course_id: '20000000-0000-0000-0000-000000000006',
-      course_track: 'Frontend Development',
-      course_name: 'SOFTWARE DEVELOPMENT (Frontend Development)',
-      amount: 300.00,
+      course_track: 'Frontend Coding',
+      course_name: 'Coding (Software Development) (Frontend Coding)',
+      amount: 340.00,
       currency: 'GBP',
       selected_subjects: ['HTML5 & Responsive CSS', 'Modern JavaScript (ES6+)', 'React Architecture', 'Tailwind CSS', 'REST APIs'],
       bank_reference: 'WIRE-DEV-984210',
       proof_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600',
       status: 'pending',
-      admin_notes: 'Software Development (Frontend Track) £300.00/mo. Awaiting bursar verification.',
+      admin_notes: 'Coding (Software Development — Frontend Coding Track) £340.00/month. Awaiting bursar verification.',
       verified_by: null,
       created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
       verified_at: null
@@ -864,7 +879,7 @@ const memoryData = {
     bank_routing_sort: '20-45-77',
     bank_iban: 'GB29BARC20457783920147',
     bank_instructions: 'Please transfer the monthly tuition fee in British Pounds (£ GBP) using the Student Full Name and Reference Code in the payment description. After completing payment, upload your transfer confirmation receipt or slip.',
-    default_tuition_fee: '£300.00 GBP / month'
+    default_tuition_fee: '£299.00 GBP / month'
   },
   consultations: [
     {
@@ -1079,7 +1094,27 @@ export const store = {
           ORDER BY c.created_at ASC
         `;
         const res = await pool.query(query);
-        if (res.rows && res.rows.length > 0) return res.rows;
+        if (res.rows && res.rows.length > 0) {
+          const memoryById = new Map(memoryData.courses.map(mc => [mc.id, mc]));
+          const memoryBySlug = new Map(memoryData.courses.map(mc => [mc.slug, mc]));
+          const merged = res.rows.map(r => {
+            const meta = memoryById.get(r.id) || memoryBySlug.get(r.slug) || {};
+            return {
+              ...meta,
+              ...r,
+              discount_from: meta.discount_from ?? r.discount_from,
+              hourly_rate: meta.hourly_rate ?? r.hourly_rate,
+              pricing_type: meta.pricing_type ?? r.pricing_type
+            };
+          });
+          const pgIds = new Set(merged.map(m => m.id));
+          const missing = memoryData.courses.filter(mc => !pgIds.has(mc.id)).map(mc => ({
+            ...mc,
+            tutor: memoryData.profiles.find(p => p.id === mc.tutor_id) || null,
+            category: memoryData.course_categories.find(c => c.id === mc.category_id) || null
+          }));
+          return [...merged, ...missing];
+        }
       } catch (e) {
         console.warn('[store] pg getCourses fallback:', e.message);
       }
@@ -1188,7 +1223,17 @@ export const store = {
           ORDER BY cl.scheduled_at ASC
         `;
         const res = await pool.query(query);
-        if (res.rows && res.rows.length > 0) return res.rows;
+        if (res.rows && res.rows.length > 0) {
+          const pgIds = new Set(res.rows.map(r => r.id));
+          const missing = memoryData.classes
+            .filter(cls => !pgIds.has(cls.id))
+            .map(cls => ({
+              ...cls,
+              course: memoryData.courses.find(c => c.id === cls.course_id) || null,
+              tutor: memoryData.profiles.find(p => p.id === cls.tutor_id) || null
+            }));
+          return [...res.rows, ...missing];
+        }
       } catch (e) {
         console.warn('[store] pg getClasses fallback:', e.message);
       }
@@ -1644,7 +1689,7 @@ export const store = {
       course_id: course_id || (memoryData.courses[0] ? memoryData.courses[0].id : null),
       course_track: course_track || null,
       course_name: courseNameWithTrack,
-      amount: parseFloat(amount) || 300.00,
+      amount: parseFloat(amount) || 299.00,
       currency: 'GBP',
       selected_subjects: selected_subjects || [],
       bank_reference: bank_reference || `BBA-${Date.now().toString(36).toUpperCase()}`,
@@ -1806,7 +1851,7 @@ export const store = {
       course_id: course_id || null,
       course_track: course_track || null,
       course_name: courseNameWithTrack,
-      amount: parseFloat(amount) || 300.00,
+      amount: parseFloat(amount) || 299.00,
       currency: 'GBP',
       bank_reference: bank_reference || `WIRE-${Date.now().toString(36).toUpperCase()}`,
       proof_url: proof_url || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600',

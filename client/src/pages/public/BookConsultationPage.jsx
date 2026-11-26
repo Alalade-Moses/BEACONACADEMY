@@ -280,11 +280,27 @@ export const BookConsultationPage = () => {
         canonicalPath="/book-consultation"
       />
       
-      {/* Master Consultation Container Header — Animated Motion Background */}
+      {/* Master Consultation Container Header — Animated Motion Image Background */}
+      <style>{`
+        @keyframes consultationKenBurns {
+          0% { transform: scale(1.0) translate(0%, 0%); }
+          50% { transform: scale(1.12) translate(-2%, -1.5%); }
+          100% { transform: scale(1.04) translate(1.5%, 1%); }
+        }
+        .consultation-motion-bg {
+          animation: consultationKenBurns 18s ease-in-out infinite alternate;
+        }
+      `}</style>
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden mb-10">
         <div className="relative w-full overflow-hidden rounded-t-3xl">
-          {/* Animated gradient background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#001f3f] via-[#050167] to-[#001f3f]" />
+          {/* Animated Motion Background Image */}
+          <img
+            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80"
+            alt="Beacon Bridge 1-on-1 Academic Consultation"
+            className="consultation-motion-bg absolute inset-0 w-full h-full object-cover object-center opacity-35"
+          />
+          {/* Deep Navy & Emerald Translucent Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#001f3f]/90 via-[#050167]/85 to-[#001f3f]/95" />
           {/* Animated orbs */}
           <div className="absolute top-[-30%] left-[-10%] w-80 h-80 bg-[#40ffa7]/25 rounded-full blur-[90px] animate-pulse" />
           <div className="absolute bottom-[-30%] right-[-10%] w-96 h-96 bg-[#2563eb]/30 rounded-full blur-[110px] animate-pulse" style={{animationDelay:'1s'}} />
@@ -294,11 +310,11 @@ export const BookConsultationPage = () => {
           <div className="absolute inset-0 opacity-10" style={{backgroundImage:'linear-gradient(rgba(64,255,167,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(64,255,167,0.3) 1px,transparent 1px)',backgroundSize:'40px 40px'}} />
           {/* Logo */}
           <div className="relative z-10 px-6 py-6 sm:py-7 flex items-center justify-center border-b border-white/10">
-            <Link to="/" className="inline-block group">
+            <Link to="/" className="inline-block group bg-white/95 px-4 py-2 rounded-2xl shadow-lg">
               <img
                 src="/logo.png"
                 alt="Beacon Bridge Academics"
-                className="h-16 sm:h-20 w-auto max-w-[280px] sm:max-w-xs object-contain transition-transform group-hover:scale-105 drop-shadow-2xl"
+                className="h-14 sm:h-16 w-auto max-w-[260px] object-contain transition-transform group-hover:scale-105"
               />
             </Link>
           </div>

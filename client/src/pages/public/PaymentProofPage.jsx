@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import { SEO } from '../../components/common/SEO';
 import { showError, showSuccess, showWarning, showNetworkError } from '../../utils/swal';
 import {
   Building2,
@@ -26,7 +27,7 @@ export const PaymentProofPage = () => {
     swift_code: 'BARCGB22',
     routing_code: '20-45-77',
     iban: 'GB29BARC20457783920147',
-    tuition_fee: '£300.00 GBP / month',
+    tuition_fee: '£299.00 GBP / month',
     instructions: 'Please include your student or parent name and reference code in the bank transfer description. Upload your transaction receipt/wire slip below to expedite verification.'
   });
 
@@ -35,14 +36,14 @@ export const PaymentProofPage = () => {
   const [proofFileName, setProofFileName] = useState('');
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState('');
-  const [selectedTrack, setSelectedTrack] = useState('Frontend Development');
+  const [selectedTrack, setSelectedTrack] = useState('Frontend Coding');
 
   const [formData, setFormData] = useState({
     parent_email: '',
     student_email: '',
     bank_reference: '',
     proof_url: '',
-    amount: '300.00',
+    amount: '299.00',
     currency: 'GBP',
     notes: ''
   });
@@ -101,7 +102,7 @@ export const PaymentProofPage = () => {
           setCourses(courseRes.data.courses);
           const first = courseRes.data.courses[0];
           setSelectedCourseId(first.id);
-          setFormData(prev => ({ ...prev, amount: String(first.price || '300.00') }));
+          setFormData(prev => ({ ...prev, amount: Number(first.price || 299).toFixed(2) }));
         }
       } catch (err) {
         console.error('Failed to load bank details', err);
@@ -115,20 +116,25 @@ export const PaymentProofPage = () => {
     const course = courses.find(c => c.id === courseId);
     if (!course) return;
 
-    if (course.slug?.includes('software') || course.title?.toLowerCase().includes('software')) {
-      const isBackend = selectedTrack === 'Backend Development';
-      setFormData(prev => ({ ...prev, amount: isBackend ? '420.00' : '300.00' }));
-    } else if (course.slug?.includes('graphics') || course.title?.toLowerCase().includes('graphics')) {
-      setFormData(prev => ({ ...prev, amount: '300.00' }));
+    const slug = (course.slug || '').toLowerCase();
+    const titleLower = (course.title || '').toLowerCase();
+
+    if (slug.includes('software') || titleLower.includes('software') || titleLower.includes('coding')) {
+      setFormData(prev => ({ ...prev, amount: '340.00' }));
+    } else if (slug.includes('graphics') || titleLower.includes('graphics')) {
+      setFormData(prev => ({ ...prev, amount: '200.00' }));
+    } else if (slug.includes('ielts') || titleLower.includes('ielts')) {
+      setFormData(prev => ({ ...prev, amount: '1000.00' }));
+    } else if (slug.includes('ks2') || titleLower.includes('ks2')) {
+      setFormData(prev => ({ ...prev, amount: '149.00' }));
     } else {
-      setFormData(prev => ({ ...prev, amount: String(course.price || '299.00') }));
+      setFormData(prev => ({ ...prev, amount: Number(course.price || 299).toFixed(2) }));
     }
   };
 
   const handleTrackSelect = (track) => {
     setSelectedTrack(track);
-    const isBackend = track === 'Backend Development';
-    setFormData(prev => ({ ...prev, amount: isBackend ? '420.00' : '300.00' }));
+    setFormData(prev => ({ ...prev, amount: '340.00' }));
   };
 
   const handleCopy = (text, field) => {
@@ -170,6 +176,11 @@ export const PaymentProofPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
+      <SEO
+        title="Payment Proof Submission | Beacon Bridge Academics"
+        description="Submit or update your monthly tuition bank transfer reference and receipt slip for Beacon Bridge Academics verification."
+        canonicalPath="/payment-proof"
+      />
       {/* Master Container Logo Header */}
       <div className="bg-white rounded-3xl border border-[#050167]/15 shadow-xl shadow-[#050167]/5 overflow-hidden mb-10">
         <div className="w-full bg-gradient-to-b from-[#f0faff] to-slate-50 border-b border-[#050167]/10 px-6 py-6 sm:py-7 flex items-center justify-center rounded-t-3xl">
@@ -320,6 +331,22 @@ export const PaymentProofPage = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Beneficiary & Dynamic Monthly Tuition Summary Banner */}
+            <div className="bg-[#001f3f] text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#40ffa7]/30">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#40ffa7] block">
+                  Beneficiary Bank Name
+                </span>
+                <div className="font-bold text-sm sm:text-base text-white">
+                  {bankDetails.bank_name || 'Barclays Bank UK PLC'} &mdash; {bankDetails.account_name || 'Beacon Bridge Academics Ltd.'}
+                </div>
+              </div>
+              <div className="sm:text-right bg-white/10 px-4 py-2 rounded-xl border border-white/15 shrink-0">
+                <span className="text-[10px] uppercase tracking-wider text-slate-300 block font-bold">Monthly Tuition Due</span>
+                <span className="text-lg font-black text-[#40ffa7]">£{formData.amount} GBP / month</span>
+              </div>
+            </div>
+
             {error && (
               <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
@@ -339,41 +366,41 @@ export const PaymentProofPage = () => {
                 >
                   {courses.map(c => (
                     <option key={c.id} value={c.id}>
-                      {c.title} — £{c.price || '300.00'} GBP/mo
+                      {c.title} — £{c.price || '299.00'} GBP/month
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* If Software Development, show Frontend (£300) vs Backend (£420) sub-track picker */}
+              {/* If Coding (Software Development), show Frontend vs Backend Coding track picker (£340/mo · £35/hr) */}
               {courses.find(c => c.id === selectedCourseId)?.slug?.includes('software') && (
                 <div className="sm:col-span-2 p-3.5 rounded-xl bg-white border border-[#050167]/20 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div>
-                    <span className="text-xs font-bold text-[#001f3f] block">Select Software Track:</span>
-                    <span className="text-[11px] text-[#001f3f]/60">Frontend: £300/mo | Backend: £420/mo</span>
+                    <span className="text-xs font-bold text-[#001f3f] block">Select Coding Track:</span>
+                    <span className="text-[11px] text-[#001f3f]/60">Both Frontend &amp; Backend Coding: £340/month (£35/hour)</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
-                      onClick={() => handleTrackSelect('Frontend Development')}
+                      onClick={() => handleTrackSelect('Frontend Coding')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        selectedTrack === 'Frontend Development'
+                        selectedTrack.toLowerCase().includes('frontend')
                           ? 'bg-[#050167] text-[#40ffa7] ring-1 ring-[#40ffa7]'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      Frontend (£300/mo)
+                      Frontend Coding (£340/mo)
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleTrackSelect('Backend Development')}
+                      onClick={() => handleTrackSelect('Backend Coding')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        selectedTrack === 'Backend Development'
+                        selectedTrack.toLowerCase().includes('backend')
                           ? 'bg-[#050167] text-[#40ffa7] ring-1 ring-[#40ffa7]'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      Backend (£420/mo)
+                      Backend Coding (£340/mo)
                     </button>
                   </div>
                 </div>

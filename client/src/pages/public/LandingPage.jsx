@@ -216,7 +216,7 @@ export const LandingPage = () => {
       name: "Aiden Powell",
       role: "Student (Professional Track)",
       location: "Pontcanna, Cardiff",
-      subject: "Full-Stack Software Development",
+      subject: "Full-Stack Coding (Software Development)",
       outcome: "Built Production Web App → Secured Junior Developer Role",
       quote: "The software engineering curriculum gave me practical coding skills in React, Node.js, and PostgreSQL that were directly applicable in technical interviews. Truly transformative.",
       image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80",
@@ -398,7 +398,7 @@ export const LandingPage = () => {
     },
     {
       q: "What age groups and year groups do you teach?",
-      a: "We teach school-age students from KS3 to A-Level, and we match each child with a teacher who has experience at their level. Tell us your child's year group, subjects and exam board when you book your consultation."
+      a: "We teach students starting from Key Stage 2 (KS2 / Primary, Year 3–6, ages 7+) through Key Stage 3 (Year 7–9), GCSE (Year 10–11), and A-Level (Year 12–13), as well as Canadian Grade 11–12, US AP, IELTS Academic & UKVI, Coding (Software Development), and Graphics Design. Tell us your child's year group, subjects and exam board when you book your consultation."
     },
     {
       q: "How do I get started?",
@@ -1217,7 +1217,7 @@ export const LandingPage = () => {
                   <Compass className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-[#050167] bg-[#f0faff] px-2.5 py-1 rounded-md inline-block mb-2.5">
-                  KS3 • GCSE • A-Level
+                  KS2 • KS3 • GCSE • A-Level
                 </span>
                 <h3 className="text-xl font-bold text-[#050167] mb-2">Curriculum & Exam Boards</h3>
                 <p className="text-xs sm:text-sm text-[#001f3f]/80 leading-relaxed mb-6">
@@ -1335,12 +1335,12 @@ export const LandingPage = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
             {[
-              { icon: Calculator, label: 'Mathematics', sub: 'KS3 · GCSE · A-Level', color: 'from-indigo-500 to-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+              { icon: Calculator, label: 'Mathematics', sub: 'KS2 · KS3 · GCSE · A-Level', color: 'from-indigo-500 to-indigo-700', bg: 'bg-indigo-50', border: 'border-indigo-200' },
               { icon: FlaskConical, label: 'Sciences', sub: 'Biology · Chemistry · Physics', color: 'from-emerald-500 to-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
               { icon: PenLine, label: 'English', sub: 'Language · Literature', color: 'from-rose-500 to-rose-700', bg: 'bg-rose-50', border: 'border-rose-200' },
-              { icon: Code2, label: 'Software Dev', sub: 'React · Node · PostgreSQL', color: 'from-sky-500 to-sky-700', bg: 'bg-sky-50', border: 'border-sky-200' },
-              { icon: Globe2, label: 'IELTS / English', sub: 'Academic · UKVI Band 7.5+', color: 'from-teal-500 to-teal-700', bg: 'bg-teal-50', border: 'border-teal-200' },
-              { icon: Palette, label: 'Graphic Design', sub: 'Figma · Illustrator · UI/UX', color: 'from-fuchsia-500 to-fuchsia-700', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200' },
+              { icon: Code2, label: 'Coding (Software Dev)', sub: '£340/month · £35/hour', color: 'from-sky-500 to-sky-700', bg: 'bg-sky-50', border: 'border-sky-200' },
+              { icon: Globe2, label: 'IELTS / UKVI', sub: 'Academic · £1,000/month', color: 'from-teal-500 to-teal-700', bg: 'bg-teal-50', border: 'border-teal-200' },
+              { icon: Palette, label: 'Graphics Design', sub: '£200/month · £20/hour', color: 'from-fuchsia-500 to-fuchsia-700', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200' },
               { icon: Compass, label: 'Homeschool', sub: 'Structured · Exam-Board Led', color: 'from-amber-500 to-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
               { icon: Globe, label: 'International', sub: 'UK · US · Canada · Australia', color: 'from-[#050167] to-[#001f3f]', bg: 'bg-[#f0faff]', border: 'border-[#050167]/20' },
             ].map(({ icon: Icon, label, sub, color, bg, border }) => (

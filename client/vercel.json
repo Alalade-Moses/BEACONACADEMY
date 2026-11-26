@@ -70,6 +70,14 @@
       "destination": "/ielts-registration/index.html"
     },
     {
+      "source": "/register",
+      "destination": "/register/index.html"
+    },
+    {
+      "source": "/payment-proof",
+      "destination": "/payment-proof/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

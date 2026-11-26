@@ -385,7 +385,7 @@ const buildEmailTemplate = ({ headerTitle, contentHtml, callToAction }) => {
 export const sendRegistrationWelcome = async ({ student, parent, course, track, amount }) => {
   const courseTitle = course?.title || 'Academic Program';
   const trackLabel = track ? `(${track})` : '';
-  const monthlyFee = amount || '300.00';
+  const monthlyFee = amount || '299.00';
 
   const html = buildEmailTemplate({
     headerTitle: 'Welcome to Beacon Bridge Academics',
@@ -437,8 +437,8 @@ export const sendPaymentProofSubmitted = async ({ parent, student, payment }) =>
       
       <div class="card">
         <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 15px;">Submission Details</h3>
-        <p style="margin: 4px 0;"><strong>Enrolled Program:</strong> ${payment?.course_display_name || 'Software Development'}</p>
-        <p style="margin: 4px 0;"><strong>Monthly Tuition:</strong> £${payment?.amount || '300.00'} GBP / month</p>
+        <p style="margin: 4px 0;"><strong>Enrolled Program:</strong> ${payment?.course_display_name || 'Coding (Software Development)'}</p>
+        <p style="margin: 4px 0;"><strong>Monthly Tuition:</strong> £${payment?.amount || '299.00'} GBP / month</p>
         <p style="margin: 4px 0;"><strong>Transaction Reference:</strong> ${payment?.bank_reference || 'Submitted'}</p>
         <p style="margin: 4px 0;"><strong>Status:</strong> <span class="badge badge-gold">Under Review by Finance</span></p>
       </div>
@@ -470,7 +470,7 @@ export const sendPaymentProofAdminAlert = async ({ payment, student, parent }) =
         <p style="margin: 4px 0;"><strong>Student:</strong> ${student?.full_name || payment?.student_name} (${student?.email || 'N/A'})</p>
         <p style="margin: 4px 0;"><strong>Parent:</strong> ${parent?.full_name || payment?.parent_name} (${parent?.email || 'N/A'})</p>
         <p style="margin: 4px 0;"><strong>Course & Track:</strong> ${payment?.course_display_name || payment?.course_track || 'Academic Program'}</p>
-        <p style="margin: 4px 0;"><strong>Monthly Tuition:</strong> £${payment?.amount || '300.00'} GBP / month</p>
+        <p style="margin: 4px 0;"><strong>Monthly Tuition:</strong> £${payment?.amount || '299.00'} GBP / month</p>
         <p style="margin: 4px 0;"><strong>Bank Reference:</strong> ${payment?.bank_reference || 'N/A'}</p>
         <p style="margin: 4px 0;"><strong>Submitted At:</strong> ${new Date().toLocaleString('en-GB')}</p>
       </div>
@@ -499,7 +499,7 @@ export const sendPaymentVerifiedReceipt = async ({ payment, student, parent }) =
     headerTitle: 'Official Payment Invoice & Portal Credentials',
     contentHtml: `
       <p>Dear <strong>${parent?.full_name || 'Parent/Guardian'}</strong>,</p>
-      <p>Thank you for your payment. We are pleased to confirm that your tuition payment of <strong>£${payment?.amount || '300.00'} GBP</strong> has been <span class="badge badge-green">Verified & Confirmed</span> by Beacon Bridge Academics administration.</p>
+      <p>Thank you for your payment. We are pleased to confirm that your tuition payment of <strong>£${payment?.amount || '299.00'} GBP</strong> has been <span class="badge badge-green">Verified & Confirmed</span> by Beacon Bridge Academics administration.</p>
       
       <!-- Official Invoice Card -->
       <div class="card" style="border-left: 4px solid #050167; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
@@ -535,7 +535,7 @@ export const sendPaymentVerifiedReceipt = async ({ payment, student, parent }) =
           </tr>
           <tr style="border-top: 1px solid #cbd5e1;">
             <td style="padding: 8px 0; font-size: 15px;"><strong>Total Paid:</strong></td>
-            <td style="padding: 8px 0; text-align: right; font-size: 16px; font-weight: bold; color: #050167;">£${payment?.amount || '300.00'} GBP</td>
+            <td style="padding: 8px 0; text-align: right; font-size: 16px; font-weight: bold; color: #050167;">£${payment?.amount || '299.00'} GBP</td>
           </tr>
         </table>
       </div>

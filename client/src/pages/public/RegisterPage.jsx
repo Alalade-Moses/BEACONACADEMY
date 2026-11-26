@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
+import { SEO } from '../../components/common/SEO';
 import { showError, showSuccess, showWarning, showNetworkError } from '../../utils/swal';
 import {
   GraduationCap,
@@ -17,15 +18,14 @@ import {
   ArrowRight,
   ShieldCheck,
   FileCheck,
-  Copy,
   Check,
-  HelpCircle,
   Eye,
   EyeOff,
   BookOpen,
   Sparkles,
   Layers,
   Globe,
+  Globe2,
   Award,
   CheckSquare,
   Square,
@@ -78,6 +78,13 @@ const US_AP_SUBJECTS = [
   'AP Microeconomics'
 ];
 
+const KS2_SUBJECTS = [
+  'KS2 Mathematics & Arithmetic',
+  'KS2 English Reading & Comprehension',
+  'KS2 SPaG & Creative Writing',
+  '11+ / Primary SATs Preparation'
+];
+
 const KS3_SUBJECTS = [
   'KS3 Mathematics',
   'KS3 English',
@@ -119,67 +126,116 @@ const EXAM_BOARDS = [
   { id: 'CIE', name: 'Cambridge Assessment International (CIE)' },
   { id: 'AP_US', name: 'College Board Advanced Placement (US)' },
   { id: 'Canada_Provincial', name: 'Canadian Provincial (Ontario / BC)' },
+  { id: 'Primary_SATs', name: 'UK Primary National Curriculum / 11+ SATs (KS2)' },
   { id: 'Industry_Cert', name: 'Industry Professional Certification & Portfolio' }
 ];
 
 const INITIAL_COURSES = [
   {
+    id: '20000000-0000-0000-0000-000000000009',
+    title: 'Key Stage 2 Foundation & SATs (Year 3–6)',
+    slug: 'ks2-foundation-sats',
+    description: 'Primary Numeracy, English Reading & Writing, and 11+ / SATs preparation for Year 3–6 students.',
+    level: 'KS2 (Year 3–6)',
+    price: 149.00,
+    discount_from: 199.00,
+    hourly_note: null
+  },
+  {
+    id: '20000000-0000-0000-0000-000000000005',
+    title: 'Key Stage 3 Foundation Bridge (Year 7–9)',
+    slug: 'ks3-foundation-bridge',
+    description: 'Foundational curriculum bridge across KS3 Maths, English, and Combined Science. (£249/month or £40/hour Year 7–11).',
+    level: 'KS3 (Year 7–9)',
+    price: 249.00,
+    discount_from: 299.00,
+    hourly_rate: 40.00,
+    hourly_note: '£40/hour per subject (Year 7–11)'
+  },
+  {
     id: '20000000-0000-0000-0000-000000000001',
     title: 'GCSE 5-Subject Core Bundle',
     slug: 'gcse-5-subject-bundle',
-    description: 'Comprehensive GCSE curriculum covering Mathematics, English Language & Literature, Chemistry, Biology, and Physics. Includes opt-out exceptions.',
-    level: 'GCSE (Years 10–11)',
-    price: 299.00
+    description: 'Comprehensive GCSE curriculum covering Mathematics, English Language & Literature, Chemistry, Biology, and Physics. (£299/month or £40/hour per subject Year 7–11).',
+    level: 'GCSE (Year 10–11)',
+    price: 299.00,
+    discount_from: 380.00,
+    hourly_rate: 40.00,
+    hourly_note: '£40/hour per subject (Year 7–11)'
   },
   {
     id: '20000000-0000-0000-0000-000000000002',
     title: 'UK A-Level 3-Subject Specialist Program',
     slug: 'uk-a-level-3-subject-program',
-    description: 'Choose your 3 A-Level subjects from Pure & Further Maths, Sciences, Economics, English, and Computing.',
-    level: 'A-Level (Years 12–13)',
-    price: 349.00
+    description: 'Choose your 3 A-Level subjects from Pure & Further Maths, Sciences, Economics, English, and Computing. (£320/month or £45/hour).',
+    level: 'A-Level (Year 12–13)',
+    price: 320.00,
+    discount_from: 399.00,
+    hourly_rate: 45.00,
+    hourly_note: '£45/hour per A-Level subject'
   },
   {
     id: '20000000-0000-0000-0000-000000000003',
     title: 'Canada Senior Secondary & AP Program (Grade 11/12)',
     slug: 'canada-senior-secondary-program',
-    description: 'Advanced Functions, Calculus & Vectors, Sciences, and English Grade 12 for university entry.',
+    description: 'Advanced Functions, Calculus & Vectors, Sciences, and English Grade 12 for university entry. (£320/month — same rate as UK A-Level).',
     level: 'Canada Grade 11–12',
-    price: 349.00
+    price: 320.00,
+    discount_from: 399.00,
+    hourly_rate: 45.00,
+    hourly_note: '£45/hour per subject'
   },
   {
     id: '20000000-0000-0000-0000-000000000004',
     title: 'US High School Advanced & AP Mastery Program',
     slug: 'us-high-school-ap-mastery',
-    description: 'AP Calculus BC, AP Chemistry, AP Physics 1/C, AP Biology, and AP English Literature.',
+    description: 'AP Calculus BC, AP Chemistry, AP Physics 1/C, AP Biology, and AP English Literature. (£320/month or £45/hour).',
     level: 'US High School / AP',
-    price: 349.00
-  },
-  {
-    id: '20000000-0000-0000-0000-000000000005',
-    title: 'Key Stage 3 Foundation Bridge (Years 7–9)',
-    slug: 'ks3-foundation-bridge',
-    description: 'Foundational curriculum bridge across KS3 Maths, English, and Combined Science.',
-    level: 'KS3 (Years 7–9)',
-    price: 249.00
+    price: 320.00,
+    discount_from: 399.00,
+    hourly_rate: 45.00,
+    hourly_note: '£45/hour per subject'
   },
   {
     id: '20000000-0000-0000-0000-000000000006',
-    title: 'SOFTWARE DEVELOPMENT',
+    title: 'Coding (Software Development)',
     slug: 'software-development',
-    description: 'Industry-standard Software Development program. Choose between Frontend Development (£300/mo) or Backend Development (£420/mo).',
-    level: 'Professional / All Levels',
-    price: 300.00
+    description: 'Industry-standard Coding (Software Development) program at £340/month (£35/hour). Choose Frontend or Backend Coding specialization.',
+    level: 'Tech & Coding Track',
+    price: 340.00,
+    discount_from: 420.00,
+    hourly_rate: 35.00,
+    hourly_note: '£35/hour flexible coaching'
   },
   {
     id: '20000000-0000-0000-0000-000000000007',
-    title: 'GRAPHICS DESIGN',
+    title: 'Graphics Design',
     slug: 'graphics-design',
-    description: 'Comprehensive Visual & Graphic Design: Figma UI/UX prototyping, brand identity, typography, Adobe Photoshop/Illustrator, and portfolio development.',
-    level: 'Professional / All Levels',
-    price: 300.00
+    description: 'Comprehensive Visual & Graphic Design at £200/month (£20/hour): Figma UI/UX prototyping, brand identity, typography, Adobe Photoshop/Illustrator.',
+    level: 'Creative / Digital Arts',
+    price: 200.00,
+    discount_from: 260.00,
+    hourly_rate: 20.00,
+    hourly_note: '£20/hour studio coaching'
   }
 ];
+
+const getHourlyLabelForCourse = (course) => {
+  if (!course) return null;
+  if (course.hourly_note) return course.hourly_note;
+  if (course.hourly_rate) {
+    const slug = course.slug || '';
+    if (slug.includes('gcse') || slug.includes('ks3')) return `£${course.hourly_rate}/hour (Year 7–11)`;
+    return `£${course.hourly_rate}/hour per subject`;
+  }
+  const slug = (course.slug || '').toLowerCase();
+  const title = (course.title || '').toLowerCase();
+  if (slug.includes('gcse') || title.includes('gcse') || slug.includes('ks3') || title.includes('ks3')) return '£40/hour per subject (Year 7–11)';
+  if (slug.includes('a-level') || title.includes('a-level') || slug.includes('canada') || slug.includes('us')) return '£45/hour per A-Level / AP subject';
+  if (slug.includes('software') || title.includes('coding')) return '£35/hour coding coaching';
+  if (slug.includes('graphics') || title.includes('graphics')) return '£20/hour studio coaching';
+  return null;
+};
 
 export const RegisterPage = () => {
   const { registerJoint } = useAuth();
@@ -190,18 +246,15 @@ export const RegisterPage = () => {
   const [bankDetails, setBankDetails] = useState({
     bank_name: 'Barclays Bank UK PLC',
     account_name: 'Beacon Bridge Academics Ltd.',
-    account_number: '83920147',
-    swift_code: 'BARCGB22',
-    routing_code: '20-45-77',
-    iban: 'GB29BARC20457783920147',
-    tuition_fee: '£300.00 GBP / month',
-    instructions: 'Please transfer the monthly tuition fee in British Pounds (£ GBP) using the Student Full Name and Reference Code in the wire payment description. Upload your receipt proof below.'
+    tuition_fee: '£299.00 GBP / month',
+    instructions: 'Upload your bank transfer confirmation receipt or payment slip below.'
   });
 
-  // Track state for Software Development (Frontend £300, Backend £420)
-  const [softwareTrack, setSoftwareTrack] = useState('Frontend Development');
+  // Track state for Coding (Software Development) — £340/month (£35/hour)
+  const [softwareTrack, setSoftwareTrack] = useState('Frontend Coding');
 
-  // Selected subjects state
+  // Selected subjects state (defaults to GCSE core subjects)
+  const defaultInitialCourse = INITIAL_COURSES.find(c => c.slug?.includes('gcse')) || INITIAL_COURSES[0];
   const [selectedSubjects, setSelectedSubjects] = useState(GCSE_CORE_SUBJECTS);
   const [examBoard, setExamBoard] = useState('AQA');
   const [hasSubjectException, setHasSubjectException] = useState(false);
@@ -226,17 +279,16 @@ export const RegisterPage = () => {
     parent_relationship: 'Father',
 
     // Course & Payment
-    course_id: '',
+    course_id: defaultInitialCourse.id,
     bank_reference: '',
     payment_proof_url: '',
-    amount: '299.00'
+    amount: Number(defaultInitialCourse.price || 299).toFixed(2)
   });
 
   const proofFileInputRef = useRef(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofFileName, setProofFileName] = useState('');
 
-  const [copiedField, setCopiedField] = useState(null);
   const [showStudentPass, setShowStudentPass] = useState(false);
   const [showParentPass, setShowParentPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -279,7 +331,7 @@ export const RegisterPage = () => {
   };
 
   useEffect(() => {
-    // Fetch available courses from database
+    // Fetch available courses from database (excluding IELTS, which has its dedicated onboarding page)
     const fetchCoursesAndBank = async () => {
       try {
         const [courseRes, bankRes] = await Promise.all([
@@ -287,17 +339,32 @@ export const RegisterPage = () => {
           api.get('/payments/bank-details')
         ]);
         if (courseRes.data.success && Array.isArray(courseRes.data.courses) && courseRes.data.courses.length > 0) {
-          const loaded = courseRes.data.courses;
-          setCourses(loaded);
-          setFormData(prev => {
-            const hasCurrent = loaded.some(c => c.id === prev.course_id);
-            const activeCourse = hasCurrent ? loaded.find(c => c.id === prev.course_id) : loaded[0];
-            return {
-              ...prev,
-              course_id: activeCourse?.id || prev.course_id,
-              amount: prev.amount || String(activeCourse?.price || '299.00')
-            };
-          });
+          const initialById = new Map(INITIAL_COURSES.map(ic => [ic.id, ic]));
+          const initialBySlug = new Map(INITIAL_COURSES.map(ic => [ic.slug, ic]));
+          const loaded = courseRes.data.courses
+            .filter(c => !c.slug?.includes('ielts') && !c.title?.toLowerCase().includes('ielts'))
+            .map(c => {
+              const fallbackMeta = initialById.get(c.id) || initialBySlug.get(c.slug) || {};
+              return {
+                ...fallbackMeta,
+                ...c,
+                discount_from: c.discount_from ?? fallbackMeta.discount_from,
+                hourly_rate: c.hourly_rate ?? fallbackMeta.hourly_rate,
+                hourly_note: c.hourly_note ?? fallbackMeta.hourly_note
+              };
+            });
+
+          if (loaded.length > 0) {
+            setCourses(loaded);
+            setFormData(prev => {
+              const activeCourse = loaded.find(c => c.id === prev.course_id) || loaded.find(c => c.slug?.includes('gcse')) || loaded[0];
+              return {
+                ...prev,
+                course_id: activeCourse?.id || prev.course_id,
+                amount: Number(activeCourse?.price || 299).toFixed(2)
+              };
+            });
+          }
         }
         if (bankRes.data.success && bankRes.data.bankDetails) {
           setBankDetails(bankRes.data.bankDetails);
@@ -315,17 +382,20 @@ export const RegisterPage = () => {
     const course = courses.find(c => c.id === courseId);
     if (!course) return;
 
-    const isSoftware = course.slug?.includes('software') || course.title?.toLowerCase().includes('software development');
-    const isGraphics = course.slug?.includes('graphics') || course.title?.toLowerCase().includes('graphics design');
+    const slug = (course.slug || '').toLowerCase();
+    const titleLower = (course.title || '').toLowerCase();
+    const isSoftware = slug.includes('software') || titleLower.includes('software development') || titleLower.includes('coding');
+    const isGraphics = slug.includes('graphics') || titleLower.includes('graphics design');
+    const isKs2 = slug.includes('ks2') || titleLower.includes('key stage 2') || titleLower.includes('ks2');
 
     if (isSoftware) {
-      const isBackend = softwareTrack === 'Backend Development';
+      const isBackend = softwareTrack.toLowerCase().includes('backend');
       setSelectedSubjects(isBackend ? SOFTWARE_BACKEND_SUBJECTS : SOFTWARE_FRONTEND_SUBJECTS);
       setFormData(prev => ({
         ...prev,
         course_id: courseId,
-        student_grade: 'Professional / Tech',
-        amount: isBackend ? '420.00' : '300.00'
+        student_grade: 'Tech & Coding Track',
+        amount: Number(course.price || 340).toFixed(2)
       }));
       setExamBoard('Industry_Cert');
     } else if (isGraphics) {
@@ -334,28 +404,32 @@ export const RegisterPage = () => {
         ...prev,
         course_id: courseId,
         student_grade: 'Creative / Digital Arts',
-        amount: '300.00'
+        amount: Number(course.price || 200).toFixed(2)
       }));
       setExamBoard('Industry_Cert');
-    } else if (course.slug?.includes('gcse') || course.title?.toLowerCase().includes('gcse')) {
+    } else if (isKs2) {
+      setSelectedSubjects(KS2_SUBJECTS);
+      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'KS2 (Year 3–6)', amount: Number(course.price || 149).toFixed(2) }));
+      setExamBoard('Primary_SATs');
+    } else if (slug.includes('gcse') || titleLower.includes('gcse')) {
       setSelectedSubjects(GCSE_CORE_SUBJECTS);
-      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Year 11 (GCSE)', amount: String(course.price || '299.00') }));
+      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Year 11 (GCSE)', amount: Number(course.price || 299).toFixed(2) }));
       setExamBoard('AQA');
-    } else if (course.slug?.includes('a-level') || course.title?.toLowerCase().includes('a-level')) {
+    } else if (slug.includes('a-level') || titleLower.includes('a-level')) {
       setSelectedSubjects(['Mathematics', 'Chemistry', 'Physics']);
-      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Year 12 (A-Level)', amount: String(course.price || '349.00') }));
+      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Year 12 (A-Level)', amount: Number(course.price || 320).toFixed(2) }));
       setExamBoard('AQA');
-    } else if (course.slug?.includes('canada') || course.title?.toLowerCase().includes('canada')) {
+    } else if (slug.includes('canada') || titleLower.includes('canada')) {
       setSelectedSubjects(['Advanced Functions (MHF4U)', 'Calculus & Vectors (MCV4U)', 'Chemistry Grade 12 (SCH4U)']);
-      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Canada Grade 12', amount: String(course.price || '349.00') }));
+      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Canada Grade 11–12', amount: Number(course.price || 320).toFixed(2) }));
       setExamBoard('Canada_Provincial');
-    } else if (course.slug?.includes('us') || course.title?.toLowerCase().includes('us')) {
+    } else if (slug.includes('us') || titleLower.includes('us high school') || titleLower.includes('ap mastery')) {
       setSelectedSubjects(['AP Calculus AB / BC', 'AP Chemistry', 'AP Physics 1 / C']);
-      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'US Grade 11/12 (AP)', amount: String(course.price || '349.00') }));
+      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'US High School / AP', amount: Number(course.price || 320).toFixed(2) }));
       setExamBoard('AP_US');
-    } else if (course.slug?.includes('ks3') || course.title?.toLowerCase().includes('ks3') || course.title?.toLowerCase().includes('key stage 3')) {
+    } else if (slug.includes('ks3') || titleLower.includes('ks3') || titleLower.includes('key stage 3')) {
       setSelectedSubjects(KS3_SUBJECTS);
-      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Year 8 (KS3)', amount: String(course.price || '249.00') }));
+      setFormData(prev => ({ ...prev, course_id: courseId, student_grade: 'Year 8 (KS3)', amount: Number(course.price || 249).toFixed(2) }));
       setExamBoard('AQA');
     } else {
       // Custom course created by administrator
@@ -364,7 +438,7 @@ export const RegisterPage = () => {
         ...prev,
         course_id: courseId,
         student_grade: course.level || 'Academic Program',
-        amount: String(course.price || '299.00')
+        amount: Number(course.price || 299).toFixed(2)
       }));
       setExamBoard('AQA');
     }
@@ -372,11 +446,11 @@ export const RegisterPage = () => {
 
   const handleSoftwareTrackChange = (trackName) => {
     setSoftwareTrack(trackName);
-    const isBackend = trackName === 'Backend Development';
+    const isBackend = trackName.toLowerCase().includes('backend');
     setSelectedSubjects(isBackend ? SOFTWARE_BACKEND_SUBJECTS : SOFTWARE_FRONTEND_SUBJECTS);
     setFormData(prev => ({
       ...prev,
-      amount: isBackend ? '420.00' : '300.00'
+      amount: '340.00'
     }));
   };
 
@@ -408,26 +482,23 @@ export const RegisterPage = () => {
     }
   };
 
-  const handleCopy = (text, fieldName) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(fieldName);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const currentCourse = courses.find(c => c.id === formData.course_id) || courses[0];
-  const isSoftwareCourse = currentCourse?.slug?.includes('software') || currentCourse?.title?.toLowerCase().includes('software development');
-  const isGraphicsCourse = currentCourse?.slug?.includes('graphics') || currentCourse?.title?.toLowerCase().includes('graphics design');
-  const isGcseCourse = (currentCourse?.title?.toLowerCase().includes('gcse') || currentCourse?.slug?.includes('gcse')) && !isSoftwareCourse && !isGraphicsCourse;
-  const isAlevelCourse = (currentCourse?.title?.toLowerCase().includes('a-level') || currentCourse?.slug?.includes('a-level')) && !isSoftwareCourse && !isGraphicsCourse;
-  const isCanadaCourse = (currentCourse?.title?.toLowerCase().includes('canada') || currentCourse?.slug?.includes('canada')) && !isSoftwareCourse && !isGraphicsCourse;
-  const isUsCourse = (currentCourse?.title?.toLowerCase().includes('us high school') || currentCourse?.slug?.includes('us') || currentCourse?.title?.toLowerCase().includes('ap mastery')) && !isSoftwareCourse && !isGraphicsCourse;
-  const isKs3Course = (currentCourse?.title?.toLowerCase().includes('ks3') || currentCourse?.slug?.includes('ks3') || currentCourse?.title?.toLowerCase().includes('key stage 3')) && !isSoftwareCourse && !isGraphicsCourse;
-  const isCustomCourse = !isGcseCourse && !isAlevelCourse && !isCanadaCourse && !isUsCourse && !isKs3Course && !isSoftwareCourse && !isGraphicsCourse;
+  const currSlug = (currentCourse?.slug || '').toLowerCase();
+  const currTitle = (currentCourse?.title || '').toLowerCase();
+  const isSoftwareCourse = currSlug.includes('software') || currTitle.includes('software development') || currTitle.includes('coding');
+  const isGraphicsCourse = currSlug.includes('graphics') || currTitle.includes('graphics design');
+  const isKs2Course = (currSlug.includes('ks2') || currTitle.includes('key stage 2') || currTitle.includes('ks2')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isGcseCourse = (currTitle.includes('gcse') || currSlug.includes('gcse')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isAlevelCourse = (currTitle.includes('a-level') || currSlug.includes('a-level')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isCanadaCourse = (currTitle.includes('canada') || currSlug.includes('canada')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isUsCourse = (currTitle.includes('us high school') || currSlug.includes('us') || currTitle.includes('ap mastery')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isKs3Course = (currTitle.includes('ks3') || currSlug.includes('ks3') || currTitle.includes('key stage 3')) && !isSoftwareCourse && !isGraphicsCourse;
+  const isCustomCourse = !isKs2Course && !isGcseCourse && !isAlevelCourse && !isCanadaCourse && !isUsCourse && !isKs3Course && !isSoftwareCourse && !isGraphicsCourse;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -633,9 +704,9 @@ export const RegisterPage = () => {
               </div>
               {isSoftwareCourse && (
                 <div className="sm:col-span-2 p-2.5 rounded-xl bg-white border border-[#050167]/20 flex items-center justify-between">
-                  <span className="font-bold text-[#001f3f]">Software Track Selected:</span>
+                  <span className="font-bold text-[#001f3f]">Coding Track Selected:</span>
                   <span className="px-3 py-1 rounded-lg bg-[#050167] text-[#40ffa7] font-extrabold text-xs">
-                    {softwareTrack} (£{formData.amount}/mo)
+                    {softwareTrack} (£{formData.amount}/month)
                   </span>
                 </div>
               )}
@@ -680,6 +751,11 @@ export const RegisterPage = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
+      <SEO
+        title="Register with Us | Student & Parent Portal | Beacon Bridge Academics"
+        description="Complete joint parent-student registration for KS2, KS3, GCSE, UK A-Level, Canada Grade 11–12, Coding (Software Development), and Graphics Design."
+        canonicalPath="/register"
+      />
       
       {/* Master Registration Container Header */}
       <div className="bg-white rounded-3xl border border-[#050167]/15 shadow-xl shadow-[#050167]/5 overflow-hidden mb-10">
@@ -811,19 +887,21 @@ export const RegisterPage = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#001f3f] mb-1.5">Student Grade / Level</label>
+              <label className="block text-xs font-bold text-[#001f3f] mb-1.5">Student Year / Grade Level</label>
               <select
                 name="student_grade"
                 value={formData.student_grade}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 rounded-xl border border-[#050167]/20 text-sm focus:outline-none focus:ring-2 focus:ring-[#40ffa7] focus:border-[#050167] bg-[#f0faff]/30"
               >
-                <option value="Middle School (Grades 6-8)">Middle School (Grades 6-8)</option>
-                <option value="High School Junior">High School Junior</option>
-                <option value="High School Senior">High School Senior</option>
-                <option value="Undergraduate (Year 1-2)">Undergraduate (Year 1-2)</option>
-                <option value="Senior Undergraduate">Senior Undergraduate</option>
-                <option value="Professional / Postgraduate">Professional / Postgraduate</option>
+                <option value="KS2 (Year 3–6)">Primary / KS2 (Year 3–6)</option>
+                <option value="Year 8 (KS3)">Key Stage 3 (Year 7–9)</option>
+                <option value="Year 11 (GCSE)">GCSE / IGCSE (Year 10–11)</option>
+                <option value="Year 12 (A-Level)">UK A-Level / Sixth Form (Year 12–13)</option>
+                <option value="Canada Grade 11–12">Canada High School (Grade 11–12)</option>
+                <option value="US High School / AP">US High School / AP</option>
+                <option value="Tech & Coding Track">Coding (Software Development)</option>
+                <option value="Creative / Digital Arts">Graphics Design</option>
               </select>
             </div>
 
@@ -984,42 +1062,103 @@ export const RegisterPage = () => {
             </div>
           </div>
 
+          {/* Dedicated IELTS Candidate Registration Redirect Banner */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#050167] via-[#001f3f] to-[#050167] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#40ffa7]/40 shadow-md">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-[#40ffa7]/20 border border-[#40ffa7]/40 text-[#40ffa7] flex items-center justify-center shrink-0">
+                <Globe2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#40ffa7] text-[#001f3f]">
+                    Separate Candidate Portal
+                  </span>
+                  <span className="text-[11px] line-through text-slate-300">Was £1,250/month</span>
+                  <span className="text-[11px] font-black text-[#40ffa7]">£1,000/month</span>
+                </div>
+                <h4 className="text-sm font-extrabold text-white">
+                  Applying for IELTS Academic or UKVI Exam Preparation?
+                </h4>
+                <p className="text-xs text-[#f0faff]/80">
+                  IELTS candidates use a dedicated registration form and get their own Student Virtual Classroom Dashboard without parent credentials.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/ielts-registration"
+              className="px-4 py-2.5 rounded-xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-xs whitespace-nowrap inline-flex items-center justify-center gap-1.5 shadow-lg transition-all shrink-0"
+            >
+              <span>Go to IELTS Registration</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
           {/* Program / Course Selector */}
           <div>
             <label className="block text-xs font-bold text-[#001f3f] mb-2 flex items-center justify-between">
               <span>Select Academic Program *</span>
-              <span className="text-xs font-semibold text-[#050167]">Tuition in British Pounds (£ GBP)</span>
+              <span className="text-xs font-semibold text-[#050167]">Tuition in British Pounds (£ GBP / month)</span>
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {courses.map(c => {
                 const isSelected = formData.course_id === c.id;
+                const priceNum = Number(c.price || 299);
+                const discountFromNum = Number(c.discount_from || Math.round(priceNum * 1.25));
+                const savings = Math.max(0, Math.round(discountFromNum - priceNum));
+                const hourlyLabel = getHourlyLabelForCourse(c);
                 return (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => handleCourseChange(c.id)}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative ${
+                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative flex flex-col justify-between ${
                       isSelected
                         ? 'bg-[#f0faff] border-[#050167] ring-2 ring-[#40ffa7] shadow-md'
                         : 'bg-white border-[#050167]/15 hover:border-[#050167]/40 hover:bg-[#f0faff]/30'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#050167]">
-                        {c.level || 'All Levels'}
-                      </span>
-                      <span className="font-black text-[#001f3f] text-sm">
-                        £{c.price || '299.00'}
-                      </span>
+                    <div>
+                      {/* Discount Banner on TOP of each program card */}
+                      <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-[#050167]/10">
+                        <span className="text-[10px] font-bold line-through text-slate-400">
+                          Was £{discountFromNum.toFixed(0)}/month
+                        </span>
+                        {savings > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-black uppercase tracking-wider">
+                            Save £{savings}/mo
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#050167]">
+                          {c.level || 'All Levels'}
+                        </span>
+                        <span className="font-black text-[#001f3f] text-sm whitespace-nowrap">
+                          £{priceNum.toFixed(0)}/month
+                        </span>
+                      </div>
+
+                      {hourlyLabel && (
+                        <div className="mb-1.5">
+                          <span className="inline-block text-[10px] font-extrabold text-[#050167] bg-[#40ffa7]/25 border border-[#40ffa7]/50 px-2 py-0.5 rounded-md">
+                            Hourly option: {hourlyLabel}
+                          </span>
+                        </div>
+                      )}
+
+                      <h4 className="font-bold text-sm text-[#001f3f] leading-snug line-clamp-2 mb-1">
+                        {c.title}
+                      </h4>
+                      <p className="text-[11px] text-[#001f3f]/70 line-clamp-2">
+                        {c.description}
+                      </p>
                     </div>
-                    <h4 className="font-bold text-sm text-[#001f3f] leading-snug line-clamp-2 mb-1">
-                      {c.title}
-                    </h4>
-                    <p className="text-[11px] text-[#001f3f]/70 line-clamp-2">
-                      {c.description}
-                    </p>
                     {isSelected && (
-                      <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#40ffa7]" />
+                      <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-black text-emerald-700">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Selected Program
+                      </span>
                     )}
                   </button>
                 );
@@ -1249,21 +1388,77 @@ export const RegisterPage = () => {
               </div>
             )}
 
-            {/* Case E: SOFTWARE DEVELOPMENT (Frontend £300/mo vs Backend £420/mo) */}
+            {/* Case D2: Key Stage 2 Foundation & SATs (Year 3–6) — £149/month */}
+            {isKs2Course && (
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#050167]/10 mb-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-[#001f3f] flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-[#050167]" />
+                      Key Stage 2 (KS2 / Year 3–6) Primary Foundation Bundle
+                    </h4>
+                    <p className="text-xs text-[#001f3f]/70 mt-0.5">
+                      Warm, structured numeracy, reading comprehension, writing &amp; 11+ / SATs preparation.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#050167] text-[#40ffa7] border border-[#40ffa7]/30 whitespace-nowrap self-start sm:self-auto">
+                    KS2 Primary · £149.00/month
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {KS2_SUBJECTS.map((sub, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-white border border-[#050167]/20 flex items-center justify-between text-xs font-bold text-[#001f3f]">
+                      <span>{sub}</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Case D3: Key Stage 3 Foundation Bridge (Year 7–9) — £249/month · £40/hr */}
+            {isKs3Course && (
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#050167]/10 mb-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-[#001f3f] flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-[#050167]" />
+                      Key Stage 3 (KS3 / Year 7–9) Core Bridge Subjects
+                    </h4>
+                    <p className="text-xs text-[#001f3f]/70 mt-0.5">
+                      Early foundation support across Maths, English &amp; Science. Per-subject hourly option: <strong>£40/hour (Year 7–11)</strong>.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#050167] text-[#40ffa7] border border-[#40ffa7]/30 whitespace-nowrap self-start sm:self-auto">
+                    KS3 Bridge · £249.00/month
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {KS3_SUBJECTS.map((sub, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-white border border-[#050167]/20 flex items-center justify-between text-xs font-bold text-[#001f3f]">
+                      <span>{sub}</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Case E: CODING (SOFTWARE DEVELOPMENT) — £340/month · £35/hour */}
             {isSoftwareCourse && (
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#050167]/10 mb-4">
                   <div>
                     <h4 className="text-sm font-bold text-[#001f3f] flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-[#050167]" />
-                      Software Development Specialized Track Selection
+                      Coding (Software Development) Track Selection
                     </h4>
                     <p className="text-xs text-[#001f3f]/70 mt-0.5">
-                      Choose between our comprehensive <strong>Frontend Development (£300/mo)</strong> or advanced <strong>Backend Development (£420/mo)</strong> track.
+                      Both <strong>Frontend Coding</strong> and <strong>Backend Coding</strong> are <strong>£340/month</strong> (or <strong>£35/hour</strong> flexible coaching).
                     </p>
                   </div>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#050167] text-[#40ffa7] border border-[#40ffa7]/30 whitespace-nowrap self-start sm:self-auto">
-                    {softwareTrack} • £{formData.amount}/mo
+                    {softwareTrack} • £{formData.amount}/month (£35/hr)
                   </span>
                 </div>
 
@@ -1271,30 +1466,30 @@ export const RegisterPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <button
                     type="button"
-                    onClick={() => handleSoftwareTrackChange('Frontend Development')}
+                    onClick={() => handleSoftwareTrackChange('Frontend Coding')}
                     className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative ${
-                      softwareTrack === 'Frontend Development'
+                      softwareTrack.toLowerCase().includes('frontend')
                         ? 'bg-white border-[#050167] ring-2 ring-[#40ffa7] shadow-md'
                         : 'bg-white/60 border-slate-200 hover:border-[#050167]/30'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-black uppercase text-[#050167] tracking-wider">
-                        Track 1: Frontend
+                        Track 1: Frontend Coding
                       </span>
                       <span className="px-2.5 py-1 rounded-full bg-[#40ffa7]/20 text-[#001f3f] font-black text-xs">
-                        £300.00 / month
+                        £340/month · £35/hr
                       </span>
                     </div>
-                    <h5 className="font-bold text-sm text-[#001f3f] mb-1">Frontend Web Engineering</h5>
+                    <h5 className="font-bold text-sm text-[#001f3f] mb-1">Frontend Coding (Software Development)</h5>
                     <p className="text-xs text-[#001f3f]/70 leading-relaxed mb-3">
-                      Master modern JavaScript (ES6+), React.js, Tailwind CSS, component state management, and responsive web user interfaces.
+                      Master modern JavaScript (ES6+), React.js, Tailwind CSS, component state management, and responsive web interfaces.
                     </p>
                     <div className="text-[11px] font-bold text-[#050167] flex items-center gap-1">
-                      {softwareTrack === 'Frontend Development' ? (
+                      {softwareTrack.toLowerCase().includes('frontend') ? (
                         <span className="flex items-center gap-1 text-emerald-700">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Track Selected (£300/mo)
+                          Track Selected (£340/month)
                         </span>
                       ) : (
                         <span>Click to Select Track 1</span>
@@ -1304,30 +1499,30 @@ export const RegisterPage = () => {
 
                   <button
                     type="button"
-                    onClick={() => handleSoftwareTrackChange('Backend Development')}
+                    onClick={() => handleSoftwareTrackChange('Backend Coding')}
                     className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative ${
-                      softwareTrack === 'Backend Development'
+                      softwareTrack.toLowerCase().includes('backend')
                         ? 'bg-white border-[#050167] ring-2 ring-[#40ffa7] shadow-md'
                         : 'bg-white/60 border-slate-200 hover:border-[#050167]/30'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-black uppercase text-[#050167] tracking-wider">
-                        Track 2: Backend
+                        Track 2: Backend Coding
                       </span>
                       <span className="px-2.5 py-1 rounded-full bg-[#050167] text-[#40ffa7] font-black text-xs">
-                        £420.00 / month
+                        £340/month · £35/hr
                       </span>
                     </div>
-                    <h5 className="font-bold text-sm text-[#001f3f] mb-1">Backend & Server Architecture</h5>
+                    <h5 className="font-bold text-sm text-[#001f3f] mb-1">Backend Coding (Software Development)</h5>
                     <p className="text-xs text-[#001f3f]/70 leading-relaxed mb-3">
-                      Build robust scalable REST APIs with Node.js, Express, PostgreSQL relational modeling, MongoDB, and enterprise cloud microservices.
+                      Build scalable REST APIs with Node.js, Express, PostgreSQL relational modeling, MongoDB, and enterprise microservices.
                     </p>
                     <div className="text-[11px] font-bold text-[#050167] flex items-center gap-1">
-                      {softwareTrack === 'Backend Development' ? (
+                      {softwareTrack.toLowerCase().includes('backend') ? (
                         <span className="flex items-center gap-1 text-emerald-700">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Track Selected (£420/mo)
+                          Track Selected (£340/month)
                         </span>
                       ) : (
                         <span>Click to Select Track 2</span>
@@ -1353,7 +1548,7 @@ export const RegisterPage = () => {
               </div>
             )}
 
-            {/* Case F: GRAPHICS DESIGN (No subform, £300/mo) */}
+            {/* Case F: GRAPHICS DESIGN (£200/month · £20/hour) */}
             {isGraphicsCourse && (
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#050167]/10 mb-4">
@@ -1367,7 +1562,7 @@ export const RegisterPage = () => {
                     </p>
                   </div>
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#050167] text-[#40ffa7] border border-[#40ffa7]/30 whitespace-nowrap self-start sm:self-auto">
-                    Full Studio Course • £300.00 / month
+                    Full Studio Course • £200.00/month (£20/hr)
                   </span>
                 </div>
 
@@ -1454,112 +1649,36 @@ export const RegisterPage = () => {
           </div>
         </div>
 
-        {/* Section 4: Bank Account Details for Payment & Proof Submission */}
+        {/* Payment Proof Upload with Beneficiary & Auto-Picked Monthly Tuition Banner */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#050167]/20 shadow-lg shadow-[#050167]/5">
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#050167]/10">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center font-bold">
-                4
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-[#001f3f]">Institutional Bank Account & Monthly Tuition Payment (£ GBP)</h3>
-                <p className="text-xs text-[#001f3f]/60">Make your wire payment in British Pounds to the account below, then input your reference & proof receipt.</p>
-              </div>
-            </div>
-            <div className="hidden sm:block text-right">
-              <span className="text-xs text-[#001f3f]/60 block font-semibold">Monthly Tuition Due</span>
-              <span className="text-xl font-black text-[#050167]">£{formData.amount} GBP / mo</span>
-            </div>
-          </div>
-
-          {/* Account Details Display Cards */}
-          <div className="bg-[#001f3f] text-[#f0faff] rounded-2xl p-6 mb-8 relative overflow-hidden shadow-md border border-[#40ffa7]/20">
-            <div className="absolute -right-8 -top-8 w-40 h-40 bg-[#40ffa7]/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2 text-[#40ffa7] text-xs font-bold uppercase tracking-wider">
+          {/* Top Summary Banner: Beneficiary Bank Name & Automatically Selected Monthly Tuition Due */}
+          <div className="bg-[#001f3f] text-white rounded-2xl p-5 sm:p-6 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#40ffa7]/30 shadow-md">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs text-[#40ffa7] font-bold uppercase tracking-wider">
                 <Building2 className="w-4 h-4" />
-                <span>Official UK Receiving Bank Coordinates</span>
+                <span>Beneficiary Bank Name</span>
               </div>
-              <span className="text-xs px-2.5 py-1 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] border border-[#40ffa7]/30 font-bold">
-                Verified UK Clearing
+              <div className="font-bold text-base sm:text-lg text-white">
+                {bankDetails.bank_name || 'Barclays Bank UK PLC'} &mdash; {bankDetails.account_name || 'Beacon Bridge Academics Ltd.'}
+              </div>
+              <p className="text-xs text-[#f0faff]/80">
+                Selected Program: <strong className="text-white">{currentCourse?.title || 'Academic Program'}</strong>
+                {isSoftwareCourse ? ` (${softwareTrack})` : ''}
+              </p>
+            </div>
+
+            <div className="sm:text-right bg-white/10 rounded-xl px-5 py-3 border border-white/15 shrink-0">
+              <span className="text-[11px] uppercase tracking-wider text-[#f0faff]/75 block font-bold">
+                Monthly Tuition Due
               </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
-              <div>
-                <span className="text-xs text-[#f0faff]/60 block mb-1">Bank Institution</span>
-                <div className="font-bold text-white text-base">
-                  {bankDetails.bank_name || 'Barclays Bank UK PLC'}
-                </div>
+              <div className="text-2xl font-black text-[#40ffa7]">
+                £{formData.amount} <span className="text-xs font-bold text-white">GBP / month</span>
               </div>
-
-              <div>
-                <span className="text-xs text-[#f0faff]/60 block mb-1">Beneficiary Account Name</span>
-                <div className="font-bold text-white text-base">
-                  {bankDetails.account_name || 'Beacon Bridge Academics Ltd.'}
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs text-[#f0faff]/60 block mb-1">Account Number</span>
-                <div className="flex items-center space-x-2">
-                  <span className="font-mono font-bold text-[#40ffa7] text-lg tracking-wider">
-                    {bankDetails.account_number || '83920147'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(bankDetails.account_number || '83920147', 'account_no')}
-                    className="p-1 rounded hover:bg-[#050167] text-[#f0faff]/80 transition-colors"
-                    title="Copy Account Number"
-                  >
-                    {copiedField === 'account_no' ? <Check className="w-4 h-4 text-[#40ffa7]" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs text-[#f0faff]/60 block mb-1">Sort Code (UK)</span>
-                <div className="flex items-center space-x-2">
-                  <span className="font-mono font-bold text-white text-base">
-                    {bankDetails.routing_code || '20-45-77'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(bankDetails.routing_code || '20-45-77', 'routing')}
-                    className="p-1 rounded hover:bg-[#050167] text-[#f0faff]/80 transition-colors"
-                  >
-                    {copiedField === 'routing' ? <Check className="w-4 h-4 text-[#40ffa7]" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs text-[#f0faff]/60 block mb-1">SWIFT / BIC Code</span>
-                <div className="flex items-center space-x-2">
-                  <span className="font-mono font-bold text-white text-base">
-                    {bankDetails.swift_code || 'BARCGB22'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(bankDetails.swift_code || 'BARCGB22', 'swift')}
-                    className="p-1 rounded hover:bg-[#050167] text-[#f0faff]/80 transition-colors"
-                  >
-                    {copiedField === 'swift' ? <Check className="w-4 h-4 text-[#40ffa7]" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-xs text-[#f0faff]/60 block mb-1">Monthly Tuition Due</span>
-                <div className="font-black text-[#40ffa7] text-xl">
-                  £{formData.amount} GBP / month
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-white/10 text-xs text-[#f0faff]/80 flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-[#40ffa7] shrink-0" />
-              <span>{bankDetails.instructions || 'Please include your student or parent name in the wire payment description. Upload your transfer slip below.'}</span>
+              {getHourlyLabelForCourse(currentCourse) && (
+                <span className="text-[10px] text-[#f0faff]/80 block mt-0.5 font-semibold">
+                  Or {getHourlyLabelForCourse(currentCourse)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -1570,7 +1689,7 @@ export const RegisterPage = () => {
               Proof of Payment Submission
             </h4>
             <p className="text-xs text-[#001f3f]/70 mb-5">
-              Enter the bank wire transaction ID / reference number and attach your payment receipt or transfer confirmation link.
+              Enter your bank transfer reference number / transaction ID and upload your payment confirmation slip below.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

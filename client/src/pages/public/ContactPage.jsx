@@ -240,7 +240,7 @@ export const ContactPage = () => {
                       <option value="GCSE">GCSE / IGCSE (Year 10-11)</option>
                       <option value="A-Level">A-Level / Further Maths (Year 12-13)</option>
                       <option value="North American">US / Canadian High School & AP</option>
-                      <option value="Professional">Coding & Software Development</option>
+                      <option value="Professional">Coding (Software Development) &amp; Design</option>
                     </select>
                   </div>
                 </div>

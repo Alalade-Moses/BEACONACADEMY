@@ -243,7 +243,7 @@ export const PublicNavbar = () => {
               className="w-full text-left py-2.5 px-3 rounded-xl hover:bg-[#f0faff] hover:text-[#050167] active:scale-95 flex items-center gap-2.5"
             >
               <Video className="w-4 h-4 text-[#050167]" />
-              <span>Curriculum (KS3, GCSE & A-Level)</span>
+              <span>Curriculum (KS2, KS3, GCSE &amp; A-Level)</span>
             </Link>
             <Link
               to="/how-it-works"
