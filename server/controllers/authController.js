@@ -208,7 +208,7 @@ export const registerIelts = async (req, res, next) => {
       focus_modules,
       payment_proof_url,
       bank_reference,
-      amount: amount || 1000.00
+      amount: amount || 100.00
     });
 
     (async () => {

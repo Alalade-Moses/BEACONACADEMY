@@ -1073,8 +1073,8 @@ export const RegisterPage = () => {
                   <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#40ffa7] text-[#001f3f]">
                     Separate Candidate Portal
                   </span>
-                  <span className="text-[11px] line-through text-slate-300">Was £1,250/month</span>
-                  <span className="text-[11px] font-black text-[#40ffa7]">£1,000/month</span>
+                  <span className="text-[11px] line-through text-slate-300">Was £150/month</span>
+                  <span className="text-[11px] font-black text-[#40ffa7]">£100/month</span>
                 </div>
                 <h4 className="text-sm font-extrabold text-white">
                   Applying for IELTS Academic or UKVI Exam Preparation?

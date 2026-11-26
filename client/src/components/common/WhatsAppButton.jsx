@@ -8,7 +8,7 @@ const CUSTOM_WHATSAPP_LINK = import.meta.env.VITE_WHATSAPP_URL || '';
 const QUICK_TOPICS = [
   { label: 'KS2 / KS3 / GCSE Tuition', msg: 'Hello Beacon Bridge Academics, I would like to enquire about KS2 / KS3 / GCSE tuition.' },
   { label: 'A-Level / Canada Grade 11–12', msg: 'Hello Beacon Bridge Academics, I would like to learn more about A-Level / Grade 11–12 programs.' },
-  { label: 'IELTS (£1,000/month)', msg: 'Hello Beacon Bridge Academics, I would like to register for IELTS Academic & UKVI Preparation.' },
+  { label: 'IELTS (£100/month)', msg: 'Hello Beacon Bridge Academics, I would like to register for IELTS Academic & UKVI Preparation (£100/month).' },
   { label: 'Coding / Graphics Design', msg: 'Hello Beacon Bridge Academics, I would like information on Coding (Software Development) & Graphics Design.' },
   { label: 'Book Free Consultation', msg: 'Hello Beacon Bridge Academics, I would like to schedule a free 20-minute diagnostic consultation.' }
 ];

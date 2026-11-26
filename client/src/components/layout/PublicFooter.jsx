@@ -94,7 +94,7 @@ export const PublicFooter = () => {
             <h4 className="text-white font-bold mb-4 tracking-wider uppercase text-xs">Students</h4>
             <ul className="space-y-2.5">
               <li><Link to="/curriculum" className="hover:text-[#40ffa7] transition-colors">Online Tutoring</Link></li>
-              <li><Link to="/ielts-registration" className="hover:text-[#40ffa7] transition-colors font-semibold text-[#40ffa7]">IELTS Registration (£1,000/mo)</Link></li>
+              <li><Link to="/ielts-registration" className="hover:text-[#40ffa7] transition-colors font-semibold text-[#40ffa7]">IELTS Registration (£100/mo)</Link></li>
               <li><Link to="/curriculum#exam-boards" className="hover:text-[#40ffa7] transition-colors">GCSE Exam Boards (AQA, Edexcel, OCR)</Link></li>
               <li><Link to="/how-it-works#virtual-classroom" className="hover:text-[#40ffa7] transition-colors">Live Virtual Classroom</Link></li>
               <li><Link to="/how-it-works" className="hover:text-[#40ffa7] transition-colors">Find Out More</Link></li>

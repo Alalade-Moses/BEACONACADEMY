@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '../../components/common/SEO';
 import {
@@ -22,6 +22,68 @@ import {
 } from 'lucide-react';
 
 export const AboutPage = () => {
+  const [classroomSlide, setClassroomSlide] = useState(0);
+  const [classroomPaused, setClassroomPaused] = useState(false);
+
+  const animatedClassrooms = [
+    {
+      src: '/classrooms/class-1.jpg',
+      alt: 'UK KS3 children smiling and learning geometry with a teacher in a sunlit classroom',
+      badge: 'KS3 Maths Classroom',
+      title: 'Dedicated Academic Lead Assigned',
+      caption: 'Guiding Year 7–9 pupils step-by-step through UK National Curriculum mathematics.',
+      tag: 'Year 7–9'
+    },
+    {
+      src: '/classrooms/class-2.jpg',
+      alt: 'Primary KS2 school children raising hands enthusiastically in an interactive classroom',
+      badge: 'KS2 Primary Classroom',
+      title: 'Confidence-Building Primary Lessons',
+      caption: 'Warm, engaging KS2 classrooms where younger learners feel excited to participate.',
+      tag: 'Year 3–6'
+    },
+    {
+      src: '/classrooms/class-3.jpg',
+      alt: 'Young children collaborating on creative projects and reading sheets at a classroom table',
+      badge: 'Hands-On Literacy & Art Room',
+      title: 'Structured Foundations & Phonics',
+      caption: 'Small-group and 1-to-1 primary support tailored to every child’s pace.',
+      tag: 'KS2 · SATs'
+    },
+    {
+      src: '/classrooms/class-4.jpg',
+      alt: 'Secondary students seated in a classroom watching a teacher lead an interactive whiteboard lesson',
+      badge: 'Interactive Whiteboard Room',
+      title: 'Exam-Board Aligned Instruction',
+      caption: 'Visual whiteboard teaching matched directly to AQA, Edexcel, OCR & WJEC rubrics.',
+      tag: 'GCSE · KS3'
+    },
+    {
+      src: '/classrooms/class-5.jpg',
+      alt: 'GCSE students writing notes and collaborating in a bright secondary school classroom',
+      badge: 'GCSE Exam Prep Classroom',
+      title: 'Past-Paper & Grade 7–9 Mastery',
+      caption: 'Focused Year 10–11 revision rooms turning exam anxiety into measurable marks.',
+      tag: 'Year 10–11'
+    },
+    {
+      src: '/classrooms/class-6.jpg',
+      alt: 'British secondary students studying sciences with molecular models, maths notebooks and laptops',
+      badge: 'STEM & A-Level Study Studio',
+      title: 'Science, Maths & Digital Fluency',
+      caption: 'Deep analytical training for GCSE Triple Science, A-Level & international tracks.',
+      tag: 'Year 12–13'
+    }
+  ];
+
+  useEffect(() => {
+    if (classroomPaused) return;
+    const timer = setInterval(() => {
+      setClassroomSlide((prev) => (prev + 1) % animatedClassrooms.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [classroomPaused, animatedClassrooms.length]);
+
   const aboutSchema = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
@@ -49,9 +111,27 @@ export const AboutPage = () => {
       {/* ========================================================= */}
       {/* HERO BANNER: HERITAGE & MISSION                           */}
       {/* ========================================================= */}
+      <style>{`
+        @keyframes aboutHeroZoom {
+          0% { transform: scale(1.02); }
+          50% { transform: scale(1.09); }
+          100% { transform: scale(1.02); }
+        }
+        @keyframes classroomCardZoom {
+          from { transform: scale(1.0); }
+          to { transform: scale(1.1); }
+        }
+      `}</style>
       <section className="relative py-20 sm:py-28 bg-[#001f3f] text-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f] via-[#050167]/80 to-[#001f3f] z-0" />
-        <div className="absolute top-1/4 left-10 w-96 h-96 bg-[#40ffa7]/15 rounded-full blur-[140px] pointer-events-none" />
+        <img
+          src="/pages/about-hero.jpg"
+          alt="Beacon Bridge Academics UK educators collaborating with teenage students in a bright classroom"
+          className="absolute inset-0 w-full h-full object-cover object-center z-0"
+          style={{ animation: 'aboutHeroZoom 18s ease-in-out infinite' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/80 via-[#050167]/62 to-[#001f3f]/75 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/35 z-0" />
+        <div className="absolute top-1/4 left-10 w-96 h-96 bg-[#40ffa7]/15 rounded-full blur-[140px] pointer-events-none z-0" />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-[#40ffa7]/20 border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-4 backdrop-blur-md">
@@ -128,35 +208,74 @@ export const AboutPage = () => {
               </div>
             </div>
 
-            {/* Right Column: High-End Photographic Showcase Card */}
+            {/* Right Column: Animated 6-Classroom Showcase Card */}
             <div className="lg:col-span-5 relative">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/30 bg-gradient-to-br from-[#050167] to-[#001f3f] p-3">
-                <div className="relative rounded-2xl overflow-hidden aspect-4/3">
-                  <img
-                    src="https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80"
-                    alt="Beacon Bridge Academics Teacher & Mentoring"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/30 to-transparent" />
+              <div
+                className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/30 bg-gradient-to-br from-[#050167] to-[#001f3f] p-3"
+                onMouseEnter={() => setClassroomPaused(true)}
+                onMouseLeave={() => setClassroomPaused(false)}
+              >
+                <div className="relative rounded-2xl overflow-hidden aspect-4/3 bg-[#001f3f]">
+                  {animatedClassrooms.map((cls, idx) => (
+                    <div
+                      key={cls.src}
+                      aria-hidden={classroomSlide !== idx}
+                      className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                        classroomSlide === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                      }`}
+                    >
+                      <img
+                        src={cls.src}
+                        alt={cls.alt}
+                        className="w-full h-full object-cover"
+                        style={classroomSlide === idx ? { animation: 'classroomCardZoom 4.2s ease-out forwards' } : undefined}
+                      />
+                    </div>
+                  ))}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/25 to-transparent z-20 pointer-events-none" />
                   
-                  {/* Floating Badges */}
-                  <div className="absolute top-3 left-3 bg-[#050167]/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#40ffa7]/40 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#40ffa7] animate-pulse" />
-                    <span className="text-[11px] font-bold text-white">UK Qualified Faculty</span>
+                  {/* Top Floating Badges */}
+                  <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2">
+                    <div className="bg-[#050167]/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#40ffa7]/40 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#40ffa7] animate-pulse" />
+                      <span className="text-[11px] font-bold text-white">{animatedClassrooms[classroomSlide].badge}</span>
+                    </div>
+                    <span className="bg-[#001f3f]/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-[10px] font-black text-[#40ffa7]">
+                      {classroomSlide + 1} / {animatedClassrooms.length}
+                    </span>
                   </div>
 
-                  <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-slate-200 shadow-lg text-xs">
+                  <div className="absolute bottom-3 left-3 right-3 z-30 bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-slate-200 shadow-lg text-xs">
                     <div className="flex items-center justify-between font-bold text-[#050167]">
                       <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        Dedicated Academic Lead Assigned
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        {animatedClassrooms[classroomSlide].title}
                       </span>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Active</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full shrink-0">Active</span>
                     </div>
                     <p className="text-[11px] text-slate-600 mt-1">
-                      Matching each student with a teacher who specializes directly in their exam board.
+                      {animatedClassrooms[classroomSlide].caption}
                     </p>
                   </div>
+                </div>
+
+                {/* 6 Interactive Classroom Thumbnails */}
+                <div className="grid grid-cols-6 gap-1.5 px-1 pt-2.5">
+                  {animatedClassrooms.map((cls, idx) => (
+                    <button
+                      key={cls.src}
+                      type="button"
+                      onClick={() => setClassroomSlide(idx)}
+                      aria-label={`View classroom ${idx + 1}: ${cls.badge}`}
+                      className={`relative rounded-lg overflow-hidden aspect-4/3 transition-all cursor-pointer border-2 ${
+                        classroomSlide === idx
+                          ? 'border-[#40ffa7] scale-105 shadow-md shadow-[#40ffa7]/30'
+                          : 'border-white/15 opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={cls.src} alt={cls.badge} className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  ))}
                 </div>
 
                 {/* Bottom Trust Stat Bar */}
@@ -200,44 +319,7 @@ export const AboutPage = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              {
-                src: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80',
-                alt: '1-to-1 Maths tutoring session',
-                label: '1-to-1 Maths Tutoring',
-                badge: 'GCSE · A-Level'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80',
-                alt: 'Science virtual lab session',
-                label: 'Science Virtual Lab',
-                badge: 'KS3 · GCSE'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80',
-                alt: 'Small group GCSE seminar',
-                label: 'GCSE Group Seminar',
-                badge: 'Year 10–11'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?auto=format&fit=crop&w=800&q=80',
-                alt: 'A-Level mentorship session',
-                label: 'A-Level Mentorship',
-                badge: 'Year 12–13'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80',
-                alt: 'KS2 primary reading class',
-                label: 'KS2 Primary Reading',
-                badge: 'Year 3–6'
-              },
-              {
-                src: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80',
-                alt: 'IELTS writing and speaking preparation',
-                label: 'IELTS Writing & Speaking',
-                badge: 'Academic · UKVI'
-              }
-            ].map((item, idx) => (
+            {animatedClassrooms.map((item, idx) => (
               <div
                 key={idx}
                 className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-[#050167]/10 aspect-video"
@@ -251,11 +333,11 @@ export const AboutPage = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/85 via-[#001f3f]/20 to-transparent" />
                 <div className="absolute top-3 right-3">
                   <span className="px-2.5 py-1 rounded-full bg-[#40ffa7]/90 text-[#001f3f] text-[10px] font-black uppercase tracking-wider">
-                    {item.badge}
+                    {item.tag}
                   </span>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <span className="text-white font-extrabold text-sm block">{item.label}</span>
+                  <span className="text-white font-extrabold text-sm block">{item.badge}</span>
                 </div>
               </div>
             ))}

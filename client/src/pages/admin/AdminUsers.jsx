@@ -139,7 +139,10 @@ export const AdminUsers = () => {
     const newStatus = user.status === 'active' ? 'suspended' : 'active';
     try {
       await api.put(`/users/${user.id}`, { status: newStatus });
-      await showSuccess('Status Updated', `User status changed to ${newStatus}.`);
+      const msg = user.status === 'pending_verification'
+        ? `${user.full_name}'s account (and any linked pending parent/student account) has been confirmed & unlocked for login.`
+        : `User status changed to ${newStatus}.`;
+      await showSuccess('Status Updated', msg);
       await fetchUsers();
     } catch (err) {
       showError('Status Update Failed', err.response?.data?.message || 'Failed to update status');
@@ -219,6 +222,7 @@ export const AdminUsers = () => {
           >
             <option value="all">All Statuses</option>
             <option value="active">Active</option>
+            <option value="pending_verification">Pending Verification</option>
             <option value="suspended">Suspended</option>
           </select>
         </div>
@@ -274,10 +278,14 @@ export const AdminUsers = () => {
                     </td>
                     <td className="py-3.5 px-6">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                        u.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                        u.status === 'active'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : u.status === 'pending_verification'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                            : 'bg-rose-50 text-rose-700'
                       }`}>
-                        {u.status === 'active' ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <XCircle className="w-3 h-3 text-rose-500" />}
-                        <span className="capitalize">{u.status}</span>
+                        {u.status === 'active' ? <CheckCircle2 className="w-3 h-3 text-emerald-500" /> : <XCircle className={`w-3 h-3 ${u.status === 'pending_verification' ? 'text-amber-500' : 'text-rose-500'}`} />}
+                        <span className="capitalize">{u.status === 'pending_verification' ? 'Pending Verification' : u.status}</span>
                       </span>
                     </td>
                     <td className="py-3.5 px-6 text-slate-500">
@@ -287,14 +295,16 @@ export const AdminUsers = () => {
                       <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() => handleToggleStatus(u)}
-                          title={u.status === 'active' ? 'Suspend Account' : 'Reactivate Account'}
-                          className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                          title={u.status === 'active' ? 'Suspend Account' : 'Confirm & Activate Account'}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
                             u.status === 'active' 
                               ? 'text-amber-700 hover:bg-amber-50' 
-                              : 'text-emerald-700 hover:bg-emerald-50'
+                              : u.status === 'pending_verification'
+                                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs'
+                                : 'text-emerald-700 hover:bg-emerald-50'
                           }`}
                         >
-                          {u.status === 'active' ? 'Suspend' : 'Activate'}
+                          {u.status === 'active' ? 'Suspend' : u.status === 'pending_verification' ? 'Confirm & Activate' : 'Activate'}
                         </button>
                         <button
                           onClick={() => openEditModal(u)}
@@ -405,6 +415,7 @@ export const AdminUsers = () => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="active">Active</option>
+                    <option value="pending_verification">Pending Verification</option>
                     <option value="suspended">Suspended</option>
                   </select>
                 </div>

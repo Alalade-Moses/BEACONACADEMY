@@ -307,21 +307,46 @@ export const TeacherApplicationPage = () => {
         canonicalPath="/apply-to-teach"
       />
       
-      {/* Top Banner / Hero */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 text-center">
-        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-500/10 text-brand-700 text-xs font-bold border border-brand-500/20 mb-3 shadow-sm">
-          <GraduationCap className="w-4 h-4 text-brand-600" />
-          <span>Beacon Bridge Academics &bull; Faculty Recruitment</span>
+      {/* Top Banner / Hero with Light Visual Educator Design */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+        <div className="relative rounded-3xl overflow-hidden bg-[#001f3f] text-white shadow-xl border border-[#050167]/15">
+          <img
+            src="/pages/teach-hero.jpg"
+            alt="UK subject specialist teaching live online at Beacon Bridge Academics"
+            className="absolute inset-0 w-full h-full object-cover object-[70%_center] opacity-80"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/92 via-[#050167]/78 to-[#001f3f]/35" />
+          <div className="relative z-10 px-6 sm:px-10 py-10 sm:py-12 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div className="lg:col-span-8 text-left">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] text-xs font-bold border border-[#40ffa7]/35 mb-3 backdrop-blur-sm">
+                <GraduationCap className="w-4 h-4 text-[#40ffa7]" />
+                <span>Beacon Bridge Academics &bull; Faculty Recruitment</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+                Join Our Elite A-Level Faculty
+              </h1>
+              <p className="mt-3 text-sm sm:text-base text-slate-200 max-w-2xl leading-relaxed">
+                Educate motivated students across the UK, US, Canada, and Australia. Enjoy flexible online scheduling, competitive compensation in £ GBP, interactive virtual classroom tools, and complete administrative support.
+              </p>
+            </div>
+            <div className="hidden lg:block lg:col-span-4">
+              <div className="rounded-2xl overflow-hidden border-2 border-white/80 shadow-2xl bg-white/10 backdrop-blur-sm">
+                <img
+                  src="/pages/teach-hero.jpg"
+                  alt="Online live lesson studio"
+                  className="w-full h-44 object-cover object-[68%_25%]"
+                />
+                <div className="px-3.5 py-2.5 bg-[#001f3f]/90 text-xs flex items-center justify-between">
+                  <span className="font-bold text-white">Live Interactive Studio</span>
+                  <span className="text-[#40ffa7] font-bold">£ GBP Pay</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#001f3f] tracking-tight">
-          Join Our Elite A-Level Faculty
-        </h1>
-        <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          Educate motivated students across the UK, US, Canada, and Australia. Enjoy flexible online scheduling, competitive compensation in £ GBP, interactive virtual classroom tools, and complete administrative support.
-        </p>
 
         {/* 3 Pillars Banner */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 max-w-3xl mx-auto text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 max-w-4xl mx-auto text-left">
           <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-start space-x-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
               <ShieldCheck className="w-5 h-5" />

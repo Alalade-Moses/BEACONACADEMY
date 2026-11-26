@@ -1,5 +1,5 @@
 import { store } from '../database/store.js';
-import { sendTutorApplicationReceived, sendTutorApprovalEmail } from '../services/emailService.js';
+import { sendTutorApplicationReceived, sendTutorApplicationAdminAlert, sendTutorApprovalEmail } from '../services/emailService.js';
 import { safeDeleteUploadedFile } from '../services/fileCleanup.js';
 
 export const VALID_ALEVEL_SUBJECTS = [
@@ -107,12 +107,18 @@ export const submitApplication = async (req, res, next) => {
       dbs_certificate_number
     });
 
-    // Send confirmation email to applicant asynchronously
+    // Send confirmation email to applicant and alert email to admin asynchronously
     (async () => {
       try {
         await sendTutorApplicationReceived({ applicant: application });
       } catch (e) {
-        console.warn('[Tutor Application Email Warning]', e.message);
+        console.warn('[Tutor Application Applicant Email Warning]', e.message);
+      }
+      try {
+        await sendTutorApplicationAdminAlert({ applicant: application });
+        console.log(`📧 [TUTOR APPLICATION ADMIN ALERT SENT]: Notified admin of application from ${application.full_name}`);
+      } catch (e) {
+        console.warn('[Tutor Application Admin Email Warning]', e.message);
       }
     })();
 

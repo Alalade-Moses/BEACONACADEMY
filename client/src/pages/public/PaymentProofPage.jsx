@@ -124,7 +124,7 @@ export const PaymentProofPage = () => {
     } else if (slug.includes('graphics') || titleLower.includes('graphics')) {
       setFormData(prev => ({ ...prev, amount: '200.00' }));
     } else if (slug.includes('ielts') || titleLower.includes('ielts')) {
-      setFormData(prev => ({ ...prev, amount: '1000.00' }));
+      setFormData(prev => ({ ...prev, amount: '100.00' }));
     } else if (slug.includes('ks2') || titleLower.includes('ks2')) {
       setFormData(prev => ({ ...prev, amount: '149.00' }));
     } else {

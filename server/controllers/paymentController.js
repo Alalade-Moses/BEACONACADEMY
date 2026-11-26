@@ -103,8 +103,8 @@ export const verifyPayment = async (req, res, next) => {
       try {
         const student = verifiedPayment.student_id ? await store.getProfileById(verifiedPayment.student_id) : null;
         const parent = verifiedPayment.parent_id ? await store.getProfileById(verifiedPayment.parent_id) : null;
-        if (parent) {
-          await sendPaymentVerifiedReceipt({ payment: verifiedPayment, student, parent });
+        if (parent || student) {
+          await sendPaymentVerifiedReceipt({ payment: verifiedPayment, student, parent: parent || student });
         }
       } catch (e) {
         console.warn('[Payment Verified Email Warning]', e.message);

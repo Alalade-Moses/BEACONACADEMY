@@ -96,6 +96,22 @@ if (pool) {
         }
       }
       console.log('📚 [COURSES] PostgreSQL courses & updated pricing synced.');
+
+      // Self-heal any profiles stuck in pending_verification that already have a verified payment
+      const healed = await pool.query(`
+        UPDATE profiles
+        SET status = 'active', updated_at = NOW()
+        WHERE status = 'pending_verification'
+          AND id IN (
+            SELECT student_id FROM payments WHERE status = 'verified' AND student_id IS NOT NULL
+            UNION
+            SELECT parent_id FROM payments WHERE status = 'verified' AND parent_id IS NOT NULL
+          )
+        RETURNING email, role;
+      `);
+      if (healed.rowCount > 0) {
+        console.log(`✅ [AUTH] Auto-activated ${healed.rowCount} verified profile(s) from payments ledger.`);
+      }
     } catch (syncErr) {
       console.warn('⚠️ [AUTH] Superadmin sync notice:', syncErr.message);
     }
@@ -484,13 +500,13 @@ const memoryData = {
       id: '20000000-0000-0000-0000-000000000008',
       title: 'IELTS Academic & UKVI Exam Preparation',
       slug: 'ielts-academic-exam-preparation',
-      description: 'Target Band 7.5+ for UK University & Visa (UKVI) admissions (£1,000/month). Intensive 1-to-1 coaching in IELTS Academic Writing (Task 1 & 2), Speaking fluency, Reading speed, and Listening.',
+      description: 'Target Band 7.5+ for UK University & Visa (UKVI) admissions (£100/month). Intensive 1-to-1 coaching in IELTS Academic Writing (Task 1 & 2), Speaking fluency, Reading speed, and Listening.',
       category_id: '10000000-0000-0000-0000-000000000001',
       tutor_id: '00000000-0000-0000-0000-000000000003',
       thumbnail_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600',
       level: 'English Language Proficiency (IELTS)',
-      price: 1000.00,
-      discount_from: 1250.00,
+      price: 100.00,
+      discount_from: 150.00,
       pricing_type: 'monthly',
       currency: 'GBP',
       has_subtracks: false,
@@ -950,14 +966,17 @@ export const store = {
   getProfileByEmail: async (email) => {
     if (!email) return null;
     const normalized = email.toLowerCase().trim();
+    const isShortUsername = !normalized.includes('@');
     const prefix = normalized.split('@')[0];
 
     if (pool) {
       try {
         const res = await pool.query('SELECT * FROM profiles WHERE LOWER(email) = LOWER($1)', [normalized]);
         if (res.rows && res.rows[0]) return res.rows[0];
-        const prefixRes = await pool.query('SELECT * FROM profiles WHERE LOWER(split_part(email, \'@\', 1)) = LOWER($1)', [prefix]);
-        if (prefixRes.rows && prefixRes.rows[0]) return prefixRes.rows[0];
+        if (isShortUsername) {
+          const prefixRes = await pool.query('SELECT * FROM profiles WHERE LOWER(split_part(email, \'@\', 1)) = LOWER($1)', [prefix]);
+          if (prefixRes.rows && prefixRes.rows[0]) return prefixRes.rows[0];
+        }
       } catch (e) {
         console.warn('[store] pg getProfileByEmail fallback:', e.message);
       }
@@ -970,24 +989,27 @@ export const store = {
     const found = memoryData.profiles.find(p => p.email.toLowerCase() === normalized);
     if (found) return found;
 
-    // 2. Flexible match on username prefix for demo accounts (e.g. admin, dr.sarah, alex.morgan, david.morgan)
-    const prefixMatch = memoryData.profiles.find(p => p.email.toLowerCase().split('@')[0] === prefix);
-    if (prefixMatch) return prefixMatch;
+    // 2. Flexible match on username prefix ONLY when no '@' domain was provided
+    if (isShortUsername) {
+      const prefixMatch = memoryData.profiles.find(p => p.email.toLowerCase().split('@')[0] === prefix);
+      if (prefixMatch) return prefixMatch;
+    }
 
     return null;
   },
 
   createProfile: async (profileData) => {
-    const newProfile = {
+    let newProfile = {
       id: profileData.id || uuidv4(),
       ...profileData,
+      email: profileData.email.toLowerCase().trim(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
     if (pool) {
       try {
-        await pool.query(`
+        const pgRes = await pool.query(`
           INSERT INTO profiles (id, email, password_hash, full_name, role, avatar_url, phone, bio, status, created_at, updated_at)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
           ON CONFLICT (email) DO UPDATE SET
@@ -999,9 +1021,10 @@ export const store = {
             bio = EXCLUDED.bio,
             status = EXCLUDED.status,
             updated_at = EXCLUDED.updated_at
+          RETURNING *
         `, [
           newProfile.id,
-          newProfile.email.toLowerCase().trim(),
+          newProfile.email,
           newProfile.password_hash,
           newProfile.full_name,
           newProfile.role,
@@ -1012,6 +1035,9 @@ export const store = {
           newProfile.created_at,
           newProfile.updated_at
         ]);
+        if (pgRes.rows && pgRes.rows[0]) {
+          newProfile = pgRes.rows[0];
+        }
       } catch (dbErr) {
         console.warn('[store] PostgreSQL createProfile notice:', dbErr.message);
       }
@@ -1022,7 +1048,9 @@ export const store = {
       if (!error && data) return data;
     }
 
-    const existingIdx = memoryData.profiles.findIndex(p => p.email.toLowerCase() === newProfile.email.toLowerCase());
+    const existingIdx = memoryData.profiles.findIndex(
+      p => p.id === newProfile.id || p.email.toLowerCase() === newProfile.email.toLowerCase()
+    );
     if (existingIdx !== -1) {
       memoryData.profiles[existingIdx] = newProfile;
     } else {
@@ -1033,12 +1061,16 @@ export const store = {
 
   updateProfile: async (id, updates) => {
     const updatedAt = new Date().toISOString();
+    const allowedColumns = new Set(['email', 'password_hash', 'full_name', 'role', 'avatar_url', 'phone', 'bio', 'status']);
+    let pgUpdatedRow = null;
+
     if (pool) {
       try {
         const fields = [];
         const values = [];
         let i = 1;
         for (const [key, val] of Object.entries(updates)) {
+          if (!allowedColumns.has(key)) continue;
           fields.push(`${key} = $${i}`);
           values.push(val);
           i++;
@@ -1047,9 +1079,15 @@ export const store = {
         values.push(updatedAt);
         i++;
         values.push(id);
-        await pool.query(`UPDATE profiles SET ${fields.join(', ')} WHERE id = $${i - 1}`, values);
+        const pgRes = await pool.query(
+          `UPDATE profiles SET ${fields.join(', ')} WHERE id = $${i} RETURNING *`,
+          values
+        );
+        if (pgRes.rows && pgRes.rows[0]) {
+          pgUpdatedRow = pgRes.rows[0];
+        }
       } catch (dbErr) {
-        console.warn('[store] PostgreSQL updateProfile notice:', dbErr.message);
+        console.warn('[store] PostgreSQL updateProfile error:', dbErr.message);
       }
     }
 
@@ -1057,11 +1095,23 @@ export const store = {
       const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select().single();
       if (!error && data) return data;
     }
+
     const idx = memoryData.profiles.findIndex(p => p.id === id);
     if (idx !== -1) {
-      memoryData.profiles[idx] = { ...memoryData.profiles[idx], ...updates, updated_at: updatedAt };
+      memoryData.profiles[idx] = {
+        ...memoryData.profiles[idx],
+        ...updates,
+        ...(pgUpdatedRow || {}),
+        updated_at: updatedAt
+      };
       return memoryData.profiles[idx];
     }
+
+    if (pgUpdatedRow) {
+      memoryData.profiles.push(pgUpdatedRow);
+      return pgUpdatedRow;
+    }
+
     return null;
   },
 
@@ -1099,9 +1149,11 @@ export const store = {
           const memoryBySlug = new Map(memoryData.courses.map(mc => [mc.slug, mc]));
           const merged = res.rows.map(r => {
             const meta = memoryById.get(r.id) || memoryBySlug.get(r.slug) || {};
+            const isIeltsCourse = (r.slug || '').includes('ielts') || (r.title || '').toLowerCase().includes('ielts');
             return {
               ...meta,
               ...r,
+              price: isIeltsCourse ? 100.00 : (meta.price ?? r.price),
               discount_from: meta.discount_from ?? r.discount_from,
               hourly_rate: meta.hourly_rate ?? r.hourly_rate,
               pricing_type: meta.pricing_type ?? r.pricing_type
@@ -1182,6 +1234,32 @@ export const store = {
 
   // Enrollments
   getEnrollments: async () => {
+    if (pool) {
+      try {
+        const res = await pool.query(`
+          SELECT e.*,
+            row_to_json(c.*) as course,
+            row_to_json(p.*) as student
+          FROM course_enrollments e
+          LEFT JOIN courses c ON e.course_id = c.id
+          LEFT JOIN profiles p ON e.student_id = p.id
+          ORDER BY e.enrolled_at DESC
+        `);
+        if (res.rows) {
+          const pgIds = new Set(res.rows.map(r => `${r.course_id}:${r.student_id}`));
+          const missing = memoryData.course_enrollments
+            .filter(enr => !pgIds.has(`${enr.course_id}:${enr.student_id}`))
+            .map(enr => ({
+              ...enr,
+              course: memoryData.courses.find(c => c.id === enr.course_id) || null,
+              student: memoryData.profiles.find(p => p.id === enr.student_id) || null
+            }));
+          return [...res.rows, ...missing];
+        }
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL getEnrollments notice:', dbErr.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('course_enrollments').select('*, course:courses(*), student:profiles(*)');
       if (!error && data) return data;
@@ -1201,6 +1279,17 @@ export const store = {
       status: enrollmentData.status || 'enrolled',
       enrolled_at: new Date().toISOString()
     };
+    if (pool) {
+      try {
+        await pool.query(`
+          INSERT INTO course_enrollments (id, course_id, student_id, status, progress_pct, enrolled_at)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (course_id, student_id) DO UPDATE SET status = EXCLUDED.status
+        `, [newEnr.id, newEnr.course_id, newEnr.student_id, newEnr.status, newEnr.progress_pct, newEnr.enrolled_at]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL createEnrollment notice:', dbErr.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('course_enrollments').insert([newEnr]).select().single();
       if (!error && data) return data;
@@ -1445,6 +1534,32 @@ export const store = {
 
   // Parent-Student Links
   getParentStudentLinks: async () => {
+    if (pool) {
+      try {
+        const res = await pool.query(`
+          SELECT l.*,
+            row_to_json(par.*) as parent,
+            row_to_json(stu.*) as student
+          FROM parent_student_links l
+          LEFT JOIN profiles par ON l.parent_id = par.id
+          LEFT JOIN profiles stu ON l.student_id = stu.id
+          ORDER BY l.created_at DESC
+        `);
+        if (res.rows) {
+          const pgPairs = new Set(res.rows.map(r => `${r.parent_id}:${r.student_id}`));
+          const missing = memoryData.parent_student_links
+            .filter(link => !pgPairs.has(`${link.parent_id}:${link.student_id}`))
+            .map(link => ({
+              ...link,
+              parent: memoryData.profiles.find(p => p.id === link.parent_id) || null,
+              student: memoryData.profiles.find(p => p.id === link.student_id) || null
+            }));
+          return [...res.rows, ...missing];
+        }
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL getParentStudentLinks notice:', dbErr.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('parent_student_links').select('*, parent:profiles!parent_id(*), student:profiles!student_id(*)');
       if (!error && data) return data;
@@ -1464,6 +1579,19 @@ export const store = {
       relationship: linkData.relationship || 'Parent',
       ...linkData
     };
+    if (pool) {
+      try {
+        await pool.query(`
+          INSERT INTO parent_student_links (id, parent_id, student_id, relationship, status, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          ON CONFLICT (parent_id, student_id) DO UPDATE SET
+            relationship = EXCLUDED.relationship,
+            status = EXCLUDED.status
+        `, [newLink.id, newLink.parent_id, newLink.student_id, newLink.relationship, newLink.status, newLink.created_at]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL createParentStudentLink notice:', dbErr.message);
+      }
+    }
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('parent_student_links').insert([newLink]).select().single();
       if (!error && data) return data;
@@ -1701,6 +1829,21 @@ export const store = {
       verified_at: null
     };
     memoryData.payments.unshift(paymentRecord);
+    if (pool) {
+      try {
+        await pool.query(`
+          INSERT INTO payments (id, parent_id, student_id, course_id, amount, currency, bank_reference, proof_url, status, admin_notes, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ON CONFLICT (id) DO NOTHING
+        `, [
+          paymentRecord.id, paymentRecord.parent_id, paymentRecord.student_id, paymentRecord.course_id,
+          paymentRecord.amount, paymentRecord.currency, paymentRecord.bank_reference, paymentRecord.proof_url,
+          paymentRecord.status, paymentRecord.admin_notes, paymentRecord.created_at
+        ]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL registerJoint payment insert notice:', dbErr.message);
+      }
+    }
 
     // 6. Pre-enroll student in pending status
     if (course_id) {
@@ -1772,7 +1915,7 @@ export const store = {
       full_name: candidate.full_name,
       role: 'student',
       phone: candidate.phone || '',
-      bio: `Program: ${trackLabel} (£1,000/month) | ${bandStr} | Focus: ${modulesStr}${exam_date ? ` | Exam Date: ${exam_date}` : ''}`,
+      bio: `Program: ${trackLabel} (£100/month) | ${bandStr} | Focus: ${modulesStr}${exam_date ? ` | Exam Date: ${exam_date}` : ''}`,
       status: 'pending_verification',
       avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(candidate.full_name)}`
     });
@@ -1784,18 +1927,33 @@ export const store = {
       course_id: ieltsCourseId,
       course_track: trackLabel,
       course_name: `IELTS Academic & UKVI Exam Preparation (${trackLabel})`,
-      amount: parseFloat(amount) || 1000.00,
+      amount: parseFloat(amount) || 100.00,
       currency: 'GBP',
       selected_subjects: focus_modules || ['Speaking', 'Writing Task 1 & 2', 'Reading', 'Listening'],
       bank_reference: bank_reference || `IELTS-${Date.now().toString(36).toUpperCase()}`,
       proof_url: payment_proof_url || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600',
       status: 'pending',
-      admin_notes: `IELTS Candidate: ${candidate.full_name} (${trackLabel}, ${bandStr}). Monthly £1,000 GBP awaiting verification.`,
+      admin_notes: `IELTS Candidate: ${candidate.full_name} (${trackLabel}, ${bandStr}). Monthly £100 GBP awaiting verification.`,
       verified_by: null,
       created_at: new Date().toISOString(),
       verified_at: null
     };
     memoryData.payments.unshift(paymentRecord);
+    if (pool) {
+      try {
+        await pool.query(`
+          INSERT INTO payments (id, parent_id, student_id, course_id, amount, currency, bank_reference, proof_url, status, admin_notes, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ON CONFLICT (id) DO NOTHING
+        `, [
+          paymentRecord.id, paymentRecord.parent_id, paymentRecord.student_id, paymentRecord.course_id,
+          paymentRecord.amount, paymentRecord.currency, paymentRecord.bank_reference, paymentRecord.proof_url,
+          paymentRecord.status, paymentRecord.admin_notes, paymentRecord.created_at
+        ]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL registerIelts payment insert notice:', dbErr.message);
+      }
+    }
 
     await store.createEnrollment({
       course_id: ieltsCourseId,
@@ -1824,18 +1982,42 @@ export const store = {
 
   // Payments & Verification
   getPayments: async () => {
-    return memoryData.payments.map(p => {
-      const course = memoryData.courses.find(c => c.id === p.course_id) || null;
+    const allProfiles = await store.getProfiles();
+    const allCourses = await store.getCourses();
+    const profileById = new Map(allProfiles.map(u => [u.id, u]));
+    const courseById = new Map(allCourses.map(c => [c.id, c]));
+
+    const enrich = (p) => {
+      const course = courseById.get(p.course_id) || memoryData.courses.find(c => c.id === p.course_id) || null;
       const courseTitle = p.course_name || (p.course_track ? `${course?.title || 'Program'} (${p.course_track})` : (course?.title || 'Selected Program'));
       return {
         ...p,
         course_display_name: courseTitle,
-        parent: memoryData.profiles.find(u => u.id === p.parent_id) || null,
-        student: memoryData.profiles.find(u => u.id === p.student_id) || null,
+        parent: profileById.get(p.parent_id) || p.parent || null,
+        student: profileById.get(p.student_id) || p.student || null,
         course,
-        verifier: p.verified_by ? memoryData.profiles.find(u => u.id === p.verified_by) : null
+        verifier: p.verified_by ? (profileById.get(p.verified_by) || null) : null
       };
-    });
+    };
+
+    if (pool) {
+      try {
+        const res = await pool.query('SELECT * FROM payments ORDER BY created_at DESC');
+        if (res.rows) {
+          const pgIds = new Set(res.rows.map(r => r.id));
+          const memOnly = memoryData.payments.filter(mp => !pgIds.has(mp.id));
+          const merged = [...res.rows.map(r => {
+            const memMatch = memoryData.payments.find(mp => mp.id === r.id);
+            return { ...(memMatch || {}), ...r };
+          }), ...memOnly];
+          return merged.map(enrich);
+        }
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL getPayments notice:', dbErr.message);
+      }
+    }
+
+    return memoryData.payments.map(enrich);
   },
 
   submitPaymentProof: async ({ parent_id, student_id, course_id, course_track, amount, bank_reference, proof_url, notes }) => {
@@ -1862,6 +2044,21 @@ export const store = {
       verified_at: null
     };
     memoryData.payments.unshift(newPayment);
+    if (pool) {
+      try {
+        await pool.query(`
+          INSERT INTO payments (id, parent_id, student_id, course_id, amount, currency, bank_reference, proof_url, status, admin_notes, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          ON CONFLICT (id) DO NOTHING
+        `, [
+          newPayment.id, newPayment.parent_id, newPayment.student_id, newPayment.course_id,
+          newPayment.amount, newPayment.currency, newPayment.bank_reference, newPayment.proof_url,
+          newPayment.status, newPayment.admin_notes, newPayment.created_at
+        ]);
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL submitPaymentProof insert notice:', dbErr.message);
+      }
+    }
 
     // Notify admins
     const admins = memoryData.profiles.filter(p => p.role === 'superadmin');
@@ -1879,25 +2076,66 @@ export const store = {
   },
 
   verifyPayment: async (paymentId, adminId) => {
-    const idx = memoryData.payments.findIndex(p => p.id === paymentId);
-    if (idx === -1) throw new Error('Payment record not found.');
+    let idx = memoryData.payments.findIndex(p => p.id === paymentId);
+    let payment = idx !== -1 ? memoryData.payments[idx] : null;
 
-    const payment = memoryData.payments[idx];
+    if (!payment && pool) {
+      try {
+        const res = await pool.query('SELECT * FROM payments WHERE id = $1', [paymentId]);
+        if (res.rows && res.rows[0]) {
+          payment = res.rows[0];
+          memoryData.payments.unshift(payment);
+          idx = 0;
+        }
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL verifyPayment lookup notice:', dbErr.message);
+      }
+    }
+
+    if (!payment) throw new Error('Payment record not found.');
+
+    const verifiedAt = new Date().toISOString();
     payment.status = 'verified';
     payment.verified_by = adminId;
-    payment.verified_at = new Date().toISOString();
+    payment.verified_at = verifiedAt;
     payment.admin_notes = 'Payment verified and confirmed by Administrator.';
 
-    // ACTIVATE BOTH STUDENT AND PARENT ACCOUNTS!
+    if (pool) {
+      try {
+        await pool.query(
+          `UPDATE payments SET status = 'verified', verified_by = $1, verified_at = $2, admin_notes = $3 WHERE id = $4`,
+          [adminId || null, verifiedAt, payment.admin_notes, paymentId]
+        );
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL verifyPayment update notice:', dbErr.message);
+      }
+    }
+
+    // ACTIVATE BOTH STUDENT AND PARENT ACCOUNTS IN POSTGRESQL + MEMORY!
     if (payment.student_id) {
       await store.updateProfile(payment.student_id, { status: 'active' });
     }
-    if (payment.parent_id) {
+    if (payment.parent_id && payment.parent_id !== payment.student_id) {
       await store.updateProfile(payment.parent_id, { status: 'active' });
     }
 
-    const student = payment.student_id ? memoryData.profiles.find(p => p.id === payment.student_id) : null;
-    const parent = payment.parent_id ? memoryData.profiles.find(p => p.id === payment.parent_id) : null;
+    const student = payment.student_id ? await store.getProfileById(payment.student_id) : null;
+    const parent = payment.parent_id ? await store.getProfileById(payment.parent_id) : null;
+
+    // Ensure any linked family member in parent_student_links is also unlocked
+    try {
+      const links = await store.getParentStudentLinks();
+      for (const lnk of links) {
+        if (lnk.parent_id === payment.parent_id && lnk.student_id && lnk.student?.status === 'pending_verification') {
+          await store.updateProfile(lnk.student_id, { status: 'active' });
+        }
+        if (lnk.student_id === payment.student_id && lnk.parent_id && lnk.parent?.status === 'pending_verification') {
+          await store.updateProfile(lnk.parent_id, { status: 'active' });
+        }
+      }
+    } catch (lnkErr) {
+      console.warn('[Linked account activation note]:', lnkErr.message);
+    }
 
     // If student has course enrollment, ensure it's marked enrolled
     if (payment.course_id && payment.student_id) {
@@ -1959,12 +2197,37 @@ export const store = {
   },
 
   rejectPayment: async (paymentId, adminNotes) => {
-    const idx = memoryData.payments.findIndex(p => p.id === paymentId);
-    if (idx === -1) throw new Error('Payment record not found.');
+    let idx = memoryData.payments.findIndex(p => p.id === paymentId);
+    let payment = idx !== -1 ? memoryData.payments[idx] : null;
 
-    const payment = memoryData.payments[idx];
+    if (!payment && pool) {
+      try {
+        const res = await pool.query('SELECT * FROM payments WHERE id = $1', [paymentId]);
+        if (res.rows && res.rows[0]) {
+          payment = res.rows[0];
+          memoryData.payments.unshift(payment);
+          idx = 0;
+        }
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL rejectPayment lookup notice:', dbErr.message);
+      }
+    }
+
+    if (!payment) throw new Error('Payment record not found.');
+
     payment.status = 'rejected';
     payment.admin_notes = adminNotes || 'Proof of payment was unclear or could not be verified by bank.';
+
+    if (pool) {
+      try {
+        await pool.query(
+          `UPDATE payments SET status = 'rejected', admin_notes = $1 WHERE id = $2`,
+          [payment.admin_notes, paymentId]
+        );
+      } catch (dbErr) {
+        console.warn('[store] PostgreSQL rejectPayment update notice:', dbErr.message);
+      }
+    }
 
     // Notify parent
     await store.createNotification({

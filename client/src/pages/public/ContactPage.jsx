@@ -83,7 +83,14 @@ export const ContactPage = () => {
       />
 
       {/* Header */}
-      <section className="bg-gradient-to-br from-[#001f3f] via-[#050167] to-[#001633] text-white py-16 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
+      <section className="bg-[#001f3f] text-white py-20 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
+        <img
+          src="/pages/contact-hero.jpg"
+          alt="Beacon Bridge Academics admissions advisors and support team"
+          className="absolute inset-0 w-full h-full object-cover object-center z-0"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/82 via-[#050167]/65 to-[#001f3f]/78 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/30 z-0" />
         <div className="max-w-4xl mx-auto relative z-10">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-4">
             <MessageSquare className="w-3.5 h-3.5" />
@@ -103,7 +110,23 @@ export const ContactPage = () => {
           
           {/* Contact Details & Fast Booking */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+            <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm">
+              <div className="relative h-44 overflow-hidden">
+                <img
+                  src="/pages/about-hero.jpg"
+                  alt="Beacon Bridge Academics UK educators collaborating with students"
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-[#001f3f]/20 to-transparent" />
+                <div className="absolute bottom-3 left-5 right-5 flex items-center justify-between text-white">
+                  <span className="text-xs font-extrabold tracking-wide">London Academic Support Desk</span>
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#40ffa7]">
+                    <span className="w-2 h-2 rounded-full bg-[#40ffa7] animate-pulse" />
+                    Online
+                  </span>
+                </div>
+              </div>
+              <div className="p-6 sm:p-8">
               <h2 className="text-xl font-bold text-slate-900 mb-6">Direct Channels</h2>
 
               <div className="space-y-5 text-sm">
@@ -143,6 +166,7 @@ export const ContactPage = () => {
                     <p className="text-slate-500 text-xs">Delivering virtual classroom tuition across the UK, Canada, the US & globally.</p>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
 

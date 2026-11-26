@@ -648,8 +648,12 @@ export const sendClassUpcomingReminderEmail = async ({ recipient, student, paren
   });
 };
 
-// 5. Tutor Application Received Confirmation
+// 5. Tutor Application Received Confirmation (Applicant)
 export const sendTutorApplicationReceived = async ({ applicant }) => {
+  const subjectsList = Array.isArray(applicant?.selected_subjects) && applicant.selected_subjects.length > 0
+    ? applicant.selected_subjects.join(', ')
+    : (Array.isArray(applicant?.subjects) ? applicant.subjects.join(', ') : applicant?.subjects || 'Academic Subjects');
+
   const html = buildEmailTemplate({
     headerTitle: 'Teacher Application Received',
     contentHtml: `
@@ -658,7 +662,7 @@ export const sendTutorApplicationReceived = async ({ applicant }) => {
       
       <div class="card">
         <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 15px;">Application Overview</h3>
-        <p style="margin: 4px 0;"><strong>Subjects Applied:</strong> ${Array.isArray(applicant?.subjects) ? applicant.subjects.join(', ') : applicant?.subjects || 'Academic Subjects'}</p>
+        <p style="margin: 4px 0;"><strong>Subjects Applied:</strong> ${subjectsList}</p>
         <p style="margin: 4px 0;"><strong>Safeguarding Policy:</strong> <span class="badge badge-green">Read & Acknowledged</span></p>
         <p style="margin: 4px 0;"><strong>3-Minute Video Submission:</strong> Received & Queued for Evaluation</p>
       </div>
@@ -677,6 +681,58 @@ export const sendTutorApplicationReceived = async ({ applicant }) => {
     html,
     senderType: 'admissions'
   });
+};
+
+// 5a. Admin Notification: New Tutor Application Submitted
+export const sendTutorApplicationAdminAlert = async ({ applicant }) => {
+  const subjectsList = Array.isArray(applicant?.selected_subjects) && applicant.selected_subjects.length > 0
+    ? applicant.selected_subjects.join(', ')
+    : (Array.isArray(applicant?.subjects) ? applicant.subjects.join(', ') : 'A-Level / Curriculum Subjects');
+  const reviewUrl = `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/admin/tutor-applications`;
+
+  const html = buildEmailTemplate({
+    headerTitle: 'New Tutor Application Submitted',
+    contentHtml: `
+      <p>A new educator has submitted an application via <strong>Teach With Us</strong> and is awaiting Superadmin review:</p>
+      
+      <div class="card" style="border-left: 4px solid #050167;">
+        <h3 style="margin: 0 0 10px 0; color: #050167; font-size: 16px;">Applicant Profile</h3>
+        <p style="margin: 4px 0;"><strong>Full Name:</strong> ${applicant?.full_name || 'N/A'}</p>
+        <p style="margin: 4px 0;"><strong>Email:</strong> <a href="mailto:${applicant?.email}">${applicant?.email || 'N/A'}</a></p>
+        <p style="margin: 4px 0;"><strong>Phone / WhatsApp:</strong> ${applicant?.phone || 'N/A'}</p>
+        <p style="margin: 4px 0;"><strong>Location:</strong> ${applicant?.location || 'N/A'}</p>
+        <p style="margin: 4px 0;"><strong>Qualification:</strong> ${applicant?.highest_qualification || 'N/A'}</p>
+        <p style="margin: 4px 0;"><strong>Experience:</strong> ${applicant?.years_experience || 'N/A'}</p>
+        <p style="margin: 4px 0;"><strong>Subjects Applied:</strong> <span class="badge badge-green">${subjectsList}</span></p>
+        <p style="margin: 4px 0;"><strong>DBS Status:</strong> ${applicant?.dbs_status || 'Declared'}</p>
+        <p style="margin: 4px 0;"><strong>Safeguarding Signed:</strong> ${applicant?.safeguarding_signature || 'Yes'}</p>
+        ${applicant?.video_url ? `<p style="margin: 6px 0 0 0;"><strong>3-Min Intro Video:</strong> <a href="${applicant.video_url}" style="color: #0284c7;">Watch Video Submission</a></p>` : ''}
+        ${applicant?.cv_url ? `<p style="margin: 4px 0 0 0;"><strong>CV Document:</strong> <a href="${applicant.cv_url}" style="color: #0284c7;">Open Uploaded CV</a></p>` : ''}
+      </div>
+
+      ${applicant?.bio ? `<div class="card"><h4 style="margin: 0 0 6px 0; color: #001f3f;">Applicant Bio</h4><p style="margin: 0; font-size: 13px; color: #475569;">${applicant.bio}</p></div>` : ''}
+
+      <p>Review the applicant's video, documents, and safeguarding compliance in the Admin Portal to approve or reject this application.</p>
+    `,
+    callToAction: {
+      label: 'Review Application in Admin Portal',
+      url: reviewUrl
+    }
+  });
+
+  const recipients = [...new Set([DEFAULT_ADMIN_EMAIL, DEFAULT_INFO_EMAIL].filter(Boolean))];
+  const results = [];
+  for (const recipient of recipients) {
+    const res = await sendEmail({
+      to: recipient,
+      subject: `[NEW TUTOR APPLICATION] ${applicant?.full_name || 'Applicant'} — ${subjectsList}`,
+      html,
+      senderType: 'admissions',
+      replyTo: applicant?.email || undefined
+    });
+    results.push(res);
+  }
+  return results[0] || { success: true };
 };
 
 // 5b. Tutor Application Approved & Account Provisioned Notification
@@ -861,6 +917,8 @@ export default {
   sendPaymentProofAdminAlert,
   sendPaymentVerifiedReceipt,
   sendTutorApplicationReceived,
+  sendTutorApplicationAdminAlert,
+  sendTutorApprovalEmail,
   sendTutorMessage,
   sendConsultationBookingNotifications
 };

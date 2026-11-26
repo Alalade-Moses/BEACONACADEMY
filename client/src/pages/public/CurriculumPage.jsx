@@ -118,13 +118,13 @@ export const CurriculumPage = () => {
       id: 'ielts',
       badge: 'Language Proficiency',
       title: 'IELTS Academic & UKVI Exam Preparation',
-      subtitle: '£1,000/month • Target Band 7.5+ for UK University & Visa (UKVI) Entry',
-      monthlyPrice: '£1,000/month',
-      discountFrom: '£1,250/month',
-      savingsTag: 'Save £250/mo',
+      subtitle: '£100/month • Target Band 7.5+ for UK University & Visa (UKVI) Entry',
+      monthlyPrice: '£100/month',
+      discountFrom: '£150/month',
+      savingsTag: 'Save £50/mo',
       hourlyNote: 'Dedicated Candidate Portal & Classroom',
       ctaPath: '/ielts-registration',
-      description: 'Comprehensive £1,000/month intensive preparation for the International English Language Testing System, with a dedicated IELTS registration portal and Student Virtual Classroom Dashboard where tutors conduct live sessions.',
+      description: 'Comprehensive £100/month intensive preparation for the International English Language Testing System, with a dedicated IELTS registration portal and Student Virtual Classroom Dashboard where tutors conduct live sessions.',
       features: [
         'Academic Writing Task 1 (graphs/processes) & Task 2 essays graded against official rubrics',
         '1-on-1 Speaking mock interviews with live pronunciation & lexical resource coaching',
@@ -201,9 +201,9 @@ export const CurriculumPage = () => {
     {
       title: 'IELTS Academic & UKVI',
       level: 'Dedicated Candidate Dashboard',
-      discountFrom: '£1,250/month',
-      savings: 'Save £250',
-      price: '£1,000',
+      discountFrom: '£150/month',
+      savings: 'Save £50',
+      price: '£100',
       hourly: '1-on-1 Exam Preparation',
       to: '/ielts-registration',
       isIelts: true
@@ -301,11 +301,11 @@ export const CurriculumPage = () => {
     {
       title: "IELTS Academic & UKVI",
       category: "University & Visa",
-      desc: "Meticulous Task 1 & 2 essay evaluation, fluency coaching, and mock interview sittings targeting Band 7.5+ (£1,000/month).",
+      desc: "Meticulous Task 1 & 2 essay evaluation, fluency coaching, and mock interview sittings targeting Band 7.5+ (£100/month).",
       icon: Globe2,
       color: "from-teal-600 to-cyan-700",
       boards: "Dedicated IELTS Portal",
-      tag: "£1,000/month"
+      tag: "£100/month"
     },
     {
       title: "Coding (Software Development)",
@@ -372,9 +372,23 @@ export const CurriculumPage = () => {
       {/* ========================================================= */}
       {/* HERO BANNER                                               */}
       {/* ========================================================= */}
+      <style>{`
+        @keyframes curriculumHeroZoom {
+          0% { transform: scale(1.02); }
+          50% { transform: scale(1.08); }
+          100% { transform: scale(1.02); }
+        }
+      `}</style>
       <section className="relative py-20 sm:py-28 bg-[#001f3f] text-white overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f] via-[#050167]/80 to-[#001f3f] z-0" />
-        <div className="absolute top-1/4 left-10 w-96 h-96 bg-[#40ffa7]/15 rounded-full blur-[140px] pointer-events-none" />
+        <img
+          src="/pages/curriculum-hero.jpg"
+          alt="UK students studying GCSE and A-Level mathematics and sciences"
+          className="absolute inset-0 w-full h-full object-cover object-center z-0"
+          style={{ animation: 'curriculumHeroZoom 18s ease-in-out infinite' }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/80 via-[#050167]/60 to-[#001f3f]/75 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/35 z-0" />
+        <div className="absolute top-1/4 left-10 w-96 h-96 bg-[#40ffa7]/15 rounded-full blur-[140px] pointer-events-none z-0" />
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-[#40ffa7]/20 border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-4 backdrop-blur-md">
@@ -598,14 +612,14 @@ export const CurriculumPage = () => {
 
                   <Link
                     to={prog.to}
-                    className={`w-full py-2.5 px-4 rounded-xl font-black text-xs text-center flex items-center justify-center gap-1.5 transition-all ${
+                    className={`w-full py-2.5 px-4 rounded-xl font-black text-xs text-center flex items-center justify-center gap-1.5 transition-all shadow-md hover:-translate-y-0.5 active:scale-95 ${
                       prog.isIelts
-                        ? 'bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f]'
-                        : 'bg-[#050167] hover:bg-[#001f3f] text-white'
+                        ? 'bg-[#40ffa7] hover:bg-[#2be08d] !text-[#001f3f]'
+                        : 'bg-[#050167] hover:bg-[#001f3f] !text-white'
                     }`}
                   >
                     <span>{prog.isIelts ? 'IELTS Registration' : 'Enrol Now'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className={`w-3.5 h-3.5 ${prog.isIelts ? 'text-[#001f3f]' : 'text-[#40ffa7]'}`} />
                   </Link>
                 </div>
               ))}

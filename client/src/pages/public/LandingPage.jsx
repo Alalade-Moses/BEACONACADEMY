@@ -585,49 +585,49 @@ export const LandingPage = () => {
 
           </div>
 
-          {/* Side photo with floating info cards (stays visible while the background carousel rotates) */}
-          <div className="hidden lg:block lg:col-span-5">
-            <div className="relative mx-auto max-w-sm xl:max-w-md">
-              <div className="absolute -inset-3 translate-x-4 translate-y-4 rounded-[2.25rem] bg-gradient-to-br from-[#40ffa7] to-[#050167] opacity-90" />
-              <div className="relative overflow-hidden rounded-[2.25rem] border-4 border-white shadow-2xl shadow-black/40 bg-white">
+          {/* Side photo with floating info cards (stays visible on mobile & desktop while the background carousel rotates) */}
+          <div className="block lg:col-span-5 mt-4 lg:mt-0 pb-6 lg:pb-0">
+            <div className="relative mx-auto max-w-[20.5rem] sm:max-w-sm xl:max-w-md">
+              <div className="absolute -inset-2 sm:-inset-3 translate-x-2.5 translate-y-2.5 sm:translate-x-4 sm:translate-y-4 rounded-[2rem] sm:rounded-[2.25rem] bg-gradient-to-br from-[#40ffa7] to-[#050167] opacity-90" />
+              <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.25rem] border-4 border-white shadow-2xl shadow-black/40 bg-white">
                 <img
                   src="/hero/side-student.jpg"
                   alt="Smiling UK student having a live 1-to-1 online lesson with a tutor on a laptop"
-                  className="h-[24rem] xl:h-[27rem] w-full object-cover object-[60%_30%]"
+                  className="h-[22rem] sm:h-[24rem] xl:h-[27rem] w-full object-cover object-[60%_30%]"
                   loading="eager"
                 />
                 <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#001f3f]/40 to-transparent" />
               </div>
 
-              <div className="absolute -left-10 top-10 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-slate-100">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#050167] text-[#40ffa7]">
-                  <Video className="h-5 w-5" />
+              <div className="absolute left-2 sm:-left-6 lg:-left-10 top-4 sm:top-10 flex items-center gap-2.5 sm:gap-3 rounded-2xl bg-white px-3 py-2 sm:px-4 sm:py-3 shadow-xl ring-1 ring-slate-100">
+                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-[#050167] text-[#40ffa7]">
+                  <Video className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div className="leading-tight text-left">
-                  <p className="text-sm font-black text-[#001f3f]">Live 1-to-1 Lessons</p>
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                  <p className="text-xs sm:text-sm font-black text-[#001f3f]">Live 1-to-1 Lessons</p>
+                  <p className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-emerald-600">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Interactive classroom
                   </p>
                 </div>
               </div>
 
-              <div className="absolute -right-6 top-1/2 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-slate-100">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-                  <GraduationCap className="h-5 w-5" />
+              <div className="absolute right-2 sm:-right-4 lg:-right-6 top-1/2 flex items-center gap-2.5 sm:gap-3 rounded-2xl bg-white px-3 py-2 sm:px-4 sm:py-3 shadow-xl ring-1 ring-slate-100">
+                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                  <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div className="leading-tight text-left">
-                  <p className="text-sm font-black text-[#001f3f]">Grade 4 → Grade 9</p>
-                  <p className="text-xs font-semibold text-slate-500">GCSE Maths success story</p>
+                  <p className="text-xs sm:text-sm font-black text-[#001f3f]">Grade 4 → Grade 9</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-500">GCSE Maths success story</p>
                 </div>
               </div>
 
-              <div className="absolute -bottom-5 left-2 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-slate-100">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
-                  <Mail className="h-5 w-5" />
+              <div className="absolute -bottom-4 sm:-bottom-5 left-2 sm:left-2 flex items-center gap-2.5 sm:gap-3 rounded-2xl bg-white px-3 py-2 sm:px-4 sm:py-3 shadow-xl ring-1 ring-slate-100">
+                <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                  <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div className="leading-tight text-left">
-                  <p className="text-sm font-black text-[#001f3f]">Weekly Parent Updates</p>
-                  <p className="text-xs font-semibold text-slate-500">Attendance &amp; homework by email</p>
+                  <p className="text-xs sm:text-sm font-black text-[#001f3f]">Weekly Parent Updates</p>
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-500">Attendance &amp; homework by email</p>
                 </div>
               </div>
             </div>
@@ -1338,7 +1338,7 @@ export const LandingPage = () => {
               { icon: FlaskConical, label: 'Sciences', sub: 'Biology · Chemistry · Physics', color: 'from-emerald-500 to-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
               { icon: PenLine, label: 'English', sub: 'Language · Literature', color: 'from-rose-500 to-rose-700', bg: 'bg-rose-50', border: 'border-rose-200' },
               { icon: Code2, label: 'Coding (Software Dev)', sub: '£340/month · £35/hour', color: 'from-sky-500 to-sky-700', bg: 'bg-sky-50', border: 'border-sky-200' },
-              { icon: Globe2, label: 'IELTS / UKVI', sub: 'Academic · £1,000/month', color: 'from-teal-500 to-teal-700', bg: 'bg-teal-50', border: 'border-teal-200' },
+              { icon: Globe2, label: 'IELTS / UKVI', sub: 'Academic · £100/month', color: 'from-teal-500 to-teal-700', bg: 'bg-teal-50', border: 'border-teal-200' },
               { icon: Palette, label: 'Graphics Design', sub: '£200/month · £20/hour', color: 'from-fuchsia-500 to-fuchsia-700', bg: 'bg-fuchsia-50', border: 'border-fuchsia-200' },
               { icon: Compass, label: 'Homeschool', sub: 'Structured · Exam-Board Led', color: 'from-amber-500 to-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
               { icon: Globe, label: 'International', sub: 'UK · US · Canada · Australia', color: 'from-[#050167] to-[#001f3f]', bg: 'bg-[#f0faff]', border: 'border-[#050167]/20' },

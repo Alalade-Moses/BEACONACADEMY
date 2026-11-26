@@ -160,14 +160,14 @@ export const IeltsRegisterPage = () => {
         focus_modules: focusModules,
         bank_reference: formData.bank_reference,
         payment_proof_url: formData.payment_proof_url,
-        amount: 1000.00
+        amount: 100.00
       };
 
       const res = await api.post('/auth/register-ielts', payload);
 
       await showSuccess(
         'IELTS Registration Submitted!',
-        'Your IELTS account and £1,000/month tuition proof have been received. Once verified by our administration team, you can log in to attend live classes in your Virtual Classroom Dashboard.'
+        'Your IELTS account and £100/month tuition proof have been received. Once verified by our administration team, you can log in to attend live classes in your Virtual Classroom Dashboard.'
       );
       setSuccessData(res.data.data);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -194,7 +194,7 @@ export const IeltsRegisterPage = () => {
             Welcome to Beacon Bridge IELTS Mastery!
           </h1>
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
-            Your candidate account and payment receipt (Ref: <strong className="text-[#050167]">{successData.bank_reference}</strong>) for <strong className="text-[#050167]">£1,000.00 / month</strong> have been submitted for verification.
+            Your candidate account and payment receipt (Ref: <strong className="text-[#050167]">{successData.bank_reference}</strong>) for <strong className="text-[#050167]">£100.00 / month</strong> have been submitted for verification.
           </p>
 
           <div className="bg-[#f0faff] rounded-2xl p-5 border border-[#050167]/15 text-left space-y-2.5 text-xs sm:text-sm text-[#001f3f] mb-8">
@@ -234,8 +234,8 @@ export const IeltsRegisterPage = () => {
   return (
     <div className="min-h-screen bg-[#f0faff] pb-20">
       <SEO 
-        title="IELTS Academic & UKVI Registration (£1,000/month) | Beacon Bridge Academics"
-        description="Register for Beacon Bridge Academics specialist IELTS Academic & UKVI Exam Preparation (£1,000/month). Includes dedicated Student Dashboard and live tutor classrooms."
+        title="IELTS Academic & UKVI Registration (£100/month) | Beacon Bridge Academics"
+        description="Register for Beacon Bridge Academics specialist IELTS Academic & UKVI Exam Preparation (£100/month). Includes dedicated Student Dashboard and live tutor classrooms."
         canonicalPath="/ielts-registration"
       />
 
@@ -259,11 +259,11 @@ export const IeltsRegisterPage = () => {
           <div className="inline-flex flex-col sm:flex-row items-center gap-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-4 shadow-xl">
             <div className="text-left">
               <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-xs line-through text-slate-300 font-semibold">Was £1,250 / month</span>
-                <span className="px-2 py-0.5 rounded-full bg-[#40ffa7] text-[#050167] text-[10px] font-black uppercase">Save £250</span>
+                <span className="text-xs line-through text-slate-300 font-semibold">Was £150 / month</span>
+                <span className="px-2 py-0.5 rounded-full bg-[#40ffa7] text-[#050167] text-[10px] font-black uppercase">Save £50</span>
               </div>
               <div className="text-2xl sm:text-3xl font-black text-white">
-                £1,000 <span className="text-sm font-semibold text-[#40ffa7]">/ month</span>
+                £100 <span className="text-sm font-semibold text-[#40ffa7]">/ month</span>
               </div>
             </div>
             <div className="h-8 w-px bg-white/20 hidden sm:block" />
@@ -499,9 +499,9 @@ export const IeltsRegisterPage = () => {
               <div className="sm:text-right bg-white/10 rounded-xl px-5 py-3 border border-white/10 shrink-0">
                 <span className="text-[11px] uppercase tracking-wider text-slate-300 block font-bold">Monthly Tuition Due</span>
                 <div className="text-2xl font-black text-[#40ffa7]">
-                  £1,000.00 <span className="text-xs font-bold text-white">GBP / month</span>
+                  £100.00 <span className="text-xs font-bold text-white">GBP / month</span>
                 </div>
-                <span className="text-[10px] line-through text-slate-400">Standard £1,250.00/mo</span>
+                <span className="text-[10px] line-through text-slate-400">Standard £150.00/mo</span>
               </div>
             </div>
 

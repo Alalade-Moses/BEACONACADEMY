@@ -95,9 +95,33 @@ export const updateUser = async (req, res, next) => {
     if (phone !== undefined) updates.phone = phone;
     if (bio !== undefined) updates.bio = bio;
 
+    const existingBefore = await store.getProfileById(req.params.id);
     const updated = await store.updateProfile(req.params.id, updates);
     if (!updated) {
       return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // If admin activates a pending_verification account, also unlock their linked family member (parent/student)
+    if (status === 'active' && existingBefore?.status === 'pending_verification') {
+      try {
+        const links = await store.getParentStudentLinks();
+        for (const lnk of links) {
+          if (lnk.parent_id === req.params.id && lnk.student_id) {
+            const stu = await store.getProfileById(lnk.student_id);
+            if (stu && stu.status === 'pending_verification') {
+              await store.updateProfile(lnk.student_id, { status: 'active' });
+            }
+          }
+          if (lnk.student_id === req.params.id && lnk.parent_id) {
+            const par = await store.getProfileById(lnk.parent_id);
+            if (par && par.status === 'pending_verification') {
+              await store.updateProfile(lnk.parent_id, { status: 'active' });
+            }
+          }
+        }
+      } catch (linkErr) {
+        console.warn('[User activation linked-family notice]:', linkErr.message);
+      }
     }
 
     await store.logAudit({

@@ -170,8 +170,14 @@ export const BlogPage = () => {
       )}
 
       {/* Hero Header */}
-      <section className="bg-gradient-to-br from-[#001f3f] via-[#050167] to-[#001633] text-white py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(#40ffa7_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
+      <section className="bg-[#001f3f] text-white py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <img
+          src="/pages/blog-hero.jpg"
+          alt="Beacon Bridge Academics study journal, library books and revision notes"
+          className="absolute inset-0 w-full h-full object-cover object-center z-0"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/78 via-[#050167]/60 to-[#001f3f]/75 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/30 z-0" />
         <div className="max-w-6xl mx-auto relative z-10 text-center">
           
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-[#40ffa7]/30 text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-5">
@@ -280,14 +286,28 @@ export const BlogPage = () => {
             <p className="text-xs font-bold text-slate-500">Loading publications...</p>
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-sm max-w-xl mx-auto">
-            <div className="w-16 h-16 rounded-2xl bg-[#050167]/10 flex items-center justify-center mx-auto mb-4 text-[#050167]">
-              <BookOpen className="w-8 h-8" />
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm max-w-2xl mx-auto overflow-hidden">
+            <div className="relative h-56 sm:h-64 overflow-hidden">
+              <img
+                src="/pages/blog-hero.jpg"
+                alt="Beacon Bridge Academic Journal and Study Library"
+                className="w-full h-full object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/80 via-[#001f3f]/25 to-transparent" />
+              <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between text-white">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#40ffa7] text-[#001f3f] text-[11px] font-black uppercase tracking-wider">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  Academic Journal
+                </span>
+                <span className="text-xs font-semibold text-white/90">GCSE · A-Level · IELTS · Parent Guides</span>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-[#001f3f]">No Publications Yet</h3>
-            <p className="text-slate-600 text-sm mt-2 leading-relaxed">
-              Our academic faculty will be publishing curriculum revision blueprints, GCSE &amp; A-Level exam techniques, and upcoming seminar flyers here soon.
-            </p>
+            <div className="text-center p-8 sm:p-10">
+              <h3 className="text-xl font-bold text-[#001f3f]">No Publications Yet</h3>
+              <p className="text-slate-600 text-sm mt-2 leading-relaxed">
+                Our academic faculty will be publishing curriculum revision blueprints, GCSE &amp; A-Level exam techniques, and upcoming seminar flyers here soon.
+              </p>
+            </div>
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 max-w-lg mx-auto">
