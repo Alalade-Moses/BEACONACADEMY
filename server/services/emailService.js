@@ -494,11 +494,17 @@ export const sendPaymentVerifiedReceipt = async ({ payment, student, parent }) =
   const loginUrl = `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/login`;
   const invoiceNum = `INV-BBA-${new Date().getFullYear()}-${payment?.id ? payment.id.slice(-6).toUpperCase() : Math.floor(100000 + Math.random() * 900000)}`;
   const issueDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const isSelfRegistered = Boolean(
+    !parent ||
+    (student?.id && parent?.id === student.id) ||
+    (student?.email && parent?.email === student.email)
+  );
+  const recipientName = parent?.full_name || student?.full_name || 'Parent/Guardian';
 
   const html = buildEmailTemplate({
     headerTitle: 'Official Payment Invoice & Portal Credentials',
     contentHtml: `
-      <p>Dear <strong>${parent?.full_name || 'Parent/Guardian'}</strong>,</p>
+      <p>Dear <strong>${recipientName}</strong>,</p>
       <p>Thank you for your payment. We are pleased to confirm that your tuition payment of <strong>£${payment?.amount || '299.00'} GBP</strong> has been <span class="badge badge-green">Verified & Confirmed</span> by Beacon Bridge Academics administration.</p>
       
       <!-- Official Invoice Card -->
@@ -522,13 +528,13 @@ export const sendPaymentVerifiedReceipt = async ({ payment, student, parent }) =
             <td style="padding: 4px 0; text-align: right; font-weight: bold;">${payment?.course_display_name || payment?.course_name || 'Enrolled Academic Course'}</td>
           </tr>
           <tr>
-            <td style="padding: 4px 0;"><strong>Student Enrolled:</strong></td>
+            <td style="padding: 4px 0;"><strong>${isSelfRegistered ? 'Candidate Enrolled:' : 'Student Enrolled:'}</strong></td>
             <td style="padding: 4px 0; text-align: right;">${student?.full_name || 'Enrolled Student'}</td>
           </tr>
-          <tr>
+          ${!isSelfRegistered ? `<tr>
             <td style="padding: 4px 0;"><strong>Parent / Guardian:</strong></td>
             <td style="padding: 4px 0; text-align: right;">${parent?.full_name || 'Parent'}</td>
-          </tr>
+          </tr>` : ''}
           <tr>
             <td style="padding: 4px 0;"><strong>Payment Method:</strong></td>
             <td style="padding: 4px 0; text-align: right;">Barclays Bank Wire Transfer (Verified)</td>
@@ -540,35 +546,39 @@ export const sendPaymentVerifiedReceipt = async ({ payment, student, parent }) =
         </table>
       </div>
 
-      <!-- Credentials Box for Parent & Student -->
+      <!-- Credentials Box -->
       <div class="card" style="border-left: 4px solid #40ffa7; background: #f0faff; margin-top: 16px;">
         <h3 style="margin: 0 0 10px 0; color: #001f3f; font-size: 15px;">🔑 Official Portal Access & Login Details</h3>
         <p style="margin: 0 0 12px 0; font-size: 13px; color: #475569;">
-          Both parent and student accounts are fully active. Use the credentials below to sign in:
+          ${isSelfRegistered
+            ? 'Your student portal account is now fully active. Use the credentials below to sign in:'
+            : 'Both parent and student accounts are fully active. Use the credentials below to sign in:'}
         </p>
 
         <!-- Student Login -->
-        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; ${isSelfRegistered ? '' : 'margin-bottom: 10px;'}">
           <span style="display: block; font-size: 11px; font-weight: bold; color: #050167; text-transform: uppercase; letter-spacing: 0.5px;">Student Portal Credentials</span>
-          <p style="margin: 4px 0; font-size: 13px;"><strong>Login Email:</strong> <span style="font-family: monospace; font-size: 13px; color: #001f3f;">${student?.email || 'N/A'}</span></p>
+          <p style="margin: 4px 0; font-size: 13px;"><strong>Login Email:</strong> <span style="font-family: monospace; font-size: 13px; color: #001f3f;">${student?.email || parent?.email || 'N/A'}</span></p>
           <p style="margin: 4px 0; font-size: 13px;"><strong>Role:</strong> Student (Live Classroom, Whiteboard & Assignments)</p>
           <p style="margin: 4px 0; font-size: 13px;"><strong>Portal Link:</strong> <a href="${loginUrl}" style="color: #0284c7; font-weight: bold;">${loginUrl}</a></p>
         </div>
 
-        <!-- Parent Login -->
+        ${!isSelfRegistered ? `<!-- Parent Login -->
         <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px;">
           <span style="display: block; font-size: 11px; font-weight: bold; color: #050167; text-transform: uppercase; letter-spacing: 0.5px;">Parent / Guardian Portal Credentials</span>
           <p style="margin: 4px 0; font-size: 13px;"><strong>Login Email:</strong> <span style="font-family: monospace; font-size: 13px; color: #001f3f;">${parent?.email || 'N/A'}</span></p>
           <p style="margin: 4px 0; font-size: 13px;"><strong>Role:</strong> Parent / Guardian (Attendance, Timetable & Watched Classes)</p>
           <p style="margin: 4px 0; font-size: 13px;"><strong>Portal Link:</strong> <a href="${loginUrl}" style="color: #0284c7; font-weight: bold;">${loginUrl}</a></p>
-        </div>
+        </div>` : ''}
 
         <p style="margin: 12px 0 0 0; font-size: 12px; color: #64748b; line-height: 1.5;">
           <strong>Security Note:</strong> Please use the password chosen during your initial registration. If you ever need to reset your password, simply click <em>"Forgot password?"</em> on the sign-in page to receive a secure 1-click password reset link.
         </p>
       </div>
 
-      <p style="margin-top: 16px;">The student's full timetable, homework calendar, and live virtual classroom access are now fully active.</p>
+      <p style="margin-top: 16px;">${isSelfRegistered
+        ? 'Your dedicated IELTS Student Dashboard, class schedule, and live virtual classroom access are now fully active.'
+        : "The student's full timetable, homework calendar, and live virtual classroom access are now fully active."}</p>
     `,
     callToAction: {
       label: 'Sign In to Portal Now',
@@ -577,7 +587,7 @@ export const sendPaymentVerifiedReceipt = async ({ payment, student, parent }) =
   });
 
   return await sendEmail({
-    to: parent?.email,
+    to: parent?.email || student?.email,
     subject: `Official Invoice [${invoiceNum}] & Portal Login Credentials — Beacon Bridge Academics`,
     html,
     senderType: 'admin'
