@@ -94,6 +94,7 @@ export const LandingPage = () => {
 
   // Hero Background Carousel State
   const [heroSlide, setHeroSlide] = useState(0);
+  const [heroPaused, setHeroPaused] = useState(false);
 
   // Other Interactive Carousels
   const [signsSlide, setSignsSlide] = useState(0);
@@ -234,37 +235,54 @@ export const LandingPage = () => {
     return () => clearInterval(timer);
   }, [isTestimonialHovered, testimonials.length]);
 
-  // Hero Carousel Slides with high-resolution imagery and contextual highlights
+  // Hero carousel: professional photography showcasing what the platform does
   const heroSlides = [
     {
-      image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=2000&q=80",
-      tag: "Curriculum-Trained UK Teachers",
-      caption: "Targeting the exact exam board specifications your child sits."
+      image: '/hero/slide-live-lessons.jpg',
+      alt: 'UK tutor teaching a live 1-to-1 online lesson with a digital maths whiteboard',
+      label: 'Live Lessons',
+      tag: 'Live 1-to-1 Online Tutoring',
+      headline: 'Learn Live with',
+      highlight: 'Expert UK Tutors',
+      caption: 'Curriculum-trained teachers, a purpose-built virtual classroom and lessons shaped around your child.'
     },
     {
-      image: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=2000&q=80",
-      tag: "Purpose-Built Virtual Classroom",
-      caption: "Live synchronized digital whiteboard, slides, and past-paper mark schemes."
+      image: '/hero/slide-parent-progress.jpg',
+      alt: 'Parent and daughter reviewing a progress dashboard together on a tablet',
+      label: 'Parent Visibility',
+      tag: 'Complete Parent Visibility',
+      headline: 'See Every Step of',
+      highlight: 'Their Progress',
+      caption: 'Attendance, homework and progress updates, all from your own parent account.'
     },
     {
-      image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=2000&q=80",
-      tag: "Rebuilding Academic Confidence",
-      caption: "Finding where the gaps started, closing them kindly, and getting exam-ready."
+      image: '/hero/slide-exam-results.jpg',
+      alt: 'Students celebrating exam results outside a UK school',
+      label: 'Exam Success',
+      tag: 'GCSE • A-Level • KS2 SATs',
+      headline: 'From Worried to',
+      highlight: 'Top Grades',
+      caption: 'Targeted preparation for the exact exam board your child sits.'
     },
     {
-      image: "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=2000&q=80",
-      tag: "Complete Parent Visibility",
-      caption: "Track attendance, progress, and homework deadlines from your own parent portal."
+      image: '/hero/slide-beyond-school.jpg',
+      alt: 'Student on a live online lesson studying IELTS and coding',
+      label: 'IELTS & Skills',
+      tag: 'IELTS • Coding • Graphics Design',
+      headline: 'Go Further with',
+      highlight: 'IELTS & Digital Skills',
+      caption: 'Academic and UKVI IELTS preparation, plus coding and design courses.'
     }
   ];
 
-  // Auto-advance hero carousel every 6 seconds
+  // Auto-advance hero carousel every 6 seconds (pauses on hover)
   useEffect(() => {
+    if (heroPaused) return;
     const timer = setInterval(() => {
       setHeroSlide(prev => (prev + 1) % heroSlides.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, [heroSlides.length]);
+  }, [heroPaused, heroSlide, heroSlides.length]);
 
   const location = useLocation();
 
@@ -445,234 +463,215 @@ export const LandingPage = () => {
       />
 
       {/* ========================================================= */}
-      {/* SECTION 1: HERO WITH DYNAMIC BACKGROUND CAROUSEL          */}
+      {/* SECTION 1: CINEMATIC IMAGE-CAROUSEL HERO (minimal text)   */}
       {/* ========================================================= */}
-      <section id="top" className="relative min-h-[90vh] flex items-center overflow-hidden bg-[#001f3f] text-white scroll-mt-24 sm:scroll-mt-28">
-        
-        {/* Background Image Carousel Slides */}
-        <div className="absolute inset-0 z-0">
+      <style>{`
+        @keyframes heroKenBurns { from { transform: scale(1.02); } to { transform: scale(1.12); } }
+        @keyframes heroTextIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes heroProgress { from { width: 0%; } to { width: 100%; } }
+      `}</style>
+      <section
+        id="top"
+        className="relative isolate flex min-h-[calc(100vh-5rem)] items-center overflow-hidden bg-[#001f3f] text-white scroll-mt-24 sm:scroll-mt-28"
+        onMouseEnter={() => setHeroPaused(true)}
+        onMouseLeave={() => setHeroPaused(false)}
+      >
+        {/* Background image slides */}
+        <div className="absolute inset-0 -z-10">
           {heroSlides.map((slide, index) => (
             <div
-              key={index}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                heroSlide === index ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
-              } transition-transform duration-[8000ms]`}
+              key={slide.image}
+              aria-hidden={heroSlide !== index}
+              className={`absolute inset-0 transition-opacity duration-[1400ms] ease-in-out ${heroSlide === index ? 'opacity-100' : 'opacity-0'}`}
             >
               <img
                 src={slide.image}
-                alt={slide.tag}
-                className="w-full h-full object-cover object-center"
+                alt={slide.alt}
+                className="h-full w-full object-cover object-[70%_center]"
+                style={heroSlide === index ? { animation: 'heroKenBurns 9s ease-out forwards' } : undefined}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchpriority={index === 0 ? 'high' : 'auto'}
               />
             </div>
           ))}
-
-          {/* Clean Directional Vignette Overlay: Leaves background images clearly visible, sharp & vibrant */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/90 via-[#001f3f]/55 to-[#001f3f]/20 z-10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/80 via-transparent to-[#001f3f]/25 z-10" />
+          {/* Readability scrims */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/95 via-[#001f3f]/65 to-[#001f3f]/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/80 via-transparent to-[#001f3f]/30" />
         </div>
 
-        {/* Floating Slide Context Badge */}
-        <div className="absolute top-24 left-4 sm:left-8 z-20 hidden md:flex items-center space-x-2.5 bg-[#001f3f]/80 backdrop-blur-md px-4 py-2 rounded-full border border-[#40ffa7]/25 text-xs text-[#f0faff] shadow-xl">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#40ffa7] animate-pulse" />
-          <span className="font-bold text-white">{heroSlides[heroSlide].tag}:</span>
-          <span className="text-[#f0faff]/80 font-medium">{heroSlides[heroSlide].caption}</span>
-        </div>
+        {/* Hero foreground content (original landing-page copy) */}
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-7 pb-24 sm:pt-9 sm:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-5 text-left">
 
-        {/* Sleek Auto-Cycle Indicators (No Next/Prev Buttons) */}
-        <div className="absolute bottom-6 right-6 sm:bottom-8 sm:right-10 z-30 flex items-center space-x-1.5 bg-[#001f3f]/75 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 shadow-xl">
-          {heroSlides.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => setHeroSlide(idx)}
-              className={`h-2 rounded-full transition-all cursor-pointer ${
-                heroSlide === idx ? 'w-6 bg-[#40ffa7]' : 'w-2 bg-white/40 hover:bg-white/70'
-              }`}
-              title={`Slide ${idx + 1}`}
-              aria-label={`Go to slide ${idx + 1}`}
-            />
-          ))}
-        </div>
-
-        {/* Hero Foreground Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative z-20 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
-            {/* Left Column: Headline, Copy, Actions & Trust Chips */}
-            <div className="lg:col-span-7 space-y-6 text-left bg-[#001f3f]/65 lg:backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-white/15 shadow-2xl">
-              
-              {/* Badge */}
-              <div className="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-[#40ffa7]/20 border border-[#40ffa7]/40 text-[#40ffa7] text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#40ffa7] animate-pulse" />
-                <span>Now welcoming UK families</span>
-              </div>
-
-              {/* Main Headline */}
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12]">
-                Online Tutoring for UK Students,{' '}
-                <span className="bg-gradient-to-r from-white via-[#f0faff] to-[#40ffa7] bg-clip-text text-transparent">
-                  From Curriculum-Trained Teachers
-                </span>
-              </h1>
-
-              {/* Subheading */}
-              <p className="text-base sm:text-lg text-slate-200 leading-relaxed max-w-2xl font-normal">
-                Is your child falling behind, losing confidence, or heading into their GCSEs feeling unprepared? 
-                <strong className="text-[#40ffa7] font-bold"> Beacon Bridge Academics</strong> gives students live online lessons with teachers who know their exact curriculum and exam board, while you follow their progress from your own parent account.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <Link
-                  to="/register"
-                  className="px-8 py-4 rounded-2xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-base shadow-xl shadow-[#40ffa7]/30 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
-                >
-                  <span>Register with Us</span>
-                  <ArrowRight className="w-5 h-5 text-[#001f3f]" />
-                </Link>
-
-                <Link
-                  to="/book-consultation"
-                  className="px-7 py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-[#f0faff] font-bold text-base border border-white/25 backdrop-blur-md transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <CalendarCheck className="w-5 h-5 text-[#40ffa7]" />
-                  <span>Book a Free Consultation</span>
-                </Link>
-
-                <button
-                  type="button"
-                  onClick={() => scrollTo('how-it-works')}
-                  className="px-5 py-4 rounded-2xl text-slate-300 hover:text-white font-medium text-sm transition-all flex items-center justify-center cursor-pointer"
-                >
-                  How It Works &darr;
-                </button>
-              </div>
-
-              {/* 4 Core Value Props Grid */}
-              <div className="pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
-                <div className="flex items-center space-x-2.5 text-xs sm:text-sm text-slate-200 bg-[#050167]/50 border border-[#40ffa7]/20 px-3.5 py-2.5 rounded-xl backdrop-blur-sm">
-                  <CheckCircle2 className="w-4 h-4 text-[#40ffa7] shrink-0" />
-                  <span className="font-semibold">Teachers trained in your child's curriculum</span>
-                </div>
-                <div className="flex items-center space-x-2.5 text-xs sm:text-sm text-slate-200 bg-[#050167]/50 border border-[#40ffa7]/20 px-3.5 py-2.5 rounded-xl backdrop-blur-sm">
-                  <CheckCircle2 className="w-4 h-4 text-[#40ffa7] shrink-0" />
-                  <span className="font-semibold">Live online classroom</span>
-                </div>
-                <div className="flex items-center space-x-2.5 text-xs sm:text-sm text-slate-200 bg-[#050167]/50 border border-[#40ffa7]/20 px-3.5 py-2.5 rounded-xl backdrop-blur-sm">
-                  <CheckCircle2 className="w-4 h-4 text-[#40ffa7] shrink-0" />
-                  <span className="font-semibold">Parent progress dashboard</span>
-                </div>
-                <div className="flex items-center space-x-2.5 text-xs sm:text-sm text-slate-200 bg-[#050167]/50 border border-[#40ffa7]/20 px-3.5 py-2.5 rounded-xl backdrop-blur-sm">
-                  <CheckCircle2 className="w-4 h-4 text-[#40ffa7] shrink-0" />
-                  <span className="font-semibold">Safeguarding built in</span>
-                </div>
-              </div>
-
-              {/* Social Proof Strip */}
-              <div className="pt-2 flex flex-wrap items-center gap-6 text-xs text-slate-300">
-                <div className="flex items-center space-x-1.5 text-amber-300 font-bold">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                    ))}
-                  </div>
-                  <span className="text-white ml-1">4.9 / 5</span>
-                  <span className="text-slate-300 font-normal">Family Satisfaction</span>
-                </div>
-                <span className="hidden sm:inline text-white/30">&bull;</span>
-                <span className="text-slate-200 font-medium">100% DBS-Checked UK Teachers</span>
-                <span className="hidden sm:inline text-white/30">&bull;</span>
-                <span className="text-[#40ffa7] font-semibold">AQA • Edexcel • OCR • WJEC</span>
-              </div>
-
+            {/* Badge */}
+            <div className="inline-flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-[#40ffa7]/20 border border-[#40ffa7]/40 text-[#40ffa7] text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-lg">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#40ffa7] animate-pulse" />
+              <span>Now welcoming UK families</span>
             </div>
 
-            {/* Right Column: High-End Live Interactive Classroom Card & Parent Teaser */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative rounded-3xl bg-[#001f3f]/80 border border-[#40ffa7]/25 p-6 shadow-2xl backdrop-blur-xl space-y-4">
-                
-                {/* Header of Preview Card */}
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-rose-500" />
-                    <div className="w-3 h-3 rounded-full bg-amber-500" />
-                    <div className="w-3 h-3 rounded-full bg-[#40ffa7]" />
-                    <span className="text-xs font-mono text-slate-300 ml-1">beacon-bridge://live-room</span>
-                  </div>
-                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] border border-[#40ffa7]/40">
-                    Live Session Active
-                  </span>
+            {/* Main Headline */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12]">
+              Online Tutoring for UK Students,{' '}
+              <span className="bg-gradient-to-r from-white via-[#f0faff] to-[#40ffa7] bg-clip-text text-transparent">
+                From Curriculum-Trained Teachers
+              </span>
+            </h1>
+
+            {/* Subheading */}
+            <p className="text-base sm:text-lg text-slate-200 leading-relaxed max-w-2xl font-normal">
+              Is your child falling behind, losing confidence, or heading into their GCSEs feeling unprepared?
+              <strong className="text-[#40ffa7] font-bold"> Beacon Bridge Academics</strong> gives students live online lessons with teachers who know their exact curriculum and exam board, while you follow their progress from your own parent account.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <Link
+                to="/register"
+                className="px-8 py-4 rounded-2xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-black text-base shadow-xl shadow-[#40ffa7]/30 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                <span>Register with Us</span>
+                <ArrowRight className="w-5 h-5 text-[#001f3f]" />
+              </Link>
+
+              <Link
+                to="/book-consultation"
+                className="px-7 py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-[#f0faff] font-bold text-base border border-white/25 backdrop-blur-md transition-all hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <CalendarCheck className="w-5 h-5 text-[#40ffa7]" />
+                <span>Book a Free Consultation</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => scrollTo('how-it-works')}
+                className="px-5 py-4 rounded-2xl text-slate-300 hover:text-white font-medium text-sm transition-all flex items-center justify-center cursor-pointer"
+              >
+                How It Works &darr;
+              </button>
+            </div>
+
+            {/* 4 Core Value Props Grid */}
+            <div className="pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+              {[
+                "Teachers trained in your child's curriculum",
+                'Live online classroom',
+                'Parent progress dashboard',
+                'Safeguarding built in'
+              ].map((item) => (
+                <div key={item} className="flex items-center space-x-2.5 text-xs sm:text-sm text-slate-200 bg-[#050167]/50 border border-[#40ffa7]/20 px-3.5 py-2.5 rounded-xl backdrop-blur-sm">
+                  <CheckCircle2 className="w-4 h-4 text-[#40ffa7] shrink-0" />
+                  <span className="font-semibold">{item}</span>
                 </div>
+              ))}
+            </div>
 
-                {/* Session Participant Snippet */}
-                <div className="p-3 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Teacher</span>
-                    <span className="font-bold text-white">Dr. Sarah Jenkins</span>
-                    <span className="text-slate-300 text-[10px] block">AQA & Edexcel Specification Lead</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Subject</span>
-                    <span className="font-bold text-[#40ffa7]">GCSE Mathematics</span>
-                    <span className="text-slate-300 text-[10px] block">Higher Tier Past Paper Prep</span>
-                  </div>
+            {/* Social Proof Strip */}
+            <div className="pt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-300">
+              <div className="flex items-center space-x-1.5 text-amber-300 font-bold">
+                <div className="flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                  ))}
                 </div>
+                <span className="text-white ml-1">4.9 / 5</span>
+                <span className="text-slate-300 font-normal">Family Satisfaction</span>
+              </div>
+              <span className="hidden sm:inline text-white/30">&bull;</span>
+              <span className="text-slate-200 font-medium">100% DBS-Checked UK Teachers</span>
+              <span className="hidden sm:inline text-white/30">&bull;</span>
+              <span className="text-[#40ffa7] font-semibold">AQA • Edexcel • OCR • WJEC</span>
+            </div>
 
-                {/* Live Whiteboard Canvas Mockup */}
-                <div className="relative h-44 rounded-2xl bg-[#050167]/70 border border-[#40ffa7]/20 p-4 flex flex-col justify-between overflow-hidden">
-                  <div className="flex items-center justify-between text-[11px] text-slate-300">
-                    <span className="flex items-center gap-1.5 text-[#40ffa7] font-semibold">
-                      <PenTool className="w-3.5 h-3.5 text-[#40ffa7]" />
-                      Digital Whiteboard Active
-                    </span>
-                    <span>Synchronized Pen (0.0ms delay)</span>
-                  </div>
+          </div>
 
-                  {/* Visual Drawn Equation Mockup */}
-                  <div className="my-auto font-mono text-sm sm:text-base text-center space-y-1">
-                    <div className="text-[#40ffa7] font-bold">ax² + bx + c = 0</div>
-                    <div className="text-amber-300 text-xs font-semibold">
-                      x = (-b ± √(b² - 4ac)) / (2a)
-                    </div>
-                    <div className="text-[#40ffa7] text-[11px] italic">
-                      ✓ Tutor Annotation: "Remember the ± sign gives both roots for full marks!"
-                    </div>
-                  </div>
+          {/* Side photo with floating info cards (stays visible while the background carousel rotates) */}
+          <div className="hidden lg:block lg:col-span-5">
+            <div className="relative mx-auto max-w-sm xl:max-w-md">
+              <div className="absolute -inset-3 translate-x-4 translate-y-4 rounded-[2.25rem] bg-gradient-to-br from-[#40ffa7] to-[#050167] opacity-90" />
+              <div className="relative overflow-hidden rounded-[2.25rem] border-4 border-white shadow-2xl shadow-black/40 bg-white">
+                <img
+                  src="/hero/side-student.jpg"
+                  alt="Smiling UK student having a live 1-to-1 online lesson with a tutor on a laptop"
+                  className="h-[24rem] xl:h-[27rem] w-full object-cover object-[60%_30%]"
+                  loading="eager"
+                />
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#001f3f]/40 to-transparent" />
+              </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[10px] text-slate-400">
-                    <span>1080p WebRTC High-Fidelity Audio</span>
-                    <span>Slide 4 of 12</span>
-                  </div>
+              <div className="absolute -left-10 top-10 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-slate-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#050167] text-[#40ffa7]">
+                  <Video className="h-5 w-5" />
                 </div>
-
-                {/* Real-Time Parent Notification Teaser Card */}
-                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-400/30 text-amber-200 text-xs flex items-start gap-3">
-                  <Mail className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-white block">Parent Visibility in Action:</span>
-                    <p className="text-[11px] text-amber-200/90 mt-0.5">
-                      "Homework assigned for Alex: Due Thursday 18:00. Automatic email notification dispatched to parent account."
-                    </p>
-                  </div>
+                <div className="leading-tight text-left">
+                  <p className="text-sm font-black text-[#001f3f]">Live 1-to-1 Lessons</p>
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Interactive classroom
+                  </p>
                 </div>
+              </div>
 
-                {/* Direct Link to Classroom */}
-                <div className="pt-1">
-                  <Link
-                    to="/classroom/ROOM-GCSE-MATH-LIVE"
-                    className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition-all flex items-center justify-center space-x-2"
-                  >
-                    <span>Experience Live Virtual Classroom</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-sky-400" />
-                  </Link>
+              <div className="absolute -right-6 top-1/2 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-slate-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                  <GraduationCap className="h-5 w-5" />
                 </div>
+                <div className="leading-tight text-left">
+                  <p className="text-sm font-black text-[#001f3f]">Grade 4 → Grade 9</p>
+                  <p className="text-xs font-semibold text-slate-500">GCSE Maths success story</p>
+                </div>
+              </div>
 
+              <div className="absolute -bottom-5 left-2 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-xl ring-1 ring-slate-100">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div className="leading-tight text-left">
+                  <p className="text-sm font-black text-[#001f3f]">Weekly Parent Updates</p>
+                  <p className="text-xs font-semibold text-slate-500">Attendance &amp; homework by email</p>
+                </div>
               </div>
             </div>
+          </div>
 
           </div>
         </div>
 
+        {/* Bottom bar: slide controls */}
+        <div className="absolute inset-x-0 bottom-0 z-10">
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 pb-5 sm:px-6 lg:px-8">
+            {/* Slide selectors with progress */}
+            <div className="flex items-end justify-between gap-6 pr-20 sm:pr-24 lg:pr-40">
+            <div className="flex flex-1 items-center gap-3">
+              {heroSlides.map((slide, idx) => (
+                <button
+                  key={slide.tag}
+                  type="button"
+                  onClick={() => setHeroSlide(idx)}
+                  aria-label={`Show slide ${idx + 1}: ${slide.tag}`}
+                  className="group flex-1 max-w-[9rem] text-left cursor-pointer"
+                >
+                  <span className="relative block h-1 overflow-hidden rounded-full bg-white/25">
+                    {heroSlide === idx && (
+                      <span
+                        key={`p-${heroSlide}-${heroPaused}`}
+                        className="absolute inset-y-0 left-0 rounded-full bg-[#40ffa7]"
+                        style={{ animation: heroPaused ? 'none' : 'heroProgress 6s linear forwards', width: heroPaused ? '100%' : undefined }}
+                      />
+                    )}
+                    {heroSlide !== idx && idx < heroSlide && <span className="absolute inset-0 rounded-full bg-white/60" />}
+                  </span>
+                  <span className={`mt-2 hidden text-[11px] font-semibold uppercase tracking-wider sm:block ${heroSlide === idx ? 'text-white' : 'text-white/50 group-hover:text-white/80'}`}>
+                    {slide.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="hidden lg:block max-w-sm text-right text-xs text-white/80">
+              <span className="font-bold text-[#40ffa7]">{heroSlides[heroSlide].tag}:</span> {heroSlides[heroSlide].caption}
+            </p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ========================================================= */}
