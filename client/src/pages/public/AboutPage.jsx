@@ -157,11 +157,11 @@ export const AboutPage = () => {
       {/* CORE PHILOSOPHY & LEADERSHIP                              */}
       {/* ========================================================= */}
       <section className="py-20 sm:py-28 bg-white border-b border-[#050167]/10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
             
             {/* Left Column: Narrative & Values */}
-            <div className="lg:col-span-7 space-y-6">
+            <div className="lg:col-span-6 space-y-6">
               <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167]/5 text-[#050167] text-xs font-bold uppercase tracking-wider">
                 <GraduationCap className="w-3.5 h-3.5 text-[#050167]" />
                 <span>Educational Leadership</span>
@@ -208,14 +208,14 @@ export const AboutPage = () => {
               </div>
             </div>
 
-            {/* Right Column: Animated 6-Classroom Showcase Card */}
-            <div className="lg:col-span-5 relative">
+            {/* Right Column: Large Animated 6-Classroom Showcase Card */}
+            <div className="lg:col-span-6 relative">
               <div
-                className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/30 bg-gradient-to-br from-[#050167] to-[#001f3f] p-3"
+                className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/30 bg-gradient-to-br from-[#050167] to-[#001f3f] p-3.5"
                 onMouseEnter={() => setClassroomPaused(true)}
                 onMouseLeave={() => setClassroomPaused(false)}
               >
-                <div className="relative rounded-2xl overflow-hidden aspect-4/3 bg-[#001f3f]">
+                <div className="relative w-full h-[22rem] sm:h-[26rem] lg:h-[28rem] rounded-2xl overflow-hidden bg-[#001f3f]">
                   {animatedClassrooms.map((cls, idx) => (
                     <div
                       key={cls.src}
@@ -232,45 +232,45 @@ export const AboutPage = () => {
                       />
                     </div>
                   ))}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/25 to-transparent z-20 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/90 via-[#001f3f]/20 to-transparent z-20 pointer-events-none" />
                   
                   {/* Top Floating Badges */}
-                  <div className="absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2">
-                    <div className="bg-[#050167]/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#40ffa7]/40 flex items-center gap-2">
+                  <div className="absolute top-3.5 left-3.5 right-3.5 z-30 flex items-center justify-between gap-2">
+                    <div className="bg-[#050167]/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#40ffa7]/40 flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#40ffa7] animate-pulse" />
-                      <span className="text-[11px] font-bold text-white">{animatedClassrooms[classroomSlide].badge}</span>
+                      <span className="text-xs font-bold text-white">{animatedClassrooms[classroomSlide].badge}</span>
                     </div>
-                    <span className="bg-[#001f3f]/85 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-[10px] font-black text-[#40ffa7]">
+                    <span className="bg-[#001f3f]/85 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-[11px] font-black text-[#40ffa7]">
                       {classroomSlide + 1} / {animatedClassrooms.length}
                     </span>
                   </div>
 
-                  <div className="absolute bottom-3 left-3 right-3 z-30 bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-slate-200 shadow-lg text-xs">
+                  <div className="absolute bottom-3.5 left-3.5 right-3.5 z-30 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200 shadow-lg text-xs">
                     <div className="flex items-center justify-between font-bold text-[#050167]">
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 text-sm">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                         {animatedClassrooms[classroomSlide].title}
                       </span>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full shrink-0">Active</span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full shrink-0 font-bold">Active</span>
                     </div>
-                    <p className="text-[11px] text-slate-600 mt-1">
+                    <p className="text-xs text-slate-600 mt-1">
                       {animatedClassrooms[classroomSlide].caption}
                     </p>
                   </div>
                 </div>
 
                 {/* 6 Interactive Classroom Thumbnails */}
-                <div className="grid grid-cols-6 gap-1.5 px-1 pt-2.5">
+                <div className="grid grid-cols-6 gap-2 px-1 pt-3">
                   {animatedClassrooms.map((cls, idx) => (
                     <button
                       key={cls.src}
                       type="button"
                       onClick={() => setClassroomSlide(idx)}
                       aria-label={`View classroom ${idx + 1}: ${cls.badge}`}
-                      className={`relative rounded-lg overflow-hidden aspect-4/3 transition-all cursor-pointer border-2 ${
+                      className={`relative rounded-lg overflow-hidden h-12 sm:h-14 w-full transition-all cursor-pointer border-2 ${
                         classroomSlide === idx
                           ? 'border-[#40ffa7] scale-105 shadow-md shadow-[#40ffa7]/30'
-                          : 'border-white/15 opacity-60 hover:opacity-100'
+                          : 'border-white/15 opacity-65 hover:opacity-100'
                       }`}
                     >
                       <img src={cls.src} alt={cls.badge} className="w-full h-full object-cover" loading="lazy" />
@@ -279,18 +279,18 @@ export const AboutPage = () => {
                 </div>
 
                 {/* Bottom Trust Stat Bar */}
-                <div className="grid grid-cols-3 gap-2 text-center p-3 text-white text-xs">
+                <div className="grid grid-cols-3 gap-2 text-center p-3.5 text-white text-xs">
                   <div>
-                    <div className="font-black text-[#40ffa7] text-base">4.9/5</div>
-                    <div className="text-[10px] text-white/70">Parent Rating</div>
+                    <div className="font-black text-[#40ffa7] text-lg">4.9/5.0</div>
+                    <div className="text-[11px] text-white/75">Parent Rating</div>
                   </div>
                   <div className="border-x border-white/10">
-                    <div className="font-black text-sky-300 text-base">100%</div>
-                    <div className="text-[10px] text-white/70">DBS Checked</div>
+                    <div className="font-black text-sky-300 text-lg">100%</div>
+                    <div className="text-[11px] text-white/75">DBS Checked</div>
                   </div>
                   <div>
-                    <div className="font-black text-amber-300 text-base">1-on-1</div>
-                    <div className="text-[10px] text-white/70">Tailored Lessons</div>
+                    <div className="font-black text-amber-300 text-lg">1-on-1</div>
+                    <div className="text-[11px] text-white/75">Tailored Lessons</div>
                   </div>
                 </div>
               </div>

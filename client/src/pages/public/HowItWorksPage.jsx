@@ -157,7 +157,7 @@ export const HowItWorksPage = () => {
             </div>
             {/* Right: Hero Image */}
             <div className="relative">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/30 aspect-4/3">
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/30 aspect-[4/3]">
                 <img
                   src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=900&q=80"
                   alt="Students learning in a Beacon Bridge online session"

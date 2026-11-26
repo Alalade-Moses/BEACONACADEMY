@@ -925,7 +925,7 @@ export const LandingPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               {/* Left Column: Authentic Student Study Image */}
               <div className="lg:col-span-5 relative">
-                <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/40 aspect-4/3 relative group">
+                <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-[#40ffa7]/40 aspect-[4/3] relative group">
                   <img
                     src={signs[signsSlide].image}
                     alt={signs[signsSlide].title}
