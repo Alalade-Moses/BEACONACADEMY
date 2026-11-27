@@ -1,12 +1,27 @@
 import express from 'express';
-import { getAllUsers, getUserById, createUser, updateUser, deleteUser, getPlatformStats } from '../controllers/userController.js';
+import {
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  getPlatformStats,
+  getTutorAssignments,
+  assignTutorToStudent,
+  unassignTutorFromStudent
+} from '../controllers/userController.js';
 import { authenticate, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.use(authenticate);
 
-// Superadmin only
+// Tutor-student assignment endpoints (registered before /:id to avoid route collision)
+router.get('/tutor-assignments', getTutorAssignments);
+router.post('/tutor-assignments', requireRole(['superadmin']), assignTutorToStudent);
+router.delete('/tutor-assignments/:id', requireRole(['superadmin']), unassignTutorFromStudent);
+
+// Superadmin stats & user management
 router.get('/stats', requireRole(['superadmin']), getPlatformStats);
 router.get('/', requireRole(['superadmin', 'tutor']), getAllUsers);
 router.get('/:id', getUserById);

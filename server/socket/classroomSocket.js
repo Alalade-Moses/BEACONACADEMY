@@ -40,6 +40,11 @@ export const initClassroomSocket = (io) => {
     let currentUser = socket.authenticatedUser || null;
     let joinTime = null;
 
+    // Join personal user channel so live-class & tutor-assignment alerts arrive immediately
+    if (currentUser?.id) {
+      socket.join(`user:${currentUser.id}`);
+    }
+
     const requireClassroomAuth = () => {
       if (!currentUser || !currentUser.id) {
         socket.emit('classroom_error', { message: 'Authentication required to participate in live classrooms.' });
@@ -53,6 +58,30 @@ export const initClassroomSocket = (io) => {
       if (!requireClassroomAuth()) return;
       const normRoomId = cleanRoomId(roomId);
       if (!normRoomId) return;
+
+      try {
+        const classRecord = await store.getClassById(normRoomId);
+        if (classRecord) {
+          // Strict classroom isolation: students may only join sessions hosted by their assigned tutor
+          if (currentUser.role === 'student') {
+            const assignedTutorIds = await store.getAssignedTutorIdsForStudent(currentUser.id, classRecord.course_id);
+            if (!assignedTutorIds.includes(classRecord.tutor_id)) {
+              socket.emit('classroom_error', {
+                message: 'Access denied: You can only join live classes hosted by your assigned tutor.'
+              });
+              return;
+            }
+          }
+          if (currentUser.role === 'tutor' && classRecord.tutor_id !== currentUser.id) {
+            socket.emit('classroom_error', {
+              message: 'Access denied: This classroom belongs to another tutor.'
+            });
+            return;
+          }
+        }
+      } catch (authErr) {
+        console.warn('[Socket Room Auth Notice]:', authErr.message);
+      }
 
       currentRoomId = normRoomId;
       joinTime = new Date();
@@ -301,9 +330,9 @@ export const initClassroomSocket = (io) => {
       });
     });
 
-    // Instructor-only class lifecycle controls
+    // Tutor-only class launch control (Superadmin monitors, never launches as instructor)
     socket.on('launch_class', ({ roomId, durationMinutes } = {}) => {
-      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
+      if (!requireClassroomAuth() || currentUser.role !== 'tutor') return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
       const now = Date.now();

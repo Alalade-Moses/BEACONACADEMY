@@ -24,7 +24,7 @@ router.post('/', authenticate, requireRole(['superadmin', 'tutor']), createCours
 router.put('/:id', authenticate, requireRole(['superadmin', 'tutor']), updateCourse);
 router.delete('/:id', authenticate, requireRole(['superadmin', 'tutor']), deleteCourse);
 
-// Enrollment routes
-router.post('/:id/enroll', authenticate, requireRole(['student']), enrollInCourse);
+// Admin-managed enrollment route (students enroll via verified registration/payment)
+router.post('/:id/enroll', authenticate, requireRole(['superadmin']), enrollInCourse);
 
 export default router;

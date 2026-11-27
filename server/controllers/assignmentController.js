@@ -5,11 +5,29 @@ import { isSafeUrl, clampText, isUuid } from '../utils/validators.js';
 export const getAssignments = async (req, res, next) => {
   try {
     const { course_id } = req.query;
-    const assignments = await store.getAssignments(course_id);
+    let assignments = await store.getAssignments(course_id);
+
+    if (req.user && req.user.role === 'tutor') {
+      assignments = assignments.filter((a) => a.tutor_id === req.user.id);
+      return res.status(200).json({ success: true, assignments });
+    }
 
     if (req.user && req.user.role === 'student') {
-      const submissions = await store.getSubmissions({ student_id: req.user.id });
-      const enriched = assignments.map((a) => {
+      const [allEnrollments, assignedTutors, submissions] = await Promise.all([
+        store.getEnrollments(),
+        store.getAssignedTutorIdsForStudent(req.user.id),
+        store.getSubmissions({ student_id: req.user.id })
+      ]);
+      const studentCourseIds = new Set(
+        allEnrollments.filter((e) => e.student_id === req.user.id).map((e) => e.course_id)
+      );
+      const assignedTutorSet = new Set(assignedTutors);
+
+      const scoped = assignments.filter(
+        (a) => studentCourseIds.has(a.course_id) && assignedTutorSet.has(a.tutor_id)
+      );
+
+      const enriched = scoped.map((a) => {
         const mySub = submissions.find((s) => s.assignment_id === a.id);
         return {
           ...a,
@@ -23,17 +41,28 @@ export const getAssignments = async (req, res, next) => {
     }
 
     if (req.user && req.user.role === 'parent') {
-      const links = await store.getParentStudentLinks();
-      const myStudentLinks = links.filter((l) => l.parent_id === req.user.id);
+      const [links, allEnrollments] = await Promise.all([
+        store.getParentStudentLinks(),
+        store.getEnrollments()
+      ]);
+      const myStudentLinks = links.filter((l) => l.parent_id === req.user.id && l.status === 'active');
       const studentIds = myStudentLinks.map((l) => l.student_id);
 
       const allSubs = [];
+      const allowed = [];
       for (const sId of studentIds) {
         const subs = await store.getSubmissions({ student_id: sId });
         allSubs.push(...subs);
+        const cIds = new Set(allEnrollments.filter((e) => e.student_id === sId).map((e) => e.course_id));
+        const tIds = new Set(await store.getAssignedTutorIdsForStudent(sId));
+        allowed.push({ cIds, tIds });
       }
 
-      const enriched = assignments.map((a) => ({
+      const scoped = assignments.filter((a) =>
+        allowed.some(({ cIds, tIds }) => cIds.has(a.course_id) && tIds.has(a.tutor_id))
+      );
+
+      const enriched = scoped.map((a) => ({
         ...a,
         childSubmissions: allSubs.filter((s) => s.assignment_id === a.id)
       }));

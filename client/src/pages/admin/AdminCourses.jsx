@@ -68,7 +68,7 @@ export const AdminCourses = () => {
       title: '',
       description: '',
       category_id: categories[0]?.id || '',
-      tutor_id: tutors[0]?.id || '',
+      tutor_id: '',
       level: 'GCSE (Year 10–11)',
       price: '299',
       thumbnail_url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600',
@@ -250,14 +250,23 @@ export const AdminCourses = () => {
                   </p>
                   
                   <div className="flex items-center space-x-2 pt-3 border-t border-slate-100">
-                    <img
-                      src={course.tutor?.avatar_url || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100'}
-                      alt={course.tutor?.full_name}
-                      className="w-6 h-6 rounded-full object-cover border border-slate-200"
-                    />
-                    <span className="text-xs text-slate-700 font-medium">
-                      {course.tutor?.full_name || 'Dr. Sarah Jenkins'}
-                    </span>
+                    {course.tutor ? (
+                      <>
+                        <img
+                          src={course.tutor.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(course.tutor.full_name)}`}
+                          alt={course.tutor.full_name}
+                          className="w-6 h-6 rounded-full object-cover border border-slate-200"
+                        />
+                        <span className="text-xs text-slate-700 font-medium">
+                          Lead Tutor: {course.tutor.full_name}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
+                        <GraduationCap className="w-3.5 h-3.5 text-brand-500" />
+                        <span>Tutors assigned per student (User Management)</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -337,12 +346,13 @@ export const AdminCourses = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Tutor</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Lead Tutor (Optional)</label>
                   <select
                     value={formData.tutor_id}
                     onChange={(e) => setFormData({ ...formData, tutor_id: e.target.value })}
                     className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
+                    <option value="">-- Assigned Per Student --</option>
                     {tutors.map((t) => (
                       <option key={t.id} value={t.id}>{t.full_name}</option>
                     ))}

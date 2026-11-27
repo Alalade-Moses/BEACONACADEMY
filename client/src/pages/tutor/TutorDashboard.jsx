@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import {
   BookOpen,
   Users,
@@ -14,68 +15,106 @@ import {
   UserCheck,
   ArrowRight,
   Sparkles,
-  Zap
+  Zap,
+  AlertCircle
 } from 'lucide-react';
 
 export const TutorDashboard = () => {
   const { user } = useAuth();
+  const socket = useSocket();
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
+  const [assignments, setAssignments] = useState([]);
   const [classes, setClasses] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [selectedInstantCourseId, setSelectedInstantCourseId] = useState('');
   const [loading, setLoading] = useState(true);
   const [launchingInstant, setLaunchingInstant] = useState(false);
 
-  useEffect(() => {
-    const fetchTutorData = async () => {
-      try {
-        const [coursesRes, classesRes, attendanceRes] = await Promise.all([
-          api.get(`/courses?tutor_id=${user.id}`).catch(() => ({ data: { success: true, courses: [] } })),
-          api.get('/classes'),
-          api.get('/attendance')
-        ]);
+  const isActualTutor = user?.role === 'tutor';
 
-        let courseList = (coursesRes.data.success && coursesRes.data.courses) || [];
-        if (courseList.length === 0) {
-          try {
-            const allCrs = await api.get('/courses');
-            if (allCrs.data.success && allCrs.data.courses) {
-              courseList = allCrs.data.courses;
-            }
-          } catch (e) {}
-        }
-        setCourses(courseList);
-        if (classesRes.data.success) setClasses(classesRes.data.classes || []);
-        if (attendanceRes.data.success) setAttendance(attendanceRes.data.records || []);
-      } catch (err) {
-        console.error('Failed to load tutor data', err);
-      } finally {
-        setLoading(false);
+  const fetchTutorData = useCallback(async () => {
+    try {
+      const [coursesRes, assignRes, classesRes, attendanceRes] = await Promise.all([
+        api.get(`/courses?tutor_id=${user.id}`).catch(() => ({ data: { success: true, courses: [] } })),
+        api.get('/users/tutor-assignments').catch(() => ({ data: { success: true, assignments: [] } })),
+        api.get('/classes'),
+        api.get('/attendance')
+      ]);
+
+      const courseList = (coursesRes.data.success && coursesRes.data.courses) || [];
+      setCourses(courseList);
+      if (courseList.length > 0 && !selectedInstantCourseId) {
+        setSelectedInstantCourseId(courseList[0].id);
       }
-    };
+      if (assignRes.data.success) setAssignments(assignRes.data.assignments || []);
+      if (classesRes.data.success) setClasses(classesRes.data.classes || []);
+      if (attendanceRes.data.success) setAttendance(attendanceRes.data.records || []);
+    } catch (err) {
+      console.error('Failed to load tutor data', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, selectedInstantCourseId]);
 
+  useEffect(() => {
     if (user?.id) fetchTutorData();
-  }, [user?.id]);
+  }, [user?.id, fetchTutorData]);
+
+  useEffect(() => {
+    if (!socket || !user?.id) return;
+    socket.on('student_assigned', fetchTutorData);
+    return () => {
+      socket.off('student_assigned', fetchTutorData);
+    };
+  }, [socket, user?.id, fetchTutorData]);
+
+  // Deduplicate assigned students
+  const uniqueStudents = Array.from(
+    new Map(
+      assignments
+        .filter((a) => a.student?.id)
+        .map((a) => [
+          a.student.id,
+          {
+            student: a.student,
+            courses: assignments
+              .filter((x) => x.student_id === a.student.id && x.course?.title)
+              .map((x) => x.course.title)
+          }
+        ])
+    ).values()
+  );
 
   const handleStartInstantClass = async () => {
+    if (!isActualTutor) {
+      alert('Only assigned Tutor accounts can launch live classes.');
+      return;
+    }
+    if (uniqueStudents.length === 0) {
+      alert('No students have been assigned to you yet. Ask the Superadmin to assign students to you before starting a live class.');
+      return;
+    }
+
     try {
       setLaunchingInstant(true);
+      const chosenCourse = courses.find((c) => c.id === selectedInstantCourseId) || courses[0] || null;
       const res = await api.post('/classes', {
-        title: `Live Session with ${user?.full_name || 'Faculty Tutor'}`,
-        description: 'Interactive live academic lecture session with synchronized digital presentation deck and whiteboard.',
-        course_id: courses[0]?.id || null,
+        title: chosenCourse
+          ? `Live Lesson: ${chosenCourse.title}`
+          : `Live Lesson with ${user.full_name}`,
+        description: 'Interactive live academic lecture session with synchronized whiteboard and voice.',
+        course_id: chosenCourse?.id || null,
         isInstant: true,
         status: 'live',
         scheduled_at: new Date().toISOString(),
-        duration_minutes: 60,
-        presentation_url: '/slides/sample-presentation.pdf',
-        presentation_pages: 6
+        duration_minutes: 60
       });
       if (res.data.success && res.data.class) {
         navigate(`/classroom/${res.data.class.meeting_room_id}?as=tutor`);
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to start instant class. Please check server connection.');
+      alert(err.response?.data?.message || 'Failed to start live class.');
     } finally {
       setLaunchingInstant(false);
     }
@@ -89,12 +128,11 @@ export const TutorDashboard = () => {
     );
   }
 
-  const upcomingClasses = classes.filter(c => c.status === 'scheduled' || c.status === 'live');
-  const liveClass = classes.find(c => c.status === 'live');
+  const upcomingClasses = classes.filter((c) => c.status === 'scheduled' || c.status === 'live');
+  const liveClass = classes.find((c) => c.status === 'live');
 
   return (
     <div className="space-y-8">
-      
       {/* Welcome & Live Banner */}
       <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-900 via-teal-950 to-slate-900 text-white relative overflow-hidden shadow-xl">
         <div className="relative z-10 max-w-2xl">
@@ -104,26 +142,53 @@ export const TutorDashboard = () => {
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Welcome, {user.full_name}</h1>
           <p className="mt-2 text-slate-300 text-sm leading-relaxed">
-            Manage your academic courses, launch real-time interactive lectures with slide annotations, and track student attendance.
+            View your assigned students, launch live interactive classes for them, upload materials, and track real attendance.
           </p>
 
-          <div className="mt-5 flex items-center gap-3 flex-wrap">
-            <button
-              onClick={handleStartInstantClass}
-              disabled={launchingInstant}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-lg shadow-emerald-950/40 transition-all disabled:opacity-50"
-            >
-              <Zap className="w-4 h-4 fill-current text-amber-300 animate-pulse" />
-              <span>{launchingInstant ? 'Launching Live Class...' : '⚡ Launch Instant Live Class'}</span>
-            </button>
-            <Link
-              to="/tutor/classes"
-              className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>View All Classes</span>
-            </Link>
-          </div>
+          {!isActualTutor ? (
+            <div className="mt-4 p-3 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-200 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Preview Mode: Sign in with a real Tutor account to create and launch live classes for assigned students.</span>
+            </div>
+          ) : uniqueStudents.length === 0 ? (
+            <div className="mt-4 p-3.5 rounded-xl bg-amber-500/15 border border-amber-400/30 text-amber-100 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+              <span>
+                No students have been assigned to you yet. Once the Superadmin assigns students to your teaching roster, you will be able to launch live classes and notify them immediately.
+              </span>
+            </div>
+          ) : (
+            <div className="mt-5 flex items-center gap-3 flex-wrap">
+              {courses.length > 1 && (
+                <select
+                  value={selectedInstantCourseId}
+                  onChange={(e) => setSelectedInstantCourseId(e.target.value)}
+                  className="px-3 py-2.5 rounded-xl bg-white/10 text-white border border-white/20 text-xs font-semibold outline-none"
+                >
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id} className="text-slate-900">
+                      {c.title} ({c.assigned_students_count || 0} student{c.assigned_students_count === 1 ? '' : 's'})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                onClick={handleStartInstantClass}
+                disabled={launchingInstant}
+                className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs shadow-lg shadow-emerald-950/40 transition-all disabled:opacity-50"
+              >
+                <Zap className="w-4 h-4 fill-current text-amber-300" />
+                <span>{launchingInstant ? 'Launching Live Class...' : 'Start Instant Live Class'}</span>
+              </button>
+              <Link
+                to="/tutor/classes"
+                className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Manage Class Schedule</span>
+              </Link>
+            </div>
+          )}
         </div>
 
         {liveClass && (
@@ -151,10 +216,22 @@ export const TutorDashboard = () => {
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">My Courses</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{courses.length}</h3>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assigned Students</p>
+              <h3 className="text-2xl font-black text-slate-900 mt-1">{uniqueStudents.length}</h3>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
+              <Users className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assigned Courses</p>
+              <h3 className="text-2xl font-black text-slate-900 mt-1">{courses.length}</h3>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200 text-teal-600 flex items-center justify-center">
               <BookOpen className="w-6 h-6" />
             </div>
           </div>
@@ -163,7 +240,7 @@ export const TutorDashboard = () => {
         <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upcoming Classes</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Live / Upcoming Classes</p>
               <h3 className="text-2xl font-black text-slate-900 mt-1">{upcomingClasses.length}</h3>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center">
@@ -183,42 +260,29 @@ export const TutorDashboard = () => {
             </div>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Completed Sessions</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">
-                {classes.filter(c => c.status === 'completed').length}
-              </h3>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200 text-purple-600 flex items-center justify-center">
-              <Clock className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Main Grid: Upcoming Classes & Quick Actions */}
+      {/* Main Grid: Upcoming Classes & Assigned Students */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
         {/* Upcoming Classes List */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-base font-bold text-slate-900">Upcoming Live Class Schedule</h3>
-              <p className="text-xs text-slate-500">Live lessons with synchronized presentations and whiteboard</p>
+              <h3 className="text-base font-bold text-slate-900">Your Live & Scheduled Classes</h3>
+              <p className="text-xs text-slate-500">Only students assigned to you receive alerts and join links</p>
             </div>
-            <Link to="/tutor/classes" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
-              <span>Schedule New</span>
-              <Plus className="w-4 h-4" />
-            </Link>
+            {isActualTutor && uniqueStudents.length > 0 && (
+              <Link to="/tutor/classes" className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
+                <span>Schedule New</span>
+                <Plus className="w-4 h-4" />
+              </Link>
+            )}
           </div>
 
           <div className="space-y-4">
             {upcomingClasses.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl">
-                No upcoming classes scheduled. Click Schedule New to set up your next live lesson.
+                No upcoming classes scheduled yet.
               </div>
             ) : (
               upcomingClasses.map((c) => (
@@ -229,7 +293,7 @@ export const TutorDashboard = () => {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">{c.title}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">{c.course?.title || 'General Curriculum'}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{c.course?.title || 'Assigned Course'}</p>
                       <div className="flex items-center space-x-3 text-[11px] text-slate-400 mt-2">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" />
@@ -244,11 +308,11 @@ export const TutorDashboard = () => {
                   </div>
 
                   <Link
-                    to={`/classroom/${c.meeting_room_id}`}
+                    to={`/classroom/${c.meeting_room_id}?as=tutor`}
                     className="self-end sm:self-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center space-x-1.5"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Launch Room</span>
+                    <span>Enter Room</span>
                   </Link>
                 </div>
               ))
@@ -256,8 +320,35 @@ export const TutorDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Management Shortcuts */}
+        {/* My Assigned Students + Shortcuts */}
         <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-900 mb-3">My Assigned Students ({uniqueStudents.length})</h3>
+            {uniqueStudents.length === 0 ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500">
+                No students assigned yet. Students linked to you by the Superadmin will appear here.
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-64 overflow-y-auto">
+                {uniqueStudents.map(({ student, courses: stuCourses }) => (
+                  <div key={student.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center space-x-3">
+                    <img
+                      src={student.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(student.full_name)}`}
+                      alt={student.full_name}
+                      className="w-8 h-8 rounded-full object-cover border border-emerald-200 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-900 truncate">{student.full_name}</p>
+                      <p className="text-[11px] text-emerald-700 font-medium truncate">
+                        {stuCourses.length > 0 ? stuCourses.join(', ') : student.email}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
             <h3 className="text-base font-bold text-slate-900 mb-4">Teaching Toolkit</h3>
             <div className="space-y-3">
@@ -267,7 +358,7 @@ export const TutorDashboard = () => {
               >
                 <div className="flex items-center space-x-3">
                   <BookOpen className="w-5 h-5 text-emerald-600" />
-                  <span className="text-xs font-bold text-slate-800">Manage Courses</span>
+                  <span className="text-xs font-bold text-slate-800">Assigned Courses</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-transform group-hover:translate-x-0.5" />
               </Link>
@@ -296,9 +387,7 @@ export const TutorDashboard = () => {
             </div>
           </div>
         </div>
-
       </div>
-
     </div>
   );
 };

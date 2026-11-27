@@ -7,6 +7,41 @@ export const getMaterials = async (req, res, next) => {
     const { course_id, class_id } = req.query;
     let materials = await store.getMaterials();
 
+    if (req.user.role === 'student') {
+      const [allEnrollments, assignedTutors] = await Promise.all([
+        store.getEnrollments(),
+        store.getAssignedTutorIdsForStudent(req.user.id)
+      ]);
+      const studentCourseIds = new Set(
+        allEnrollments.filter((e) => e.student_id === req.user.id).map((e) => e.course_id)
+      );
+      const assignedTutorSet = new Set(assignedTutors);
+
+      materials = materials.filter(
+        (m) => studentCourseIds.has(m.course_id) && assignedTutorSet.has(m.uploader_id)
+      );
+    } else if (req.user.role === 'tutor') {
+      materials = materials.filter((m) => m.uploader_id === req.user.id);
+    } else if (req.user.role === 'parent') {
+      const [parentLinks, allEnrollments] = await Promise.all([
+        store.getParentStudentLinks(),
+        store.getEnrollments()
+      ]);
+      const childIds = parentLinks
+        .filter((l) => l.parent_id === req.user.id && l.status === 'active')
+        .map((l) => l.student_id);
+
+      const allowed = [];
+      for (const childId of childIds) {
+        const cIds = new Set(allEnrollments.filter((e) => e.student_id === childId).map((e) => e.course_id));
+        const tIds = new Set(await store.getAssignedTutorIdsForStudent(childId));
+        allowed.push({ cIds, tIds });
+      }
+      materials = materials.filter((m) =>
+        allowed.some(({ cIds, tIds }) => cIds.has(m.course_id) && tIds.has(m.uploader_id))
+      );
+    }
+
     if (course_id) {
       materials = materials.filter((m) => m.course_id === course_id);
     }
@@ -77,7 +112,51 @@ export const deleteMaterial = async (req, res, next) => {
 
 export const getRecordings = async (req, res, next) => {
   try {
-    const recordings = await store.getRecordings();
+    let recordings = await store.getRecordings();
+
+    if (req.user.role === 'tutor') {
+      recordings = recordings.filter((r) => r.class?.tutor_id === req.user.id);
+    } else if (req.user.role === 'student') {
+      const [allEnrollments, assignedTutors] = await Promise.all([
+        store.getEnrollments(),
+        store.getAssignedTutorIdsForStudent(req.user.id)
+      ]);
+      const studentCourseIds = new Set(
+        allEnrollments.filter((e) => e.student_id === req.user.id).map((e) => e.course_id)
+      );
+      const assignedTutorSet = new Set(assignedTutors);
+
+      recordings = recordings.filter(
+        (r) =>
+          r.class &&
+          assignedTutorSet.has(r.class.tutor_id) &&
+          (!r.class.course_id || studentCourseIds.has(r.class.course_id))
+      );
+    } else if (req.user.role === 'parent') {
+      const [parentLinks, allEnrollments] = await Promise.all([
+        store.getParentStudentLinks(),
+        store.getEnrollments()
+      ]);
+      const childIds = parentLinks
+        .filter((l) => l.parent_id === req.user.id && l.status === 'active')
+        .map((l) => l.student_id);
+
+      const allowed = [];
+      for (const childId of childIds) {
+        const cIds = new Set(allEnrollments.filter((e) => e.student_id === childId).map((e) => e.course_id));
+        const tIds = new Set(await store.getAssignedTutorIdsForStudent(childId));
+        allowed.push({ cIds, tIds });
+      }
+      recordings = recordings.filter(
+        (r) =>
+          r.class &&
+          allowed.some(
+            ({ cIds, tIds }) =>
+              tIds.has(r.class.tutor_id) && (!r.class.course_id || cIds.has(r.class.course_id))
+          )
+      );
+    }
+
     res.status(200).json({ success: true, count: recordings.length, recordings });
   } catch (err) {
     next(err);
@@ -114,6 +193,10 @@ export const deleteRecording = async (req, res, next) => {
     const rec = recordings.find((r) => r.id === req.params.id);
     if (!rec) {
       return res.status(404).json({ success: false, message: 'Recording not found.' });
+    }
+
+    if (req.user.role === 'tutor' && rec.class?.tutor_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'You can only delete recordings from your own classes.' });
     }
 
     if (rec.recording_url) {

@@ -118,6 +118,31 @@ export const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Unassigned Active Students Notice */}
+      {(stats?.unassignedStudents || 0) > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">
+                {stats.unassignedStudents} Active Student{stats.unassignedStudents > 1 ? 's' : ''} Waiting for a Tutor Assignment
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Assign a verified tutor in User Management so these students can receive live class alerts.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/admin/users"
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm text-center shrink-0"
+          >
+            Assign Tutors Now &rarr;
+          </Link>
+        </div>
+      )}
+
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {statCards.map((card, idx) => {
@@ -166,40 +191,52 @@ export const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
-                {classes.slice(0, 4).map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-900 max-w-xs truncate">
-                      {c.title}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600">
-                      {c.tutor?.full_name || 'Dr. Sarah Jenkins'}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600">
-                      {new Date(c.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {c.status === 'live' ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping inline-block" />
-                          LIVE
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 capitalize">
-                          {c.status}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <Link
-                        to={`/classroom/${c.meeting_room_id}`}
-                        className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 font-semibold text-xs"
-                      >
-                        <Play className="w-3 h-3 fill-current" />
-                        <span>Inspect</span>
-                      </Link>
+                {classes.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-10 text-center text-slate-400">
+                      No live or scheduled classes yet. Sessions appear here once assigned tutors schedule or launch live classes.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  classes.slice(0, 5).map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-slate-900 max-w-xs truncate">
+                        {c.title}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600">
+                        {c.tutor?.full_name || 'Unassigned'}
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600">
+                        {new Date(c.scheduled_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {c.status === 'live' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping inline-block" />
+                            LIVE
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 capitalize">
+                            {c.status}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        {c.status === 'live' ? (
+                          <Link
+                            to={`/classroom/${c.meeting_room_id}`}
+                            className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 font-semibold text-xs"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            <span>Monitor</span>
+                          </Link>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 capitalize">{c.status}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -213,15 +250,21 @@ export const AdminDashboard = () => {
               <Activity className="w-4 h-4 text-slate-400" />
             </div>
             <div className="space-y-3.5">
-              {logs.map((log) => (
-                <div key={log.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                  <div className="flex items-center justify-between text-slate-500 mb-1">
-                    <span className="font-bold text-slate-800">{log.action}</span>
-                    <span className="text-[10px]">{new Date(log.created_at).toLocaleTimeString()}</span>
-                  </div>
-                  <p className="text-slate-600 text-[11px] truncate">By: {log.user_email || 'System'}</p>
+              {logs.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl">
+                  No security audit activity recorded yet.
                 </div>
-              ))}
+              ) : (
+                logs.map((log) => (
+                  <div key={log.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                    <div className="flex items-center justify-between text-slate-500 mb-1">
+                      <span className="font-bold text-slate-800">{log.action}</span>
+                      <span className="text-[10px]">{new Date(log.created_at).toLocaleTimeString()}</span>
+                    </div>
+                    <p className="text-slate-600 text-[11px] truncate">By: {log.user_email || 'System'}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

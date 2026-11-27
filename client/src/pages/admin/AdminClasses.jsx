@@ -2,16 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import {
-  Video,
   Play,
-  Calendar,
-  Clock,
-  Users,
-  CheckCircle2,
-  XCircle,
   Eye,
-  FileText,
-  X
+  X,
+  ShieldCheck
 } from 'lucide-react';
 
 export const AdminClasses = () => {
@@ -26,7 +20,7 @@ export const AdminClasses = () => {
       setLoading(true);
       const res = await api.get('/classes');
       if (res.data.success) {
-        setClasses(res.data.classes);
+        setClasses(res.data.classes || []);
       }
     } catch (err) {
       console.error('Failed to fetch classes', err);
@@ -45,7 +39,7 @@ export const AdminClasses = () => {
       setLogsLoading(true);
       const res = await api.get(`/attendance?class_id=${classItem.id}`);
       if (res.data.success) {
-        setAttendanceLogs(res.data.records);
+        setAttendanceLogs(res.data.records || []);
       }
     } catch (err) {
       console.error('Failed to load attendance', err);
@@ -54,31 +48,31 @@ export const AdminClasses = () => {
     }
   };
 
-  const handleStartClass = async (classId) => {
-    try {
-      await api.post(`/classes/${classId}/start`);
-      fetchClasses();
-    } catch (err) {
-      alert('Failed to start class');
-    }
-  };
-
   const handleEndClass = async (classId) => {
+    if (!window.confirm('End this live session?')) return;
     try {
       await api.post(`/classes/${classId}/end`);
       fetchClasses();
     } catch (err) {
-      alert('Failed to end class');
+      alert(err.response?.data?.message || 'Failed to end class');
     }
   };
 
   return (
     <div className="space-y-6">
-      
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Virtual Classroom Sessions & Attendance</h1>
-        <p className="text-xs text-slate-500 mt-1">Live monitoring of active lecture halls, WebRTC signaling rooms, and participant attendance</p>
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Live Classroom Monitor & Attendance</h1>
+        <p className="text-xs text-slate-500 mt-1">
+          Oversight view of tutor-hosted live sessions and verified attendance logs
+        </p>
+      </div>
+
+      <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs flex items-start gap-2.5">
+        <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+        <span>
+          Live classes are created and started exclusively by assigned <strong>Tutors</strong> for their linked students. Use this panel to monitor live rooms, inspect attendance, or end an inactive session.
+        </span>
       </div>
 
       {/* Classes Table */}
@@ -88,31 +82,33 @@ export const AdminClasses = () => {
             <thead className="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
               <tr>
                 <th className="py-3.5 px-6">Class Title & Course</th>
-                <th className="py-3.5 px-6">Assigned Tutor</th>
+                <th className="py-3.5 px-6">Hosting Tutor</th>
                 <th className="py-3.5 px-6">Scheduled Time</th>
                 <th className="py-3.5 px-6">Duration</th>
-                <th className="py-3.5 px-6">Class Status</th>
-                <th className="py-3.5 px-6 text-right">Actions</th>
+                <th className="py-3.5 px-6">Status</th>
+                <th className="py-3.5 px-6 text-right">Oversight</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-400">Loading scheduled classes...</td>
+                  <td colSpan={6} className="text-center py-12 text-slate-400">Loading sessions...</td>
                 </tr>
               ) : classes.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-slate-400">No scheduled sessions found.</td>
+                  <td colSpan={6} className="text-center py-12 text-slate-400">
+                    No tutor-hosted live or scheduled classes yet.
+                  </td>
                 </tr>
               ) : (
                 classes.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3.5 px-6">
                       <span className="font-bold text-slate-900 block">{c.title}</span>
-                      <span className="text-[11px] text-brand-600">{c.course?.title || 'General Curriculum'}</span>
+                      <span className="text-[11px] text-brand-600">{c.course?.title || 'Assigned Course'}</span>
                     </td>
-                    <td className="py-3.5 px-6 text-slate-600">
-                      {c.tutor?.full_name || 'Dr. Sarah Jenkins'}
+                    <td className="py-3.5 px-6 text-slate-700 font-semibold">
+                      {c.tutor?.full_name || 'Unassigned'}
                     </td>
                     <td className="py-3.5 px-6 text-slate-600">
                       {new Date(c.scheduled_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
@@ -142,32 +138,24 @@ export const AdminClasses = () => {
                           <Eye className="w-3.5 h-3.5 text-slate-400" />
                           <span>Attendance</span>
                         </button>
-                        
-                        {c.status === 'scheduled' && (
-                          <button
-                            onClick={() => handleStartClass(c.id)}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold text-xs"
-                          >
-                            Start
-                          </button>
-                        )}
 
                         {c.status === 'live' && (
-                          <button
-                            onClick={() => handleEndClass(c.id)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 font-semibold text-xs"
-                          >
-                            End
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleEndClass(c.id)}
+                              className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 font-semibold text-xs"
+                            >
+                              End Session
+                            </button>
+                            <Link
+                              to={`/classroom/${c.meeting_room_id}`}
+                              className="px-3 py-1 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-sm flex items-center space-x-1"
+                            >
+                              <Play className="w-3 h-3 fill-current" />
+                              <span>Monitor</span>
+                            </Link>
+                          </>
                         )}
-
-                        <Link
-                          to={`/classroom/${c.meeting_room_id}`}
-                          className="px-3 py-1 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-sm flex items-center space-x-1"
-                        >
-                          <Play className="w-3 h-3 fill-current" />
-                          <span>Join</span>
-                        </Link>
                       </div>
                     </td>
                   </tr>
@@ -240,7 +228,6 @@ export const AdminClasses = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

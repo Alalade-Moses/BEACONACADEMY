@@ -74,12 +74,14 @@ export const ParentProgress = () => {
                   </div>
                 </div>
 
-                {/* Overall Watched & Attended Metric Pill */}
+                {/* Overall Attendance Metric Pill */}
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-right">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Class Completion Rate</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Live Attendance Rate</span>
                     <span className="text-lg font-black text-emerald-800">
-                      {child.watch_stats?.overall_rate || 100}% Completed
+                      {(child.watch_stats?.total_held || 0) > 0
+                        ? `${child.watch_stats.overall_rate}% Attended`
+                        : 'No sessions yet'}
                     </span>
                   </div>
                 </div>
@@ -118,7 +120,13 @@ export const ParentProgress = () => {
                       </div>
 
                       <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1">
-                        <span>Status: Active & Enrolled</span>
+                        <span>
+                          {enr.assigned_tutor ? (
+                            <strong className="text-emerald-700">Tutor: {enr.assigned_tutor.full_name}</strong>
+                          ) : (
+                            <strong className="text-amber-700">Tutor will be assigned soon.</strong>
+                          )}
+                        </span>
                         <span>Enrolled: {new Date(enr.enrolled_at).toLocaleDateString()}</span>
                       </div>
                     </div>
@@ -184,22 +192,12 @@ export const ParentProgress = () => {
                               {cls.watch_status === 'live_attended' ? (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>Attended Live (100% Done)</span>
-                                </span>
-                              ) : cls.watch_status === 'watched' ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>Watched (100% Done)</span>
-                                </span>
-                              ) : cls.watch_status === 'in_progress' ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                  <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                  <span>In Progress (65% Watched)</span>
+                                  <span>Attended Live Class</span>
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                                   <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
-                                  <span>Not Watched Yet</span>
+                                  <span>{cls.status_label || 'Did Not Attend'}</span>
                                 </span>
                               )}
                             </td>

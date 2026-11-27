@@ -78,7 +78,7 @@ export const ParentAttendance = () => {
                       child.attendance?.map((att) => (
                         <tr key={att.id} className="hover:bg-slate-50/70">
                           <td className="py-3 px-4 font-bold text-slate-900">
-                            {att.class?.title || 'Foundations of Modern Node.js Architecture'}
+                            {att.class?.title || 'Live Class Session'}
                           </td>
                           <td className="py-3 px-4 text-slate-500">
                             {new Date(att.joined_at).toLocaleDateString()}
@@ -87,12 +87,12 @@ export const ParentAttendance = () => {
                             {new Date(att.joined_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </td>
                           <td className="py-3 px-4 text-slate-600">
-                            {att.duration_minutes || 60} mins
+                            {Number(att.duration_minutes) || 0} mins
                           </td>
                           <td className="py-3 px-4 text-right">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize">
                               <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                              <span>Present</span>
+                              <span>{att.status || 'present'}</span>
                             </span>
                           </td>
                         </tr>

@@ -17,7 +17,7 @@ export const ParentStudents = () => {
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    student_email: 'alex.morgan@beaconbridgeacademics.co.uk',
+    student_email: '',
     relationship: 'Father'
   });
   const [formError, setFormError] = useState('');
@@ -111,12 +111,25 @@ export const ParentStudents = () => {
                   Enrolled Subjects ({c.enrollments?.length || 0})
                 </h4>
                 <div className="space-y-1.5">
-                  {c.enrollments?.map((e) => (
-                    <div key={e.id} className="text-xs text-slate-600 flex items-center justify-between p-2 rounded-lg bg-slate-50">
-                      <span className="font-medium truncate max-w-[240px]">{e.course?.title}</span>
-                      <span className="font-bold text-amber-700">{e.progress_pct || 0}%</span>
-                    </div>
-                  ))}
+                  {c.enrollments?.length === 0 ? (
+                    <div className="text-xs text-slate-400 p-2 rounded-lg bg-slate-50">No enrolled courses yet.</div>
+                  ) : (
+                    c.enrollments?.map((e) => (
+                      <div key={e.id} className="text-xs text-slate-600 p-2.5 rounded-lg bg-slate-50 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-800 truncate max-w-[240px]">{e.course?.title}</span>
+                          <span className="font-bold text-amber-700">{e.progress_pct || 0}%</span>
+                        </div>
+                        <div className="text-[11px]">
+                          {e.assigned_tutor ? (
+                            <span className="text-emerald-700 font-semibold">Tutor: {e.assigned_tutor.full_name}</span>
+                          ) : (
+                            <span className="text-amber-700 font-semibold">Tutor will be assigned soon.</span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -158,7 +171,7 @@ export const ParentStudents = () => {
                     required
                     value={formData.student_email}
                     onChange={(e) => setFormData({ ...formData, student_email: e.target.value })}
-                    placeholder="student@beaconbridgeacademics.co.uk"
+                    placeholder="student@gmail.com"
                     className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 outline-none"
                   />
                 </div>

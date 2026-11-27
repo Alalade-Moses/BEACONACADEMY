@@ -327,12 +327,27 @@ export const ensureDatabaseReady = () => {
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
         student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        tutor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
         course_track VARCHAR(255),
         status VARCHAR(50) DEFAULT 'enrolled' CHECK (status IN ('enrolled', 'completed', 'dropped')),
         progress_pct INTEGER DEFAULT 0 CHECK (progress_pct >= 0 AND progress_pct <= 100),
         enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(course_id, student_id)
       );
+
+      CREATE TABLE IF NOT EXISTS tutor_student_links (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        tutor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
+        assigned_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+        status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_tutor_links_tutor ON tutor_student_links(tutor_id);
+      CREATE INDEX IF NOT EXISTS idx_tutor_links_student ON tutor_student_links(student_id);
+      CREATE INDEX IF NOT EXISTS idx_tutor_links_course ON tutor_student_links(course_id);
 
       CREATE TABLE IF NOT EXISTS classes (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -554,6 +569,7 @@ export const ensureDatabaseReady = () => {
       `ALTER TABLE courses ADD COLUMN IF NOT EXISTS hourly_note VARCHAR(255)`,
       `ALTER TABLE courses ADD COLUMN IF NOT EXISTS pricing_type VARCHAR(50) DEFAULT 'monthly'`,
       `ALTER TABLE course_enrollments ADD COLUMN IF NOT EXISTS course_track VARCHAR(255)`,
+      `ALTER TABLE course_enrollments ADD COLUMN IF NOT EXISTS tutor_id UUID REFERENCES profiles(id) ON DELETE SET NULL`,
       `ALTER TABLE payments ADD COLUMN IF NOT EXISTS course_track VARCHAR(255)`,
       `ALTER TABLE payments ADD COLUMN IF NOT EXISTS course_name VARCHAR(255)`,
       `ALTER TABLE payments ADD COLUMN IF NOT EXISTS selected_subjects JSONB`,
@@ -671,6 +687,92 @@ export const ensureDatabaseReady = () => {
     `);
     if (healed.rowCount > 0) {
       console.log(`✅ [AUTH] Auto-activated ${healed.rowCount} verified profile(s) from payments ledger.`);
+    }
+
+    // 6. Targeted cleanup of legacy seeded demo data ONLY (never touches real user accounts or official courses)
+    try {
+      const legacyDemoIds = [
+        '00000000-0000-0000-0000-000000000002',
+        '00000000-0000-0000-0000-000000000003',
+        '00000000-0000-0000-0000-000000000004',
+        '00000000-0000-0000-0000-000000000005',
+        '00000000-0000-0000-0000-000000000006',
+        '00000000-0000-0000-0000-000000000007'
+      ];
+      const legacyDemoEmails = [
+        'dr.sarah@beaconbridgeacademics.co.uk',
+        'prof.chen@beaconbridgeacademics.co.uk',
+        'alex.morgan@beaconbridgeacademics.co.uk',
+        'liam.chen@beaconbridgeacademics.co.uk',
+        'david.morgan@beaconbridgeacademics.co.uk',
+        'grace.chen@beaconbridgeacademics.co.uk',
+        'sarah.tutor@beaconbridge.edu',
+        'arthur.tutor@beaconbridge.edu',
+        'alex.student@beaconbridge.edu',
+        'david.parent@beaconbridge.edu',
+        'liam.student@beaconbridge.edu',
+        'grace.parent@beaconbridge.edu'
+      ];
+      const legacyDemoClassIds = [
+        '30000000-0000-0000-0000-000000000001',
+        '30000000-0000-0000-0000-000000000002',
+        '30000000-0000-0000-0000-000000000003',
+        '30000000-0000-0000-0000-000000000004'
+      ];
+      const legacyDemoRoomIds = [
+        'ROOM-GCSE-MATH-LIVE',
+        'ROOM-ALEVEL-MATH-01',
+        'ROOM-SOFTDEV-LIVE',
+        'ROOM-IELTS-LIVE'
+      ];
+
+      // Remove legacy demo classes AND any classes erroneously owned by Superadmin
+      await pool.query(
+        `DELETE FROM classes
+         WHERE id = ANY($1::uuid[])
+            OR UPPER(meeting_room_id) = ANY($2::text[])
+            OR tutor_id = $3::uuid`,
+        [legacyDemoClassIds, legacyDemoRoomIds, SUPERADMIN_ID]
+      );
+
+      // Remove legacy demo links & enrollments
+      await pool.query(
+        `DELETE FROM parent_student_links WHERE id IN ('40000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000002')`
+      );
+      await pool.query(
+        `DELETE FROM course_enrollments WHERE id IN ('50000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002')`
+      );
+
+      // Clear course tutor_id pointers to demo tutors or Superadmin
+      await pool.query(
+        `UPDATE courses SET tutor_id = NULL
+         WHERE tutor_id = $1::uuid
+            OR tutor_id = ANY($2::uuid[])`,
+        [SUPERADMIN_ID, legacyDemoIds]
+      );
+
+      // Delete legacy demo profiles (cascades demo attendance, submissions, notifications)
+      const purgedUsers = await pool.query(
+        `DELETE FROM profiles
+         WHERE (id = ANY($1::uuid[]) OR LOWER(email) = ANY($2::text[]))
+           AND id <> $3::uuid
+         RETURNING email`,
+        [legacyDemoIds, legacyDemoEmails, SUPERADMIN_ID]
+      );
+
+      // Delete legacy demo tutor applications & consultations
+      await pool.query(
+        `DELETE FROM tutor_applications WHERE id LIKE 'app-0000-0000-0000-00000000000%' OR LOWER(email) LIKE '%@example.co.uk'`
+      );
+      await pool.query(
+        `DELETE FROM consultations WHERE id = '00000000-0000-0000-0000-000000000101' OR LOWER(email) LIKE '%@example.co.uk'`
+      );
+
+      if (purgedUsers.rowCount > 0) {
+        console.log(`🧹 [DB CLEANUP] Removed ${purgedUsers.rowCount} legacy demo profile(s) from PostgreSQL.`);
+      }
+    } catch (cleanErr) {
+      console.warn('[DB Demo Cleanup Notice]:', cleanErr.message);
     }
 
     return true;
@@ -924,20 +1026,39 @@ export const store = {
   },
 
   // ----------------------------
-  // ENROLLMENTS
+  // ENROLLMENTS & TUTOR-STUDENT ASSIGNMENTS
   // ----------------------------
   getEnrollments: async () => {
     const db = requireDb();
     const res = await db.query(`
       SELECT e.*,
-        row_to_json(c.*) AS course,
-        row_to_json(p.*) AS student
+        (SELECT row_to_json(course_obj) FROM (
+          SELECT c.*, row_to_json(cat.*) AS category
+          FROM courses c
+          LEFT JOIN course_categories cat ON c.category_id = cat.id
+          WHERE c.id = e.course_id
+        ) course_obj) AS course,
+        row_to_json(p.*) AS student,
+        COALESCE(
+          (SELECT row_to_json(t.*) FROM profiles t WHERE t.id = e.tutor_id AND t.role = 'tutor'),
+          (SELECT row_to_json(t2.*) FROM tutor_student_links tsl
+           JOIN profiles t2 ON t2.id = tsl.tutor_id
+           WHERE tsl.student_id = e.student_id
+             AND tsl.status = 'active'
+             AND t2.role = 'tutor'
+             AND (tsl.course_id = e.course_id OR tsl.course_id IS NULL)
+           ORDER BY (CASE WHEN tsl.course_id = e.course_id THEN 0 ELSE 1 END), tsl.created_at DESC
+           LIMIT 1)
+        ) AS assigned_tutor
       FROM course_enrollments e
-      LEFT JOIN courses c ON e.course_id = c.id
       LEFT JOIN profiles p ON e.student_id = p.id
       ORDER BY e.enrolled_at DESC
     `);
-    return res.rows.map((r) => ({ ...r, student: stripPassword(r.student) }));
+    return res.rows.map((r) => ({
+      ...r,
+      student: stripPassword(r.student),
+      assigned_tutor: stripPassword(r.assigned_tutor)
+    }));
   },
 
   createEnrollment: async (enrollmentData) => {
@@ -949,12 +1070,14 @@ export const store = {
     }
     const id = uuidv4();
     const now = new Date().toISOString();
+    const tutorId = isUuid(enrollmentData.tutor_id) ? enrollmentData.tutor_id : null;
     const res = await db.query(
       `
-      INSERT INTO course_enrollments (id, course_id, student_id, course_track, status, progress_pct, enrolled_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO course_enrollments (id, course_id, student_id, tutor_id, course_track, status, progress_pct, enrolled_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       ON CONFLICT (course_id, student_id) DO UPDATE SET
         status = EXCLUDED.status,
+        tutor_id = COALESCE(EXCLUDED.tutor_id, course_enrollments.tutor_id),
         course_track = COALESCE(EXCLUDED.course_track, course_enrollments.course_track)
       RETURNING *
       `,
@@ -962,6 +1085,7 @@ export const store = {
         id,
         enrollmentData.course_id,
         enrollmentData.student_id,
+        tutorId,
         enrollmentData.course_track || null,
         enrollmentData.status || 'enrolled',
         parseInt(enrollmentData.progress_pct, 10) || 0,
@@ -969,6 +1093,241 @@ export const store = {
       ]
     );
     return res.rows[0];
+  },
+
+  getTutorStudentLinks: async ({ tutor_id, student_id, course_id } = {}) => {
+    const db = requireDb();
+    const clauses = [`l.status = 'active'`];
+    const params = [];
+    if (tutor_id && isUuid(tutor_id)) {
+      params.push(tutor_id);
+      clauses.push(`l.tutor_id = $${params.length}`);
+    }
+    if (student_id && isUuid(student_id)) {
+      params.push(student_id);
+      clauses.push(`l.student_id = $${params.length}`);
+    }
+    if (course_id && isUuid(course_id)) {
+      params.push(course_id);
+      clauses.push(`l.course_id = $${params.length}`);
+    }
+    const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+    const res = await db.query(
+      `
+      SELECT l.*,
+        row_to_json(tut.*) AS tutor,
+        row_to_json(stu.*) AS student,
+        row_to_json(c.*) AS course
+      FROM tutor_student_links l
+      JOIN profiles tut ON l.tutor_id = tut.id AND tut.role = 'tutor'
+      JOIN profiles stu ON l.student_id = stu.id AND stu.role = 'student'
+      LEFT JOIN courses c ON l.course_id = c.id
+      ${where}
+      ORDER BY l.created_at DESC
+      `,
+      params
+    );
+    return res.rows.map((r) => ({
+      ...r,
+      tutor: stripPassword(r.tutor),
+      student: stripPassword(r.student)
+    }));
+  },
+
+  getAssignedStudentIdsForTutor: async (tutorId, courseId = null) => {
+    if (!isUuid(tutorId)) return [];
+    const db = requireDb();
+    const ids = new Set();
+
+    const linksRes = await db.query(
+      `SELECT student_id, course_id FROM tutor_student_links WHERE tutor_id = $1 AND status = 'active'`,
+      [tutorId]
+    );
+    for (const row of linksRes.rows) {
+      if (!courseId || !row.course_id || row.course_id === courseId) {
+        ids.add(row.student_id);
+      }
+    }
+
+    const enrRes = await db.query(
+      courseId && isUuid(courseId)
+        ? `SELECT student_id FROM course_enrollments WHERE tutor_id = $1 AND course_id = $2`
+        : `SELECT student_id FROM course_enrollments WHERE tutor_id = $1`,
+      courseId && isUuid(courseId) ? [tutorId, courseId] : [tutorId]
+    );
+    for (const row of enrRes.rows) {
+      ids.add(row.student_id);
+    }
+
+    // If a course_id was requested, ensure every returned student is actually enrolled in that course
+    if (courseId && isUuid(courseId) && ids.size > 0) {
+      const enrolledInCourseRes = await db.query(
+        `SELECT student_id FROM course_enrollments WHERE course_id = $1 AND student_id = ANY($2::uuid[])`,
+        [courseId, Array.from(ids)]
+      );
+      return enrolledInCourseRes.rows.map((r) => r.student_id);
+    }
+
+    return Array.from(ids);
+  },
+
+  getAssignedTutorIdsForStudent: async (studentId, courseId = null) => {
+    if (!isUuid(studentId)) return [];
+    const db = requireDb();
+    const ids = new Set();
+
+    const linksRes = await db.query(
+      `SELECT l.tutor_id, l.course_id
+       FROM tutor_student_links l
+       JOIN profiles p ON p.id = l.tutor_id AND p.role = 'tutor'
+       WHERE l.student_id = $1 AND l.status = 'active'`,
+      [studentId]
+    );
+    for (const row of linksRes.rows) {
+      if (!courseId || !row.course_id || row.course_id === courseId) {
+        ids.add(row.tutor_id);
+      }
+    }
+
+    const enrRes = await db.query(
+      courseId && isUuid(courseId)
+        ? `SELECT e.tutor_id FROM course_enrollments e JOIN profiles p ON p.id = e.tutor_id AND p.role = 'tutor' WHERE e.student_id = $1 AND e.course_id = $2`
+        : `SELECT e.tutor_id FROM course_enrollments e JOIN profiles p ON p.id = e.tutor_id AND p.role = 'tutor' WHERE e.student_id = $1`,
+      courseId && isUuid(courseId) ? [studentId, courseId] : [studentId]
+    );
+    for (const row of enrRes.rows) {
+      if (row.tutor_id) ids.add(row.tutor_id);
+    }
+
+    return Array.from(ids);
+  },
+
+  assignTutorToStudent: async ({ tutor_id, student_id, course_id = null, assigned_by = null }) => {
+    const db = requireDb();
+    if (!isUuid(tutor_id) || !isUuid(student_id)) {
+      const err = new Error('Valid tutor_id and student_id are required.');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const [tutor, student] = await Promise.all([
+      store.getProfileById(tutor_id),
+      store.getProfileById(student_id)
+    ]);
+
+    if (!tutor || tutor.role !== 'tutor') {
+      const err = new Error('Selected instructor must be an active Tutor account.');
+      err.statusCode = 400;
+      throw err;
+    }
+    if (!student || student.role !== 'student') {
+      const err = new Error('Selected learner must be a Student account.');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    let resolvedCourseId = isUuid(course_id) ? course_id : null;
+    if (!resolvedCourseId) {
+      const stuEnrRes = await db.query(
+        'SELECT course_id FROM course_enrollments WHERE student_id = $1 ORDER BY enrolled_at DESC LIMIT 1',
+        [student_id]
+      );
+      resolvedCourseId = stuEnrRes.rows[0]?.course_id || null;
+    }
+
+    const course = resolvedCourseId ? await store.getCourseById(resolvedCourseId) : null;
+
+    if (resolvedCourseId) {
+      // Ensure student has an enrollment row for this course with tutor_id set
+      await store.createEnrollment({
+        course_id: resolvedCourseId,
+        student_id,
+        tutor_id,
+        status: 'enrolled'
+      });
+
+      // Replace any previous tutor link for this exact student + course
+      await db.query(
+        `DELETE FROM tutor_student_links WHERE student_id = $1 AND (course_id = $2 OR course_id IS NULL)`,
+        [student_id, resolvedCourseId]
+      );
+    } else {
+      await db.query(
+        `DELETE FROM tutor_student_links WHERE student_id = $1 AND course_id IS NULL`,
+        [student_id]
+      );
+    }
+
+    const id = uuidv4();
+    const res = await db.query(
+      `INSERT INTO tutor_student_links (id, tutor_id, student_id, course_id, assigned_by, status, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())
+       RETURNING *`,
+      [id, tutor_id, student_id, resolvedCourseId, isUuid(assigned_by) ? assigned_by : null]
+    );
+    const link = res.rows[0];
+    const courseLabel = course?.title || 'your enrolled program';
+
+    // Notify Student
+    await store.createNotification({
+      user_id: student.id,
+      title: 'Tutor Assigned to Your Course!',
+      message: `${tutor.full_name} has been assigned as your tutor for ${courseLabel}. You will be notified whenever they schedule or start a live class.`,
+      type: 'course',
+      link: '/student/courses'
+    });
+
+    // Notify Tutor
+    await store.createNotification({
+      user_id: tutor.id,
+      title: 'New Student Assigned to You',
+      message: `${student.full_name} (${courseLabel}) has been assigned to your teaching roster.`,
+      type: 'course',
+      link: '/tutor/dashboard'
+    });
+
+    // Notify Linked Parent(s)
+    const parRes = await db.query(
+      `SELECT parent_id FROM parent_student_links WHERE student_id = $1 AND status = 'active'`,
+      [student.id]
+    );
+    for (const pRow of parRes.rows) {
+      await store.createNotification({
+        user_id: pRow.parent_id,
+        title: `Tutor Assigned for ${student.full_name}`,
+        message: `${tutor.full_name} has been assigned as ${student.full_name}'s tutor for ${courseLabel}.`,
+        type: 'course',
+        link: '/parent/dashboard'
+      });
+    }
+
+    return {
+      ...link,
+      tutor: stripPassword(tutor),
+      student: stripPassword(student),
+      course
+    };
+  },
+
+  unassignTutorFromStudent: async (linkId) => {
+    if (!isUuid(linkId)) return null;
+    const db = requireDb();
+    const res = await db.query('DELETE FROM tutor_student_links WHERE id = $1 RETURNING *', [linkId]);
+    const deleted = res.rows[0];
+    if (!deleted) return null;
+
+    if (deleted.course_id) {
+      await db.query(
+        `UPDATE course_enrollments SET tutor_id = NULL WHERE student_id = $1 AND course_id = $2 AND tutor_id = $3`,
+        [deleted.student_id, deleted.course_id, deleted.tutor_id]
+      );
+    } else {
+      await db.query(
+        `UPDATE course_enrollments SET tutor_id = NULL WHERE student_id = $1 AND tutor_id = $2`,
+        [deleted.student_id, deleted.tutor_id]
+      );
+    }
+    return deleted;
   },
 
   // ----------------------------
@@ -2005,10 +2364,13 @@ export const store = {
     const newAssignment = res.rows[0];
 
     const course = await store.getCourseById(newAssignment.course_id);
-    const enrolledRes = await db.query(
-      `SELECT e.student_id, p.full_name FROM course_enrollments e JOIN profiles p ON p.id = e.student_id WHERE e.course_id = $1`,
-      [newAssignment.course_id]
-    );
+    const assignedStudentIds = await store.getAssignedStudentIdsForTutor(newAssignment.tutor_id, newAssignment.course_id);
+    const enrolledRes = assignedStudentIds.length > 0
+      ? await db.query(
+          `SELECT id AS student_id, full_name FROM profiles WHERE id = ANY($1::uuid[]) AND role = 'student'`,
+          [assignedStudentIds]
+        )
+      : { rows: [] };
 
     for (const st of enrolledRes.rows) {
       await store.createNotification({
@@ -2148,12 +2510,18 @@ export const store = {
     if (!pool) return [];
     const remindersSent = [];
     const res = await pool.query(`
-      SELECT a.id, a.title, a.due_date, a.course_id, e.student_id, p.full_name AS student_name
+      SELECT DISTINCT a.id, a.title, a.due_date, a.course_id, e.student_id, p.full_name AS student_name
       FROM assignments a
       JOIN course_enrollments e ON e.course_id = a.course_id
       JOIN profiles p ON p.id = e.student_id
+      LEFT JOIN tutor_student_links tsl
+        ON tsl.student_id = e.student_id
+       AND tsl.tutor_id = a.tutor_id
+       AND tsl.status = 'active'
+       AND (tsl.course_id = a.course_id OR tsl.course_id IS NULL)
       LEFT JOIN assignment_submissions s ON s.assignment_id = a.id AND s.student_id = e.student_id
       WHERE s.id IS NULL
+        AND (e.tutor_id = a.tutor_id OR tsl.id IS NOT NULL)
         AND a.due_date > NOW()
         AND a.due_date <= NOW() + INTERVAL '48 hours'
     `);

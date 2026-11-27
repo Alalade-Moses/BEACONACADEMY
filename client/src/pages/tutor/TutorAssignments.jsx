@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 import {
   FileText,
   Plus,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export const TutorAssignments = () => {
+  const { user } = useAuth();
   const [assignments, setAssignments] = useState([]);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export const TutorAssignments = () => {
       setLoading(true);
       const [assignRes, courseRes] = await Promise.all([
         api.get('/assignments'),
-        api.get('/courses')
+        api.get(`/courses?tutor_id=${user?.id}`)
       ]);
 
       if (assignRes.data.success) {
@@ -77,8 +79,8 @@ export const TutorAssignments = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?.id) loadData();
+  }, [user?.id]);
 
   const handleCreateAssignment = async (e) => {
     e.preventDefault();
@@ -421,7 +423,7 @@ export const TutorAssignments = () => {
               </div>
 
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-[11px] leading-relaxed">
-                <strong>Dual Notification Trigger:</strong> Submitting this grade automatically sends an in-app alert and simulated grade email to <strong>both the student and their parent(s)</strong>.
+                <strong>Dual Notification Trigger:</strong> Submitting this grade automatically sends an in-app notification to <strong>both the student and their linked parent(s)</strong>.
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
@@ -534,7 +536,7 @@ export const TutorAssignments = () => {
               </div>
 
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] leading-relaxed">
-                <strong>Automatic Dual Notification Notice:</strong> Publishing this assignment will dispatch in-app notifications and simulated emails to <strong>both the enrolled student and their registered parent(s)</strong>.
+                <strong>Automatic Dual Notification Notice:</strong> Publishing this assignment will send in-app notifications to <strong>your assigned students in this course and their linked parent(s)</strong>.
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

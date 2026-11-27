@@ -563,7 +563,7 @@ export const DashboardLayout = () => {
                   required
                   value={profileFormData.full_name}
                   onChange={(e) => setProfileFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                  placeholder="e.g. Elena Rostova or Platform Administrator"
+                  placeholder="Enter your full name"
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500 outline-none"
                 />
               </div>

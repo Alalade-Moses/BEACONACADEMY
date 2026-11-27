@@ -150,23 +150,9 @@ export const ParentAssignments = () => {
                   )}
                 </div>
 
-                <div className="pt-3 border-t border-slate-100">
-                  <button
-                    onClick={() => handleSendReminder(item.id)}
-                    className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    {remindedId === item.id ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-emerald-700">Reminder Dispatched</span>
-                      </>
-                    ) : (
-                      <>
-                        <Bell className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Send Child Study Reminder</span>
-                      </>
-                    )}
-                  </button>
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                  <span>Tutor: <strong className="text-slate-700">{item.tutor?.full_name || 'Course Tutor'}</strong></span>
+                  <span className="font-semibold text-amber-700">{isGraded ? 'Graded' : hasSubmitted ? 'Submitted' : 'Pending'}</span>
                 </div>
               </div>
             );

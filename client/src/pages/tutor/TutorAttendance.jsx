@@ -104,7 +104,7 @@ export const TutorAttendance = () => {
                       {new Date(record.joined_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                     </td>
                     <td className="py-3.5 px-6 text-slate-600">
-                      {record.duration_minutes || 60} mins
+                      {Number(record.duration_minutes) || 0} mins
                     </td>
                     <td className="py-3.5 px-6 text-right">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">

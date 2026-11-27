@@ -2619,13 +2619,13 @@ export const ClassroomPage = () => {
         return (
           <div className="h-full flex flex-col justify-center items-center text-center p-8 bg-gradient-to-br from-indigo-950 via-slate-900 to-brand-950 text-white select-none">
             <span className="px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full bg-brand-500/20 text-brand-300 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2 sm:mb-4 border border-brand-500/30">
-              Module 1 &bull; System Architecture
+              {classDetails?.course?.title || 'Beacon Bridge Live Classroom'}
             </span>
             <h2 className="text-xl sm:text-3xl md:text-4xl font-extrabold max-w-2xl leading-snug sm:leading-tight px-2">
-              Real-Time Bi-Directional WebSockets & Canvas Synchronization
+              {classDetails?.title || 'Interactive Live Virtual Classroom'}
             </h2>
             <p className="text-slate-300 text-xs sm:text-sm max-w-lg mt-2 sm:mt-4 leading-relaxed px-2">
-              Dr. Sarah Jenkins &bull; Department of Distributed Systems & Web Engineering
+              {classDetails?.tutor?.full_name || 'Beacon Bridge Academics Faculty'} &bull; Live Interactive Whiteboard & Presentation Room
             </p>
             <div className="mt-4 sm:mt-8 flex flex-wrap justify-center items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-slate-400">
               <span className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl bg-white/10">Beacon Bridge Classroom</span>
@@ -2818,7 +2818,7 @@ export const ClassroomPage = () => {
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Assigned Tutor:</span>
               <span className="font-bold text-white flex items-center gap-1.5">
-                <span>👨‍🏫</span> {classDetails?.tutor?.full_name || 'Dr. Sarah Jenkins'}
+                <span>👨‍🏫</span> {classDetails?.tutor?.full_name || 'Your Tutor'}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -3026,7 +3026,7 @@ export const ClassroomPage = () => {
               </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block truncate">
-              Room: {classId} &bull; Instructor: {classDetails?.tutor?.full_name || 'Dr. Sarah Jenkins'}
+              Room: {classId} &bull; Tutor: {classDetails?.tutor?.full_name || 'Course Tutor'}
             </p>
           </div>
         </div>
@@ -3666,7 +3666,7 @@ export const ClassroomPage = () => {
                                   {classDetails?.tutor?.full_name?.charAt(0) || 'T'}
                                 </div>
                                 <span className="text-[10px] sm:text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[160px]">
-                                  {classDetails?.tutor?.full_name || 'Dr. Sarah Jenkins'}
+                                  {classDetails?.tutor?.full_name || 'Course Tutor'}
                                 </span>
                                 <div className="flex items-center space-x-1 mt-0.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />

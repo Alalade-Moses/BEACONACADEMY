@@ -25,21 +25,20 @@ export const checkAndDispatchUpcomingClassReminders = async () => {
 
     if (upcomingClasses.length === 0) return;
 
-    const allEnrollments = await store.getEnrollments();
     const allLinks = await store.getParentStudentLinks();
 
     for (const classItem of upcomingClasses) {
       remindedClassIds.add(classItem.id);
 
-      const enrollments = allEnrollments.filter(e => e.course_id === classItem.course_id);
+      const assignedStudentIds = await store.getAssignedStudentIdsForTutor(classItem.tutor_id, classItem.course_id);
       const clientUrl = process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk';
-      const roomUrl = `${clientUrl}/classroom/${classItem.id}`;
+      const roomUrl = `${clientUrl}/classroom/${classItem.meeting_room_id}?as=student`;
 
-      console.log(`⏰ [ClassReminderScheduler] Triggering 1-hour reminder for class "${classItem.title}" (${enrollments.length} enrolled students).`);
+      console.log(`⏰ [ClassReminderScheduler] Triggering 1-hour reminder for class "${classItem.title}" (${assignedStudentIds.length} assigned students).`);
 
-      for (const enr of enrollments) {
-        const student = enr.student_id ? await store.getProfileById(enr.student_id) : null;
-        if (!student) continue;
+      for (const studentId of assignedStudentIds) {
+        const student = await store.getProfileById(studentId);
+        if (!student || student.status !== 'active') continue;
 
         // Find linked parent
         const link = allLinks.find(l => l.student_id === student.id && l.status === 'active');

@@ -15,6 +15,9 @@ export const getAttendanceRecords = async (req, res, next) => {
     // Zero-trust IDOR defense: enforce role scoping BEFORE applying user_id query filter
     if (req.user.role === 'student') {
       records = records.filter((r) => r.user_id === req.user.id);
+    } else if (req.user.role === 'tutor') {
+      records = records.filter((r) => r.class?.tutor_id === req.user.id);
+      if (user_id) records = records.filter((r) => r.user_id === user_id);
     } else if (req.user.role === 'parent') {
       const links = await store.getParentStudentLinks();
       const childIds = new Set(links.filter((l) => l.parent_id === req.user.id).map((l) => l.student_id));

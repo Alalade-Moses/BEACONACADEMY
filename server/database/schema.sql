@@ -94,6 +94,8 @@ CREATE TABLE course_enrollments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    tutor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    course_track VARCHAR(255),
     status VARCHAR(50) DEFAULT 'enrolled' CHECK (status IN ('enrolled', 'completed', 'dropped')),
     progress_pct INTEGER DEFAULT 0 CHECK (progress_pct >= 0 AND progress_pct <= 100),
     enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -102,6 +104,22 @@ CREATE TABLE course_enrollments (
 
 CREATE INDEX idx_enrollments_student ON course_enrollments(student_id);
 CREATE INDEX idx_enrollments_course ON course_enrollments(course_id);
+
+-- 5B. TUTOR-STUDENT ASSIGNMENTS
+CREATE TABLE tutor_student_links (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tutor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
+    assigned_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_tutor_links_tutor ON tutor_student_links(tutor_id);
+CREATE INDEX idx_tutor_links_student ON tutor_student_links(student_id);
+CREATE INDEX idx_tutor_links_course ON tutor_student_links(course_id);
 
 -- 6. LIVE CLASSES & SESSIONS
 CREATE TABLE classes (
@@ -323,7 +341,7 @@ CREATE TABLE IF NOT EXISTS consultations (
     consultation_day VARCHAR(50) NOT NULL,
     consultation_time VARCHAR(50) NOT NULL,
     consultation_date VARCHAR(50),
-    consultant_name VARCHAR(255) DEFAULT 'Dr. Sarah Jenkins',
+    consultant_name VARCHAR(255) DEFAULT 'Mr. Gideon Babs',
     mode VARCHAR(100) DEFAULT 'Live Interactive Video (Classroom / Meet)',
     notes TEXT,
     status VARCHAR(50) DEFAULT 'confirmed',

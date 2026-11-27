@@ -1,8 +1,8 @@
 import { store } from '../database/store.js';
 import { getClientIp } from '../middleware/securityMiddleware.js';
-import { isSafeUrl, clampText, pickFields } from '../utils/validators.js';
+import { isSafeUrl, clampText, pickFields, isUuid } from '../utils/validators.js';
 
-const COURSE_EDITABLE_FIELDS = ['title', 'description', 'category_id', 'level', 'price', 'discount_from', 'hourly_rate', 'hourly_note', 'thumbnail_url', 'status'];
+const COURSE_EDITABLE_FIELDS = ['title', 'description', 'category_id', 'tutor_id', 'level', 'price', 'discount_from', 'hourly_rate', 'hourly_note', 'thumbnail_url', 'status'];
 const VALID_COURSE_STATUSES = new Set(['draft', 'published', 'archived']);
 
 export const getAllCourses = async (req, res, next) => {
@@ -23,9 +23,55 @@ export const getAllCourses = async (req, res, next) => {
     if (level && level !== 'all') {
       courses = courses.filter((c) => c.level === level);
     }
-    if (tutor_id) {
-      courses = courses.filter((c) => c.tutor_id === tutor_id);
+
+    // When filtering by tutor_id, include courses where this tutor is assigned to at least one student OR directly assigned as course tutor
+    if (tutor_id && isUuid(tutor_id)) {
+      const [tutorLinks, allEnrollments] = await Promise.all([
+        store.getTutorStudentLinks({ tutor_id }),
+        store.getEnrollments()
+      ]);
+
+      const linkedCourseIds = new Set();
+      const studentsByCourse = new Map();
+
+      const addStudentToCourse = (cid, stu) => {
+        if (!cid || !stu?.id) return;
+        linkedCourseIds.add(cid);
+        if (!studentsByCourse.has(cid)) studentsByCourse.set(cid, new Map());
+        studentsByCourse.get(cid).set(stu.id, stu);
+      };
+
+      for (const link of tutorLinks) {
+        if (link.course_id) {
+          addStudentToCourse(link.course_id, link.student);
+        } else {
+          // General link: attach all enrolled courses of this student
+          const stuEnrs = allEnrollments.filter((e) => e.student_id === link.student_id);
+          for (const enr of stuEnrs) {
+            addStudentToCourse(enr.course_id, link.student);
+          }
+        }
+      }
+
+      for (const enr of allEnrollments) {
+        if (enr.tutor_id === tutor_id) {
+          addStudentToCourse(enr.course_id, enr.student);
+        }
+      }
+
+      courses = courses
+        .filter((c) => c.tutor_id === tutor_id || linkedCourseIds.has(c.id))
+        .map((c) => {
+          const studentMap = studentsByCourse.get(c.id);
+          const assignedStudents = studentMap ? Array.from(studentMap.values()) : [];
+          return {
+            ...c,
+            assigned_students: assignedStudents,
+            assigned_students_count: assignedStudents.length
+          };
+        });
     }
+
     if (search) {
       const q = String(search).toLowerCase();
       courses = courses.filter(
@@ -53,7 +99,6 @@ export const getCourseById = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Course not found.' });
     }
 
-    // Only expose private class schedules and learning materials to authenticated portal users
     if (!req.user) {
       return res.status(200).json({ success: true, course });
     }
@@ -63,12 +108,24 @@ export const getCourseById = async (req, res, next) => {
       store.getClasses()
     ]);
 
+    let scopedMaterials = allMaterials.filter((m) => m.course_id === course.id);
+    let scopedClasses = allClasses.filter((c) => c.course_id === course.id && c.tutor?.role === 'tutor');
+
+    if (req.user.role === 'student') {
+      const assignedTutors = new Set(await store.getAssignedTutorIdsForStudent(req.user.id, course.id));
+      scopedMaterials = scopedMaterials.filter((m) => assignedTutors.has(m.uploader_id));
+      scopedClasses = scopedClasses.filter((c) => assignedTutors.has(c.tutor_id));
+    } else if (req.user.role === 'tutor') {
+      scopedMaterials = scopedMaterials.filter((m) => m.uploader_id === req.user.id);
+      scopedClasses = scopedClasses.filter((c) => c.tutor_id === req.user.id);
+    }
+
     res.status(200).json({
       success: true,
       course: {
         ...course,
-        materials: allMaterials.filter((m) => m.course_id === course.id),
-        classes: allClasses.filter((c) => c.course_id === course.id)
+        materials: scopedMaterials,
+        classes: scopedClasses
       }
     });
   } catch (err) {
@@ -96,7 +153,15 @@ export const createCourse = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Course price must be between £0 and £50,000.' });
     }
 
-    const tutor_id = req.user.role === 'tutor' ? req.user.id : (req.body.tutor_id || req.user.id);
+    // Never assign Superadmin as a course tutor; keep tutor_id null unless an actual tutor is chosen
+    let tutor_id = null;
+    if (req.user.role === 'tutor') {
+      tutor_id = req.user.id;
+    } else if (isUuid(req.body.tutor_id)) {
+      const candidate = await store.getProfileById(req.body.tutor_id);
+      if (candidate && candidate.role === 'tutor') tutor_id = candidate.id;
+    }
+
     const slug = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Date.now().toString(36);
 
     const newCourse = await store.createCourse({
@@ -151,6 +216,14 @@ export const updateCourse = async (req, res, next) => {
       }
       updates.price = p;
     }
+    if (updates.tutor_id === '') {
+      updates.tutor_id = null;
+    } else if (updates.tutor_id && isUuid(updates.tutor_id)) {
+      const candidate = await store.getProfileById(updates.tutor_id);
+      if (!candidate || candidate.role !== 'tutor') {
+        updates.tutor_id = null;
+      }
+    }
 
     const updated = await store.updateCourse(course.id, updates);
     res.status(200).json({ success: true, message: 'Course updated successfully.', course: updated });
@@ -189,45 +262,38 @@ export const getCategories = async (req, res, next) => {
 export const enrollInCourse = async (req, res, next) => {
   try {
     const course_id = req.params.id;
-    const student_id = req.user.id;
+    const student_id = req.body?.student_id;
+
+    if (!isUuid(student_id)) {
+      return res.status(400).json({ success: false, message: 'Valid student_id is required.' });
+    }
 
     const course = await store.getCourseById(course_id);
     if (!course) {
       return res.status(404).json({ success: false, message: 'Course not found.' });
     }
 
-    const allEnrollments = await store.getEnrollments();
-    const existing = allEnrollments.find((e) => e.course_id === course.id && e.student_id === student_id);
-    if (existing) {
-      return res.status(409).json({ success: false, message: 'You are already enrolled in this course.' });
+    const student = await store.getProfileById(student_id);
+    if (!student || student.role !== 'student') {
+      return res.status(404).json({ success: false, message: 'Student account not found.' });
     }
 
     const enrollment = await store.createEnrollment({
       course_id: course.id,
-      student_id,
+      student_id: student.id,
       status: 'enrolled',
       progress_pct: 0
     });
 
     await store.createNotification({
-      user_id: student_id,
+      user_id: student.id,
       title: 'Enrolled in Course',
-      message: `You have successfully enrolled in "${course.title}".`,
+      message: `You have been enrolled in "${course.title}".`,
       type: 'course',
       link: '/student/courses'
     });
 
-    if (course.tutor_id) {
-      await store.createNotification({
-        user_id: course.tutor_id,
-        title: 'New Student Enrollment',
-        message: `${req.user.full_name} enrolled in "${course.title}".`,
-        type: 'course',
-        link: '/tutor/courses'
-      });
-    }
-
-    res.status(201).json({ success: true, message: 'Successfully enrolled in course.', enrollment });
+    res.status(201).json({ success: true, message: 'Student enrolled in course successfully.', enrollment });
   } catch (err) {
     next(err);
   }

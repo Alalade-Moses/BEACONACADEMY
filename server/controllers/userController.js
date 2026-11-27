@@ -8,8 +8,14 @@ const VALID_STATUSES = new Set(['active', 'suspended', 'pending', 'pending_verif
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { role, status, search } = req.query;
+    const { role, status, search, includeAssignments } = req.query;
     let users = await store.getProfiles();
+
+    // Tutors may only see students explicitly assigned to them
+    if (req.user.role === 'tutor') {
+      const assignedIds = new Set(await store.getAssignedStudentIdsForTutor(req.user.id));
+      users = users.filter((u) => u.role === 'student' && assignedIds.has(u.id));
+    }
 
     if (role && role !== 'all') {
       users = users.filter((u) => u.role === role);
@@ -26,7 +32,37 @@ export const getAllUsers = async (req, res, next) => {
       );
     }
 
-    const sanitized = users.map(({ password_hash, ...rest }) => rest);
+    let sanitized = users.map(({ password_hash, ...rest }) => rest);
+
+    // Enrich with real enrollment & tutor-student assignment data for Superadmin
+    if (req.user.role === 'superadmin' && includeAssignments === 'true') {
+      const [allEnrollments, allLinks] = await Promise.all([
+        store.getEnrollments(),
+        store.getTutorStudentLinks()
+      ]);
+
+      sanitized = sanitized.map((u) => {
+        if (u.role === 'student') {
+          const studentEnrollments = allEnrollments.filter((e) => e.student_id === u.id);
+          const tutorLinks = allLinks.filter((l) => l.student_id === u.id);
+          return {
+            ...u,
+            enrollments: studentEnrollments,
+            tutor_links: tutorLinks
+          };
+        }
+        if (u.role === 'tutor') {
+          const assignedLinks = allLinks.filter((l) => l.tutor_id === u.id);
+          return {
+            ...u,
+            assigned_students: assignedLinks,
+            assigned_students_count: new Set(assignedLinks.map((l) => l.student_id)).size
+          };
+        }
+        return u;
+      });
+    }
+
     res.status(200).json({ success: true, count: sanitized.length, users: sanitized });
   } catch (err) {
     next(err);
@@ -40,17 +76,23 @@ export const getUserById = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid user identifier.' });
     }
 
-    // Zero-trust IDOR protection: users may only access themselves, their linked children, or via superadmin/tutor role
-    const isElevated = req.user.role === 'superadmin' || req.user.role === 'tutor';
+    const isSuperadmin = req.user.role === 'superadmin';
     const isSelf = req.user.id === targetId;
 
-    if (!isElevated && !isSelf) {
-      let isLinkedChild = false;
+    if (!isSuperadmin && !isSelf) {
+      let authorized = false;
       if (req.user.role === 'parent') {
         const links = await store.getParentStudentLinks();
-        isLinkedChild = links.some((l) => l.parent_id === req.user.id && l.student_id === targetId);
+        authorized = links.some((l) => l.parent_id === req.user.id && l.student_id === targetId);
+      } else if (req.user.role === 'tutor') {
+        const assignedStudentIds = await store.getAssignedStudentIdsForTutor(req.user.id);
+        authorized = assignedStudentIds.includes(targetId);
+      } else if (req.user.role === 'student') {
+        const assignedTutorIds = await store.getAssignedTutorIdsForStudent(req.user.id);
+        authorized = assignedTutorIds.includes(targetId);
       }
-      if (!isLinkedChild) {
+
+      if (!authorized) {
         return res.status(403).json({ success: false, message: 'Forbidden: You cannot view this user profile.' });
       }
     }
@@ -220,27 +262,147 @@ export const deleteUser = async (req, res, next) => {
   }
 };
 
+// ----------------------------
+// TUTOR-STUDENT ASSIGNMENTS
+// ----------------------------
+export const getTutorAssignments = async (req, res, next) => {
+  try {
+    let links = [];
+
+    if (req.user.role === 'superadmin') {
+      links = await store.getTutorStudentLinks({
+        tutor_id: req.query.tutor_id,
+        student_id: req.query.student_id,
+        course_id: req.query.course_id
+      });
+    } else if (req.user.role === 'tutor') {
+      links = await store.getTutorStudentLinks({ tutor_id: req.user.id });
+    } else if (req.user.role === 'student') {
+      links = await store.getTutorStudentLinks({ student_id: req.user.id });
+    } else if (req.user.role === 'parent') {
+      const parentLinks = await store.getParentStudentLinks();
+      const childIds = new Set(
+        parentLinks.filter((l) => l.parent_id === req.user.id && l.status === 'active').map((l) => l.student_id)
+      );
+      const all = await store.getTutorStudentLinks();
+      links = all.filter((l) => childIds.has(l.student_id));
+    }
+
+    res.status(200).json({ success: true, count: links.length, assignments: links });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const assignTutorToStudent = async (req, res, next) => {
+  try {
+    const { tutor_id, student_id, course_id } = req.body || {};
+    if (!isUuid(tutor_id) || !isUuid(student_id)) {
+      return res.status(400).json({ success: false, message: 'Please select a valid Tutor and Student.' });
+    }
+    if (course_id && !isUuid(course_id)) {
+      return res.status(400).json({ success: false, message: 'Invalid course identifier.' });
+    }
+
+    const assignment = await store.assignTutorToStudent({
+      tutor_id,
+      student_id,
+      course_id: course_id || null,
+      assigned_by: req.user.id
+    });
+
+    // Notify student and tutor in real time via Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${student_id}`).emit('tutor_assigned', {
+        tutor: assignment.tutor,
+        course: assignment.course
+      });
+      io.to(`user:${tutor_id}`).emit('student_assigned', {
+        student: assignment.student,
+        course: assignment.course
+      });
+    }
+
+    await store.logAudit({
+      user_id: req.user.id,
+      action: 'ASSIGN_TUTOR_TO_STUDENT',
+      entity_type: 'TUTOR_STUDENT_LINK',
+      entity_id: assignment.id,
+      ip_address: getClientIp(req),
+      details: {
+        tutor_id,
+        tutor_name: assignment.tutor?.full_name,
+        student_id,
+        student_name: assignment.student?.full_name,
+        course_id: assignment.course_id || null
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `${assignment.tutor?.full_name} has been assigned to ${assignment.student?.full_name}.`,
+      assignment
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const unassignTutorFromStudent = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!isUuid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid assignment ID.' });
+    }
+
+    const removed = await store.unassignTutorFromStudent(id);
+    if (!removed) {
+      return res.status(404).json({ success: false, message: 'Tutor assignment not found.' });
+    }
+
+    await store.logAudit({
+      user_id: req.user.id,
+      action: 'UNASSIGN_TUTOR_FROM_STUDENT',
+      entity_type: 'TUTOR_STUDENT_LINK',
+      entity_id: id,
+      ip_address: getClientIp(req),
+      details: { tutor_id: removed.tutor_id, student_id: removed.student_id, course_id: removed.course_id }
+    });
+
+    res.status(200).json({ success: true, message: 'Tutor unassigned successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getPlatformStats = async (req, res, next) => {
   try {
-    const [profiles, courses, classes, enrollments, attendance] = await Promise.all([
+    const [profiles, courses, classes, enrollments, attendance, payments, tutorLinks] = await Promise.all([
       store.getProfiles(),
       store.getCourses(),
       store.getClasses(),
       store.getEnrollments(),
-      store.getAttendance()
+      store.getAttendance(),
+      store.getPayments(),
+      store.getTutorStudentLinks()
     ]);
 
-    const totalStudents = profiles.filter((p) => p.role === 'student').length;
+    const students = profiles.filter((p) => p.role === 'student');
+    const totalStudents = students.length;
     const totalTutors = profiles.filter((p) => p.role === 'tutor').length;
     const totalParents = profiles.filter((p) => p.role === 'parent').length;
     const totalCourses = courses.length;
     const activeClasses = classes.filter((c) => c.status === 'live').length;
     const scheduledClasses = classes.filter((c) => c.status === 'scheduled').length;
 
-    const revenue = enrollments.reduce((sum, enr) => {
-      const course = courses.find((c) => c.id === enr.course_id);
-      return sum + (course ? Number(course.price || 0) : 0);
-    }, 0);
+    const assignedStudentIds = new Set(tutorLinks.map((l) => l.student_id));
+    const unassignedStudents = students.filter((s) => s.status === 'active' && !assignedStudentIds.has(s.id)).length;
+
+    // Real verified revenue from confirmed tuition payments ONLY
+    const revenue = payments
+      .filter((p) => p.status === 'verified')
+      .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
     res.status(200).json({
       success: true,
@@ -253,6 +415,7 @@ export const getPlatformStats = async (req, res, next) => {
         scheduledClasses,
         totalEnrollments: enrollments.length,
         totalAttendanceRecords: attendance.length,
+        unassignedStudents,
         revenue
       }
     });

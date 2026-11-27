@@ -141,7 +141,13 @@ export const TutorMaterials = () => {
           <p className="text-xs text-slate-500 mt-1">Upload PowerPoint presentations, PDF documents, and lecture assets for your students</p>
         </div>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            if (courses.length === 0) {
+              alert('You have no assigned courses yet. Once the Superadmin assigns students to your roster, you can upload materials for their courses.');
+              return;
+            }
+            setModalOpen(true);
+          }}
           className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto"
         >
           <Upload className="w-4 h-4" />

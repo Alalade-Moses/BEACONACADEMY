@@ -1,4 +1,5 @@
 import { dailyService } from '../services/dailyService.js';
+import { store } from '../database/store.js';
 
 /**
  * Daily.co Classroom Controller
@@ -29,16 +30,34 @@ export const getRoomAccess = async (req, res) => {
       });
     }
 
-    const user = req.user || {
-      id: 'guest',
-      full_name: 'Guest Attendee',
-      role: 'student'
-    };
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Authentication required.' });
+    }
+
+    // Enforce tutor-student assignment check before issuing Daily.co video tokens
+    const classRecord = await store.getClassById(roomId);
+    if (classRecord) {
+      if (user.role === 'student') {
+        const assignedTutorIds = await store.getAssignedTutorIdsForStudent(user.id, classRecord.course_id);
+        if (!assignedTutorIds.includes(classRecord.tutor_id)) {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You can only join live classes started by your assigned tutor.'
+          });
+        }
+      } else if (user.role === 'tutor' && classRecord.tutor_id !== user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: This live classroom belongs to another tutor.'
+        });
+      }
+    }
 
     // Determine owner permissions:
-    // If asRole is explicitly student, never give owner rights even to admins testing as students
+    // Only the assigned tutor (not students, and never explicit student mode) gets host owner rights
     const isExplicitStudent = asRole === 'student' || req.query.as === 'student';
-    const isOwner = !isExplicitStudent && (user.role === 'tutor' || user.role === 'superadmin');
+    const isOwner = !isExplicitStudent && user.role === 'tutor';
 
     // 1. Get or create Daily room
     const roomResult = await dailyService.createOrGetRoom(roomId);
