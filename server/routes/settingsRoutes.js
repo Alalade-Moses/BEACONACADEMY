@@ -4,7 +4,8 @@ import { authenticate, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/', getSettings);
+// Platform settings are strictly administrative
+router.get('/', authenticate, requireRole(['superadmin']), getSettings);
 router.put('/', authenticate, requireRole(['superadmin']), updateSettings);
 
 export default router;

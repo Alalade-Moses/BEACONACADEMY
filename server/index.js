@@ -9,6 +9,13 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import { errorHandler } from './middleware/errorHandler.js';
+import {
+  securityHeaders,
+  corsOptions,
+  preventParamPollution,
+  sanitizeInputs,
+  globalApiRateLimiter
+} from './middleware/securityMiddleware.js';
 import { initClassroomSocket } from './socket/classroomSocket.js';
 
 // Route imports
@@ -43,27 +50,32 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const server = http.createServer(app);
 
-// Socket.IO configuration with high-performance real-time WebSocket priority
+// Hide framework fingerprint & trust Railway / Vercel reverse proxy for accurate client IP rate limiting
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
+
+// Socket.IO configuration with strict origin allowlist
 const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-  },
+  cors: corsOptions,
   transports: ['websocket', 'polling'],
   pingTimeout: 60000,
   pingInterval: 25000,
+  maxHttpBufferSize: 1e6, // 1MB max socket message size against payload flooding
   allowUpgrades: true
 });
 
 // Attach Socket.IO instance to Express app for real-time controllers
 app.set('io', io);
 
-// Middleware
-app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(morgan('dev'));
+// Zero-Trust Security Middleware Stack
+app.use(securityHeaders);
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+app.use(preventParamPollution);
+app.use(sanitizeInputs);
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use('/api', globalApiRateLimiter);
 
 // Static files for materials, presentations, and uploaded media
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
@@ -76,12 +88,16 @@ if (!fs.existsSync(decksDir)) {
 }
 
 app.use('/uploads', (req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox");
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
-}, express.static(uploadDir));
-app.use('/slides', express.static(path.join(__dirname, 'public/slides')));
+}, express.static(uploadDir, { dotfiles: 'deny', index: false }));
+app.use('/slides', (req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+}, express.static(path.join(__dirname, 'public/slides'), { dotfiles: 'deny', index: false }));
 
 // API Health Check
 app.get('/api/health', (req, res) => {

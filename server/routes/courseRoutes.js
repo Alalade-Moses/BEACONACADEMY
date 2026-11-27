@@ -9,14 +9,15 @@ import {
   enrollInCourse, 
   getMyEnrollments 
 } from '../controllers/courseController.js';
-import { authenticate, requireRole } from '../middleware/authMiddleware.js';
+import { authenticate, optionalAuthenticate, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Public routes
+// Public catalog routes (optionalAuthenticate lets tutors/superadmins see drafts without exposing drafts publicly)
 router.get('/categories', getCategories);
-router.get('/', getAllCourses);
-router.get('/:id', getCourseById);
+router.get('/', optionalAuthenticate, getAllCourses);
+router.get('/user/my-enrollments', authenticate, getMyEnrollments);
+router.get('/:id', optionalAuthenticate, getCourseById);
 
 // Protected routes
 router.post('/', authenticate, requireRole(['superadmin', 'tutor']), createCourse);
@@ -25,6 +26,5 @@ router.delete('/:id', authenticate, requireRole(['superadmin', 'tutor']), delete
 
 // Enrollment routes
 router.post('/:id/enroll', authenticate, requireRole(['student']), enrollInCourse);
-router.get('/user/my-enrollments', authenticate, getMyEnrollments);
 
 export default router;

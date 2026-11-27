@@ -1,21 +1,21 @@
 import { store } from '../database/store.js';
-import { 
-  sendPaymentProofSubmitted, 
-  sendPaymentProofAdminAlert, 
-  sendPaymentVerifiedReceipt 
+import { getClientIp } from '../middleware/securityMiddleware.js';
+import { isSafeUrl, parsePositiveAmount, clampText, isUuid } from '../utils/validators.js';
+import {
+  sendPaymentProofSubmitted,
+  sendPaymentProofAdminAlert,
+  sendPaymentVerifiedReceipt
 } from '../services/emailService.js';
 
 export const getBankDetails = async (req, res, next) => {
   try {
     const settings = await store.getSettings();
-    // Security: Do not expose institutional account numbers, sort codes, SWIFT, or IBAN publicly
+    // Security: Never expose bank institution or receiving account coordinates publicly
     const bankDetails = {
-      bank_name: settings.bank_name || 'Barclays Bank UK PLC',
-      account_name: settings.bank_account_name || 'Beacon Bridge Academics Ltd.',
       tuition_fee: settings.default_tuition_fee || '£299.00 GBP / month',
       currency: 'GBP',
       currency_symbol: '£',
-      instructions: 'Please include the Student Full Name and Reference Code in your bank transfer description, then upload your transfer confirmation slip or receipt below.'
+      instructions: 'Please include the Student Full Name and Reference Code in your transfer description, then upload your confirmation receipt below.'
     };
 
     res.status(200).json({
@@ -31,13 +31,11 @@ export const getPayments = async (req, res, next) => {
   try {
     const payments = await store.getPayments();
 
-    // If caller is a parent, filter payments where parent_id === req.user.id
     if (req.user.role === 'parent') {
-      const parentPayments = payments.filter(p => p.parent_id === req.user.id);
+      const parentPayments = payments.filter((p) => p.parent_id === req.user.id);
       return res.status(200).json({ success: true, payments: parentPayments });
     }
 
-    // Admins get all payments
     res.status(200).json({
       success: true,
       payments
@@ -49,26 +47,43 @@ export const getPayments = async (req, res, next) => {
 
 export const submitProof = async (req, res, next) => {
   try {
-    const { parent_id, student_id, course_id, course_track, amount, bank_reference, proof_url, notes } = req.body;
+    const { parent_id, student_id, course_id, course_track, amount, bank_reference, proof_url, notes } = req.body || {};
 
-    const callerId = req.user ? req.user.id : parent_id;
+    const cleanRef = clampText(bank_reference || '', 100);
+    if (!cleanRef) {
+      return res.status(400).json({ success: false, message: 'Bank reference number or transaction ID is required.' });
+    }
+
+    if (!proof_url || !isSafeUrl(proof_url, { allowRelative: true, allowEmpty: false })) {
+      return res.status(400).json({ success: false, message: 'A valid uploaded payment receipt slip is required.' });
+    }
+
+    const parsedAmount = amount !== undefined && amount !== '' ? parsePositiveAmount(amount) : 299.00;
+    if (parsedAmount === null) {
+      return res.status(400).json({ success: false, message: 'Amount must be a valid positive number.' });
+    }
+
+    // Never allow an authenticated parent to spoof another parent's ID
+    const resolvedParentId = req.user?.role === 'parent'
+      ? req.user.id
+      : (req.user?.id || (isUuid(parent_id) ? parent_id : null));
+    const resolvedStudentId = isUuid(student_id) ? student_id : null;
 
     const payment = await store.submitPaymentProof({
-      parent_id: callerId || parent_id,
-      student_id,
-      course_id,
-      course_track,
-      amount,
-      bank_reference,
-      proof_url,
-      notes
+      parent_id: resolvedParentId,
+      student_id: resolvedStudentId,
+      course_id: isUuid(course_id) ? course_id : null,
+      course_track: course_track ? clampText(String(course_track), 100) : null,
+      amount: parsedAmount,
+      bank_reference: cleanRef,
+      proof_url: String(proof_url).trim(),
+      notes: clampText(notes || '', 500)
     });
 
-    // Notify Parent & Admin asynchronously
     (async () => {
       try {
-        const parent = callerId ? await store.getProfileById(callerId) : null;
-        const student = student_id ? await store.getProfileById(student_id) : null;
+        const parent = resolvedParentId ? await store.getProfileById(resolvedParentId) : null;
+        const student = resolvedStudentId ? await store.getProfileById(resolvedStudentId) : null;
         if (parent) {
           await sendPaymentProofSubmitted({ parent, student, payment });
         }
@@ -95,7 +110,6 @@ export const verifyPayment = async (req, res, next) => {
 
     const verifiedPayment = await store.verifyPayment(id, adminId);
 
-    // Send official receipt email asynchronously
     (async () => {
       try {
         const student = verifiedPayment.student_id ? await store.getProfileById(verifiedPayment.student_id) : null;
@@ -108,13 +122,12 @@ export const verifyPayment = async (req, res, next) => {
       }
     })();
 
-    // Audit log
     await store.logAudit({
       user_id: adminId,
       action: 'PAYMENT_VERIFIED',
       entity_type: 'PAYMENT',
       entity_id: id,
-      ip_address: req.ip || '127.0.0.1',
+      ip_address: getClientIp(req),
       details: {
         paymentId: id,
         studentId: verifiedPayment.student_id,
@@ -125,7 +138,7 @@ export const verifyPayment = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Payment verified successfully! Official invoice and login credentials dispatched to parent email.',
+      message: 'Payment verified successfully! Official invoice and portal activation email dispatched.',
       payment: verifiedPayment
     });
   } catch (err) {
@@ -137,7 +150,7 @@ export const sendPaymentInvoice = async (req, res, next) => {
   try {
     const { id } = req.params;
     const payments = await store.getPayments();
-    const payment = payments.find(p => p.id === id);
+    const payment = payments.find((p) => p.id === id);
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment record not found.' });
     }
@@ -149,12 +162,12 @@ export const sendPaymentInvoice = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'No linked parent or student email found for this payment.' });
     }
 
-    const recipientParent = parent || { full_name: student?.parent_name || 'Parent', email: student?.parent_email || student?.email };
+    const recipientParent = parent || student;
     await sendPaymentVerifiedReceipt({ payment, student, parent: recipientParent });
 
     res.status(200).json({
       success: true,
-      message: `Official invoice and login credentials dispatched to ${recipientParent.email}.`
+      message: `Official invoice and login details dispatched to ${recipientParent.email}.`
     });
   } catch (err) {
     next(err);
@@ -164,26 +177,22 @@ export const sendPaymentInvoice = async (req, res, next) => {
 export const rejectPayment = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { admin_notes } = req.body;
+    const admin_notes = clampText(req.body?.admin_notes || '', 500);
 
     const rejectedPayment = await store.rejectPayment(id, admin_notes);
 
-    // Audit log
     await store.logAudit({
       user_id: req.user.id,
       action: 'PAYMENT_REJECTED',
       entity_type: 'PAYMENT',
       entity_id: id,
-      ip_address: req.ip || '127.0.0.1',
-      details: {
-        paymentId: id,
-        adminNotes: admin_notes
-      }
+      ip_address: getClientIp(req),
+      details: { paymentId: id, adminNotes: admin_notes }
     });
 
     res.status(200).json({
       success: true,
-      message: 'Payment marked as rejected. Parent has been notified to re-upload proof.',
+      message: 'Payment marked as rejected. User has been notified to re-upload proof.',
       payment: rejectedPayment
     });
   } catch (err) {
@@ -196,16 +205,14 @@ export const deletePayment = async (req, res, next) => {
     const { id } = req.params;
     await store.deletePayment(id);
 
-    if (typeof store.logAudit === 'function') {
-      await store.logAudit({
-        user_id: req.user?.id || '00000000-0000-0000-0000-000000000001',
-        action: 'PAYMENT_RECORD_DELETED',
-        entity_type: 'PAYMENT',
-        entity_id: id,
-        ip_address: req.ip || '127.0.0.1',
-        details: { paymentId: id }
-      });
-    }
+    await store.logAudit({
+      user_id: req.user?.id,
+      action: 'PAYMENT_RECORD_DELETED',
+      entity_type: 'PAYMENT',
+      entity_id: id,
+      ip_address: getClientIp(req),
+      details: { paymentId: id }
+    });
 
     res.status(200).json({
       success: true,

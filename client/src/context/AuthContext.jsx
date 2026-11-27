@@ -5,8 +5,14 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('bba_user') || localStorage.getItem('edulearn_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('bba_user') || localStorage.getItem('edulearn_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      localStorage.removeItem('bba_user');
+      localStorage.removeItem('edulearn_user');
+      return null;
+    }
   });
   const [token, setToken] = useState(() => localStorage.getItem('bba_token') || localStorage.getItem('edulearn_token'));
   const [loading, setLoading] = useState(true);

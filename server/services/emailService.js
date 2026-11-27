@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import { escapeHtml, stripHeaderBreaks } from '../utils/validators.js';
 dotenv.config();
 
 // Global domain & default addresses
@@ -226,8 +227,10 @@ export const sendEmail = async ({
 }) => {
   try {
     const sender = resolveSenderIdentity(senderType, tutor);
-    const from = customFrom || sender.fromHeader;
-    const resolvedReplyTo = replyTo || sender.replyTo;
+    const from = stripHeaderBreaks(customFrom || sender.fromHeader);
+    const resolvedReplyTo = stripHeaderBreaks(replyTo || sender.replyTo);
+    const safeSubject = stripHeaderBreaks(subject || 'Beacon Bridge Academics Notification');
+    const safeTo = Array.isArray(to) ? to.map((addr) => stripHeaderBreaks(addr)) : stripHeaderBreaks(to || '');
 
     // 1. Resend HTTPS REST API (Port 443 - Immune to cloud SMTP port blocking)
     const resendKey = process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.trim() : null;
@@ -242,9 +245,9 @@ export const sendEmail = async ({
           },
           body: JSON.stringify({
             from: fromAddress,
-            to: Array.isArray(to) ? to : [to],
+            to: Array.isArray(safeTo) ? safeTo : [safeTo],
             reply_to: resolvedReplyTo,
-            subject,
+            subject: safeSubject,
             html,
             text: text || ''
           })
@@ -276,9 +279,9 @@ export const sendEmail = async ({
               name: sender.displayName || 'Beacon Bridge Academics',
               email: process.env.SMTP_USER || 'info@beaconbridgeacademics.co.uk'
             },
-            to: [{ email: to }],
+            to: [{ email: Array.isArray(safeTo) ? safeTo[0] : safeTo }],
             replyTo: { email: resolvedReplyTo },
-            subject,
+            subject: safeSubject,
             htmlContent: html,
             textContent: text || ''
           })
@@ -317,9 +320,9 @@ export const sendEmail = async ({
 
     const info = await transporter.sendMail({
       from,
-      to,
+      to: safeTo,
       replyTo: resolvedReplyTo,
-      subject,
+      subject: safeSubject,
       text: text || '',
       html
     });
@@ -965,12 +968,13 @@ export const sendConsultationBookingNotifications = async (consultation) => {
 // 8. Public Contact Us Academic Enquiry -> Direct to info@beaconbridgeacademics.co.uk
 export const sendContactInquiryEmail = async ({ name, email, phone, curriculum, subject, message }) => {
   const infoEmail = DEFAULT_INFO_EMAIL;
-  const safeName = (name || 'Website Visitor').trim();
-  const safeEmail = (email || '').trim();
-  const safePhone = (phone || 'Not provided').trim();
-  const safeCurriculum = (curriculum || 'General').trim();
-  const safeSubject = (subject || 'General Academic Enquiry').trim();
-  const safeMessage = (message || '').trim().replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
+  const safeName = escapeHtml((name || 'Website Visitor').trim());
+  const safeEmail = escapeHtml((email || '').trim());
+  const rawEmail = stripHeaderBreaks(email || '');
+  const safePhone = escapeHtml((phone || 'Not provided').trim());
+  const safeCurriculum = escapeHtml((curriculum || 'General').trim());
+  const safeSubject = escapeHtml((subject || 'General Academic Enquiry').trim());
+  const safeMessage = escapeHtml((message || '').trim()).replace(/\n/g, '<br/>');
 
   const staffHtml = buildEmailTemplate({
     headerTitle: 'New Website Contact Enquiry',
@@ -995,16 +999,16 @@ export const sendContactInquiryEmail = async ({ name, email, phone, curriculum, 
 
   const staffNotice = await sendEmail({
     to: infoEmail,
-    subject: `[Contact Enquiry] ${safeName} — ${safeCurriculum} (${safeSubject})`,
+    subject: `[Contact Enquiry] ${stripHeaderBreaks(name || 'Visitor')} — ${stripHeaderBreaks(curriculum || 'General')} (${stripHeaderBreaks(subject || 'Enquiry')})`,
     html: staffHtml,
-    text: `New Contact Enquiry\nName: ${safeName}\nEmail: ${safeEmail}\nPhone: ${safePhone}\nLevel: ${safeCurriculum}\nSubject(s): ${safeSubject}\n\nMessage:\n${message || ''}`,
+    text: `New Contact Enquiry\nName: ${name || ''}\nEmail: ${rawEmail}\nPhone: ${phone || 'Not provided'}\nLevel: ${curriculum || 'General'}\nSubject(s): ${subject || 'General'}\n\nMessage:\n${message || ''}`,
     senderType: 'info',
-    replyTo: safeEmail || infoEmail
+    replyTo: rawEmail || infoEmail
   });
 
   // Send acknowledgement to sender so they know info@ received it
   let senderAck = { success: true };
-  if (safeEmail) {
+  if (rawEmail) {
     const ackHtml = buildEmailTemplate({
       headerTitle: 'We Have Received Your Enquiry',
       contentHtml: `
@@ -1024,7 +1028,7 @@ export const sendContactInquiryEmail = async ({ name, email, phone, curriculum, 
     });
 
     senderAck = await sendEmail({
-      to: safeEmail,
+      to: rawEmail,
       subject: 'Thank You for Contacting Beacon Bridge Academics',
       html: ackHtml,
       senderType: 'info',

@@ -1,4 +1,6 @@
 import { store } from '../database/store.js';
+import { getClientIp } from '../middleware/securityMiddleware.js';
+import { isValidEmail, normalizeEmail, isSafeUrl, clampText } from '../utils/validators.js';
 import { sendTutorApplicationReceived, sendTutorApplicationAdminAlert, sendTutorApprovalEmail } from '../services/emailService.js';
 import { safeDeleteUploadedFile } from '../services/fileCleanup.js';
 
@@ -17,10 +19,6 @@ export const VALID_ALEVEL_SUBJECTS = [
   'A-Level Philosophy'
 ];
 
-/**
- * Public endpoint: Submit a new teacher application
- * POST /api/tutor-applications
- */
 export const submitApplication = async (req, res, next) => {
   try {
     const {
@@ -44,9 +42,8 @@ export const submitApplication = async (req, res, next) => {
       safeguarding_signature,
       dbs_status,
       dbs_certificate_number
-    } = req.body;
+    } = req.body || {};
 
-    // Validation
     if (!full_name || !email || !phone) {
       return res.status(400).json({
         success: false,
@@ -54,22 +51,34 @@ export const submitApplication = async (req, res, next) => {
       });
     }
 
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    }
+
     if (!selected_subjects || !Array.isArray(selected_subjects) || selected_subjects.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Please select at least one A-Level subject you are qualified to teach.'
+        message: 'Please select at least one subject you are qualified to teach.'
       });
     }
 
-    // Ensure introductory video is provided
-    if (!video_url) {
+    if (!video_url || !isSafeUrl(video_url, { allowRelative: true, allowEmpty: false })) {
       return res.status(400).json({
         success: false,
-        message: 'A 3-minute introductory video is mandatory for all teacher applicants.'
+        message: 'A valid 3-minute introductory video link or uploaded video is mandatory for all teacher applicants.'
       });
     }
 
-    // Ensure safeguarding policy is read and acknowledged
+    for (const [label, urlVal] of [
+      ['CV link', cv_url],
+      ['Degree certificate link', degree_certificate_url],
+      ['Teaching licence link', teaching_licence_url]
+    ]) {
+      if (urlVal && !isSafeUrl(urlVal, { allowRelative: true, allowEmpty: true })) {
+        return res.status(400).json({ success: false, message: `Invalid ${label}.` });
+      }
+    }
+
     if (!safeguarding_acknowledged) {
       return res.status(400).json({
         success: false,
@@ -84,30 +93,34 @@ export const submitApplication = async (req, res, next) => {
       });
     }
 
+    const cleanSubjects = selected_subjects
+      .slice(0, 15)
+      .map((s) => clampText(String(s), 100))
+      .filter(Boolean);
+
     const application = await store.createTutorApplication({
-      full_name,
-      email,
-      phone,
-      location,
-      highest_qualification,
-      years_experience,
-      current_role,
-      selected_subjects,
-      bio,
-      teaching_approach,
-      video_url,
-      video_duration,
-      video_filename,
-      cv_url,
-      degree_certificate_url,
-      teaching_licence_url,
-      safeguarding_acknowledged,
-      safeguarding_signature,
-      dbs_status,
-      dbs_certificate_number
+      full_name: clampText(full_name, 120),
+      email: normalizeEmail(email),
+      phone: clampText(phone, 40),
+      location: clampText(location || 'United Kingdom', 120),
+      highest_qualification: clampText(highest_qualification || '', 250),
+      years_experience: clampText(years_experience || '1-3 years', 50),
+      current_role: clampText(current_role || '', 150),
+      selected_subjects: cleanSubjects,
+      bio: clampText(bio || '', 2500),
+      teaching_approach: clampText(teaching_approach || '', 2500),
+      video_url: String(video_url).trim(),
+      video_duration: clampText(video_duration || 'Approx. 3 minutes', 50),
+      video_filename: clampText(video_filename || '', 200),
+      cv_url: cv_url ? String(cv_url).trim() : null,
+      degree_certificate_url: degree_certificate_url ? String(degree_certificate_url).trim() : null,
+      teaching_licence_url: teaching_licence_url ? String(teaching_licence_url).trim() : null,
+      safeguarding_acknowledged: true,
+      safeguarding_signature: clampText(safeguarding_signature, 120),
+      dbs_status: clampText(dbs_status || 'Willing to undergo Enhanced DBS check', 150),
+      dbs_certificate_number: clampText(dbs_certificate_number || '', 80)
     });
 
-    // Send confirmation email to applicant and alert email to admin asynchronously
     (async () => {
       try {
         await sendTutorApplicationReceived({ applicant: application });
@@ -116,7 +129,6 @@ export const submitApplication = async (req, res, next) => {
       }
       try {
         await sendTutorApplicationAdminAlert({ applicant: application });
-        console.log(`📧 [TUTOR APPLICATION ADMIN ALERT SENT]: Notified admin of application from ${application.full_name}`);
       } catch (e) {
         console.warn('[Tutor Application Admin Email Warning]', e.message);
       }
@@ -132,10 +144,6 @@ export const submitApplication = async (req, res, next) => {
   }
 };
 
-/**
- * Superadmin endpoint: Get all teacher applications with filtering
- * GET /api/tutor-applications
- */
 export const getAllApplications = async (req, res, next) => {
   try {
     const { status, subject } = req.query;
@@ -151,39 +159,25 @@ export const getAllApplications = async (req, res, next) => {
   }
 };
 
-/**
- * Superadmin endpoint: Get single application by ID
- * GET /api/tutor-applications/:id
- */
 export const getApplicationById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const application = await store.getTutorApplicationById(id);
 
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        message: 'Teacher application not found.'
-      });
+      return res.status(404).json({ success: false, message: 'Teacher application not found.' });
     }
 
-    res.status(200).json({
-      success: true,
-      application
-    });
+    res.status(200).json({ success: true, application });
   } catch (err) {
     next(err);
   }
 };
 
-/**
- * Superadmin endpoint: Update application status (approve / reject / under_review)
- * PUT /api/tutor-applications/:id/status
- */
 export const updateApplicationStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, admin_notes } = req.body;
+    const { status, admin_notes } = req.body || {};
 
     if (!['pending', 'under_review', 'approved', 'rejected'].includes(status)) {
       return res.status(400).json({
@@ -197,16 +191,14 @@ export const updateApplicationStatus = async (req, res, next) => {
 
     const updated = await store.updateTutorApplicationStatus(id, {
       status,
-      admin_notes,
+      admin_notes: admin_notes !== undefined ? clampText(admin_notes, 1500) : undefined,
       reviewed_by,
+      reviewed_by_id: req.user?.id,
       tempPassword
     });
 
     if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: 'Teacher application not found.'
-      });
+      return res.status(404).json({ success: false, message: 'Teacher application not found.' });
     }
 
     const credentials = updated.provisioned_credentials || {
@@ -214,34 +206,29 @@ export const updateApplicationStatus = async (req, res, next) => {
       tempPassword
     };
 
-    // Send automated congratulations & onboarding email upon approval
     if (status === 'approved') {
       try {
         await sendTutorApprovalEmail({
           applicant: updated,
           tempPassword: credentials.tempPassword
         });
-        console.log(`📧 [TUTOR APPROVED EMAIL SENT]: Dispatched login credentials to ${updated.email}`);
       } catch (emailErr) {
         console.warn('⚠️ [Tutor Approval Email Notice]:', emailErr.message);
       }
     }
 
-    // Log in audit log
-    if (typeof store.logAudit === 'function') {
-      await store.logAudit({
-        user_id: req.user?.id || '00000000-0000-0000-0000-000000000001',
-        action: `TUTOR_APPLICATION_${status.toUpperCase()}`,
-        resource: 'tutor_applications',
-        resource_id: id,
-        details: {
-          applicant: updated.full_name,
-          subjects: updated.selected_subjects,
-          status,
-          admin_notes
-        }
-      });
-    }
+    await store.logAudit({
+      user_id: req.user?.id,
+      action: `TUTOR_APPLICATION_${status.toUpperCase()}`,
+      entity_type: 'TUTOR_APPLICATION',
+      entity_id: id,
+      ip_address: getClientIp(req),
+      details: {
+        applicant: updated.full_name,
+        subjects: updated.selected_subjects,
+        status
+      }
+    });
 
     res.status(200).json({
       success: true,
@@ -254,10 +241,6 @@ export const updateApplicationStatus = async (req, res, next) => {
   }
 };
 
-/**
- * Superadmin / Admin endpoint: Permanently delete a teacher application and its video/files
- * DELETE /api/tutor-applications/:id
- */
 export const deleteApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -266,27 +249,21 @@ export const deleteApplication = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Teacher application not found.' });
     }
 
-    // Delete uploaded intro video from disk
-    if (app.video_url) {
-      safeDeleteUploadedFile(app.video_url);
-    }
-    // Delete uploaded CV from disk
-    if (app.cv_url) {
-      safeDeleteUploadedFile(app.cv_url);
-    }
+    if (app.video_url) safeDeleteUploadedFile(app.video_url);
+    if (app.cv_url) safeDeleteUploadedFile(app.cv_url);
+    if (app.degree_certificate_url) safeDeleteUploadedFile(app.degree_certificate_url);
+    if (app.teaching_licence_url) safeDeleteUploadedFile(app.teaching_licence_url);
 
     await store.deleteTutorApplication(id);
 
-    // Audit log
-    if (typeof store.logAudit === 'function') {
-      await store.logAudit({
-        user_id: req.user?.id || '00000000-0000-0000-0000-000000000001',
-        action: 'TUTOR_APPLICATION_DELETED',
-        resource: 'tutor_applications',
-        resource_id: id,
-        details: { applicant: app.full_name, email: app.email }
-      });
-    }
+    await store.logAudit({
+      user_id: req.user?.id,
+      action: 'TUTOR_APPLICATION_DELETED',
+      entity_type: 'TUTOR_APPLICATION',
+      entity_id: id,
+      ip_address: getClientIp(req),
+      details: { applicant: app.full_name, email: app.email }
+    });
 
     res.status(200).json({
       success: true,

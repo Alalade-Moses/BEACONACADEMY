@@ -6,20 +6,21 @@ import {
   updateConsultationStatus
 } from '../controllers/consultationController.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { publicFormRateLimiter } from '../middleware/securityMiddleware.js';
 import { testSmtpConnection } from '../services/emailService.js';
 
 const router = express.Router();
 
-// Public submission: Anyone can book a 1-on-1 consultation
-router.post('/', createConsultation);
+// Public submission (rate-limited): book a 1-on-1 consultation
+router.post('/', publicFormRateLimiter, createConsultation);
 
-// Diagnostic SMTP verification route (test Hostinger connection directly)
-router.get('/test-smtp', async (req, res) => {
+// Superadmin ONLY diagnostic SMTP verification route
+router.get('/test-smtp', authenticate, authorize('superadmin'), async (req, res) => {
   try {
     const result = await testSmtpConnection();
     res.status(result.connected ? 200 : 500).json(result);
   } catch (err) {
-    res.status(500).json({ connected: false, error: err.message });
+    res.status(500).json({ connected: false, error: 'SMTP verification check failed.' });
   }
 });
 

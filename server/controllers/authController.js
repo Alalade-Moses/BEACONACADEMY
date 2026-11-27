@@ -1,9 +1,28 @@
 import bcrypt from 'bcryptjs';
 import { store } from '../database/store.js';
 import { generateToken } from '../middleware/authMiddleware.js';
-import { sendRegistrationWelcome, sendIeltsRegistrationWelcome, sendPaymentProofAdminAlert } from '../services/emailService.js';
+import {
+  getClientIp,
+  checkLoginLockout,
+  recordFailedLogin,
+  clearFailedLogins
+} from '../middleware/securityMiddleware.js';
+import {
+  isValidEmail,
+  normalizeEmail,
+  validatePassword,
+  isSafeUrl,
+  parsePositiveAmount,
+  clampText
+} from '../utils/validators.js';
+import {
+  sendRegistrationWelcome,
+  sendIeltsRegistrationWelcome,
+  sendPaymentProofAdminAlert
+} from '../services/emailService.js';
 
 const IELTS_COURSE_ID = '20000000-0000-0000-0000-000000000008';
+const PUBLIC_REGISTER_ROLES = new Set(['student', 'parent']);
 
 const detectIeltsCandidate = async (user) => {
   if (!user) return false;
@@ -37,16 +56,66 @@ const detectIeltsCandidate = async (user) => {
 
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const rawEmail = req.body?.email;
+    const password = req.body?.password;
+    const clientIp = getClientIp(req);
 
-    if (!email || !password) {
+    if (!rawEmail || !password || typeof rawEmail !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
 
+    const email = normalizeEmail(rawEmail);
+    if (email.length > 254 || password.length > 128) {
+      return res.status(400).json({ success: false, message: 'Invalid email or password format.' });
+    }
+
+    // 1. Check per-(IP + email) lockout BEFORE doing password work
+    const lockout = checkLoginLockout(clientIp, email);
+    if (lockout.locked) {
+      const mins = Math.max(1, Math.ceil(lockout.retryAfterSeconds / 60));
+      res.setHeader('Retry-After', String(lockout.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        rate_limited: true,
+        retry_after_seconds: lockout.retryAfterSeconds,
+        message: `Too many failed sign-in attempts for this account. Please try again in ${mins} minute${mins > 1 ? 's' : ''}.`
+      });
+    }
+
     const user = await store.getProfileByEmail(email);
-    if (!user) {
+
+    // 2. Always verify password BEFORE revealing account status (prevents account & IELTS status enumeration)
+    const isMatch = user && user.password_hash
+      ? await bcrypt.compare(password, user.password_hash)
+      : false;
+
+    if (!user || !isMatch) {
+      const failState = recordFailedLogin(clientIp, email);
+      await store.logAudit({
+        user_id: user?.id || null,
+        action: failState.locked ? 'USER_LOGIN_LOCKED' : 'USER_LOGIN_FAILED',
+        entity_type: 'AUTH',
+        entity_id: user?.id || email,
+        ip_address: clientIp,
+        details: { email, attempts: failState.attempts, locked: failState.locked }
+      });
+
+      if (failState.locked) {
+        const mins = Math.max(1, Math.ceil(failState.retryAfterSeconds / 60));
+        res.setHeader('Retry-After', String(failState.retryAfterSeconds));
+        return res.status(429).json({
+          success: false,
+          rate_limited: true,
+          retry_after_seconds: failState.retryAfterSeconds,
+          message: `Account sign-in temporarily locked after repeated failed attempts. Please try again in ${mins} minute${mins > 1 ? 's' : ''}.`
+        });
+      }
+
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
+
+    // Password is verified — clear any failed attempts counter
+    clearFailedLogins(clientIp, email);
 
     if (user.status === 'suspended') {
       return res.status(403).json({ success: false, message: 'Your account has been suspended. Contact support.' });
@@ -71,20 +140,14 @@ export const login = async (req, res, next) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
-    }
-
     const token = generateToken(user);
 
-    // Audit log
     await store.logAudit({
       user_id: user.id,
       action: 'USER_LOGIN',
       entity_type: 'AUTH',
       entity_id: user.id,
-      ip_address: req.ip || '127.0.0.1',
+      ip_address: clientIp,
       details: { email: user.email, role: user.role }
     });
 
@@ -103,15 +166,32 @@ export const login = async (req, res, next) => {
 
 export const register = async (req, res, next) => {
   try {
-    const { email, password, full_name, role = 'student', phone, bio } = req.body;
+    const { email, password, full_name, role = 'student', phone, bio } = req.body || {};
 
     if (!email || !password || !full_name) {
       return res.status(400).json({ success: false, message: 'Full name, email, and password are required.' });
     }
 
-    // Role check: superadmin cannot be registered directly
-    if (role === 'superadmin') {
-      return res.status(403).json({ success: false, message: 'Superadmin accounts cannot be registered via public signup.' });
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    }
+
+    const pwCheck = validatePassword(password);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ success: false, message: pwCheck.message });
+    }
+
+    const cleanName = clampText(full_name, 120);
+    if (cleanName.length < 2) {
+      return res.status(400).json({ success: false, message: 'Full name must be at least 2 characters long.' });
+    }
+
+    // Strict role allowlist: never allow tutor/admin/superadmin via public signup
+    if (!PUBLIC_REGISTER_ROLES.has(role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only student or parent accounts may register directly. Educators must apply via Teach With Us.'
+      });
     }
 
     const existingUser = await store.getProfileByEmail(email);
@@ -123,43 +203,38 @@ export const register = async (req, res, next) => {
     const password_hash = await bcrypt.hash(password, salt);
 
     const newUser = await store.createProfile({
-      email,
+      email: normalizeEmail(email),
       password_hash,
-      full_name,
+      full_name: cleanName,
       role,
-      phone: phone || '',
-      bio: bio || '',
-      avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(full_name)}`,
-      status: 'active'
+      phone: clampText(phone || '', 40),
+      bio: clampText(bio || '', 600),
+      avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`,
+      status: 'pending_verification'
     });
 
-    const token = generateToken(newUser);
-
-    // Audit log
     await store.logAudit({
       user_id: newUser.id,
       action: 'USER_REGISTER',
       entity_type: 'AUTH',
       entity_id: newUser.id,
-      ip_address: req.ip || '127.0.0.1',
+      ip_address: getClientIp(req),
       details: { email: newUser.email, role: newUser.role }
     });
 
-    // Welcome notification
     await store.createNotification({
       user_id: newUser.id,
       title: 'Welcome to Beacon Bridge Academics!',
-      message: `Welcome ${full_name}! Your ${role} account is now active. Explore your dashboard to get started.`,
+      message: `Welcome ${cleanName}! Your ${role} registration has been received and awaits verification.`,
       type: 'system',
-      link: `/${role}/dashboard`
+      link: '/payment-proof'
     });
 
     const { password_hash: _, ...safeUser } = newUser;
 
     res.status(201).json({
       success: true,
-      message: 'Account registered successfully.',
-      token,
+      message: 'Account registered and awaiting administrator payment verification.',
       user: safeUser
     });
   } catch (err) {
@@ -169,9 +244,9 @@ export const register = async (req, res, next) => {
 
 export const registerJoint = async (req, res, next) => {
   try {
-    const { student, parent, course_id, course_track, selected_subjects, payment_proof_url, bank_reference, amount } = req.body;
+    const { student, parent, course_id, course_track, selected_subjects, payment_proof_url, bank_reference, amount } = req.body || {};
 
-    if (!student || !parent) {
+    if (!student || !parent || typeof student !== 'object' || typeof parent !== 'object') {
       return res.status(400).json({ success: false, message: 'Both student and parent information are required.' });
     }
 
@@ -183,28 +258,67 @@ export const registerJoint = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Parent full name, email, and password are required.' });
     }
 
+    if (!isValidEmail(student.email) || !isValidEmail(parent.email)) {
+      return res.status(400).json({ success: false, message: 'Please provide valid email addresses for both student and parent.' });
+    }
+
+    if (normalizeEmail(student.email) === normalizeEmail(parent.email)) {
+      return res.status(400).json({ success: false, message: 'Student and Parent must use different email addresses.' });
+    }
+
+    const stuPw = validatePassword(student.password);
+    if (!stuPw.valid) return res.status(400).json({ success: false, message: `Student password: ${stuPw.message}` });
+
+    const parPw = validatePassword(parent.password);
+    if (!parPw.valid) return res.status(400).json({ success: false, message: `Parent password: ${parPw.message}` });
+
+    if (payment_proof_url && !isSafeUrl(payment_proof_url, { allowRelative: true, allowEmpty: false })) {
+      return res.status(400).json({ success: false, message: 'Invalid payment proof file link.' });
+    }
+
+    const parsedAmount = amount !== undefined && amount !== '' ? parsePositiveAmount(amount) : undefined;
+    if (amount !== undefined && amount !== '' && parsedAmount === null) {
+      return res.status(400).json({ success: false, message: 'Invalid tuition amount provided.' });
+    }
+
+    const cleanStudent = {
+      full_name: clampText(student.full_name, 120),
+      email: normalizeEmail(student.email),
+      password: student.password,
+      phone: clampText(student.phone || '', 40),
+      grade: clampText(student.grade || '', 120)
+    };
+    const cleanParent = {
+      full_name: clampText(parent.full_name, 120),
+      email: normalizeEmail(parent.email),
+      password: parent.password,
+      phone: clampText(parent.phone || '', 40),
+      relationship: clampText(parent.relationship || 'Parent', 60)
+    };
+    const cleanSubjects = Array.isArray(selected_subjects)
+      ? selected_subjects.slice(0, 20).map((s) => clampText(String(s), 120)).filter(Boolean)
+      : [];
+
     const result = await store.registerJoint({
-      student,
-      parent,
+      student: cleanStudent,
+      parent: cleanParent,
       course_id,
-      course_track,
-      selected_subjects: selected_subjects || [],
-      payment_proof_url,
-      bank_reference,
-      amount
+      course_track: course_track ? clampText(String(course_track), 100) : null,
+      selected_subjects: cleanSubjects,
+      payment_proof_url: payment_proof_url ? String(payment_proof_url).trim() : '',
+      bank_reference: clampText(bank_reference || '', 100),
+      amount: parsedAmount
     });
 
-    // Send Welcome Email to Parent & Student asynchronously
     (async () => {
       try {
-        const courses = await store.getCourses();
-        const course = courses.find(c => c.id === course_id);
+        const course = course_id ? await store.getCourseById(course_id) : null;
         await sendRegistrationWelcome({
           student: result.student,
           parent: result.parent,
           course,
           track: course_track,
-          amount
+          amount: parsedAmount || result.payment?.amount
         });
 
         if (payment_proof_url && result.payment) {
@@ -237,21 +351,49 @@ export const registerJoint = async (req, res, next) => {
 
 export const registerIelts = async (req, res, next) => {
   try {
-    const { candidate, ielts_track, target_band, exam_date, focus_modules, payment_proof_url, bank_reference, amount } = req.body;
+    const { candidate, ielts_track, target_band, exam_date, focus_modules, payment_proof_url, bank_reference, amount } = req.body || {};
 
-    if (!candidate || !candidate.email || !candidate.password || !candidate.full_name) {
+    if (!candidate || typeof candidate !== 'object' || !candidate.email || !candidate.password || !candidate.full_name) {
       return res.status(400).json({ success: false, message: 'Candidate full name, email, and password are required.' });
     }
 
+    if (!isValidEmail(candidate.email)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid candidate email address.' });
+    }
+
+    const pwCheck = validatePassword(candidate.password);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ success: false, message: pwCheck.message });
+    }
+
+    if (payment_proof_url && !isSafeUrl(payment_proof_url, { allowRelative: true, allowEmpty: false })) {
+      return res.status(400).json({ success: false, message: 'Invalid payment proof file link.' });
+    }
+
+    const parsedAmount = amount !== undefined && amount !== '' ? parsePositiveAmount(amount) : 100.00;
+    if (parsedAmount === null) {
+      return res.status(400).json({ success: false, message: 'Invalid tuition amount provided.' });
+    }
+
+    const cleanCandidate = {
+      full_name: clampText(candidate.full_name, 120),
+      email: normalizeEmail(candidate.email),
+      password: candidate.password,
+      phone: clampText(candidate.phone || '', 40)
+    };
+    const cleanModules = Array.isArray(focus_modules)
+      ? focus_modules.slice(0, 10).map((m) => clampText(String(m), 150)).filter(Boolean)
+      : [];
+
     const result = await store.registerIelts({
-      candidate,
-      ielts_track,
-      target_band,
-      exam_date,
-      focus_modules,
-      payment_proof_url,
-      bank_reference,
-      amount: amount || 100.00
+      candidate: cleanCandidate,
+      ielts_track: clampText(ielts_track || 'IELTS Academic', 80),
+      target_band: clampText(String(target_band || '7.5'), 20),
+      exam_date: clampText(exam_date || '', 40),
+      focus_modules: cleanModules,
+      payment_proof_url: payment_proof_url ? String(payment_proof_url).trim() : '',
+      bank_reference: clampText(bank_reference || '', 100),
+      amount: parsedAmount
     });
 
     (async () => {
@@ -261,8 +403,8 @@ export const registerIelts = async (req, res, next) => {
           track: ielts_track,
           targetBand: target_band,
           examDate: exam_date,
-          focusModules: focus_modules,
-          amount: amount || 100.00,
+          focusModules: cleanModules,
+          amount: parsedAmount,
           bankReference: result.payment?.bank_reference || bank_reference
         });
 
@@ -303,12 +445,24 @@ export const getMe = async (req, res) => {
 
 export const updateProfile = async (req, res, next) => {
   try {
-    const { full_name, phone, bio, avatar_url } = req.body;
+    const { full_name, phone, bio, avatar_url } = req.body || {};
     const updates = {};
-    if (full_name) updates.full_name = full_name;
-    if (phone !== undefined) updates.phone = phone;
-    if (bio !== undefined) updates.bio = bio;
-    if (avatar_url) updates.avatar_url = avatar_url;
+
+    if (full_name !== undefined) {
+      const cleanName = clampText(full_name, 120);
+      if (cleanName.length < 2) {
+        return res.status(400).json({ success: false, message: 'Full name must be at least 2 characters.' });
+      }
+      updates.full_name = cleanName;
+    }
+    if (phone !== undefined) updates.phone = clampText(phone, 40);
+    if (bio !== undefined) updates.bio = clampText(bio, 1000);
+    if (avatar_url !== undefined) {
+      if (!isSafeUrl(avatar_url, { allowRelative: true, allowEmpty: true })) {
+        return res.status(400).json({ success: false, message: 'Invalid avatar URL.' });
+      }
+      updates.avatar_url = avatar_url;
+    }
 
     const updatedUser = await store.updateProfile(req.user.id, updates);
     const { password_hash, ...safeUser } = updatedUser;
@@ -325,9 +479,18 @@ export const updateProfile = async (req, res, next) => {
 
 export const changePassword = async (req, res, next) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword } = req.body || {};
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: 'Current and new password are required.' });
+    }
+
+    const pwCheck = validatePassword(newPassword);
+    if (!pwCheck.valid) {
+      return res.status(400).json({ success: false, message: pwCheck.message });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ success: false, message: 'New password must be different from your current password.' });
     }
 
     const isMatch = await bcrypt.compare(currentPassword, req.user.password_hash);
@@ -339,6 +502,15 @@ export const changePassword = async (req, res, next) => {
     const password_hash = await bcrypt.hash(newPassword, salt);
 
     await store.updateProfile(req.user.id, { password_hash });
+
+    await store.logAudit({
+      user_id: req.user.id,
+      action: 'PASSWORD_CHANGED',
+      entity_type: 'AUTH',
+      entity_id: req.user.id,
+      ip_address: getClientIp(req),
+      details: { email: req.user.email }
+    });
 
     res.status(200).json({
       success: true,

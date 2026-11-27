@@ -1,15 +1,16 @@
 import { store } from '../database/store.js';
+import { getClientIp } from '../middleware/securityMiddleware.js';
+import { isSafeUrl, clampText, isUuid } from '../utils/validators.js';
 
 export const getAssignments = async (req, res, next) => {
   try {
     const { course_id } = req.query;
     const assignments = await store.getAssignments(course_id);
 
-    // If student is querying, optionally decorate with student's own submission status
     if (req.user && req.user.role === 'student') {
       const submissions = await store.getSubmissions({ student_id: req.user.id });
-      const enriched = assignments.map(a => {
-        const mySub = submissions.find(s => s.assignment_id === a.id);
+      const enriched = assignments.map((a) => {
+        const mySub = submissions.find((s) => s.assignment_id === a.id);
         return {
           ...a,
           mySubmission: mySub || null,
@@ -21,11 +22,10 @@ export const getAssignments = async (req, res, next) => {
       return res.status(200).json({ success: true, assignments: enriched });
     }
 
-    // If parent is querying, decorate with linked student's submissions
     if (req.user && req.user.role === 'parent') {
       const links = await store.getParentStudentLinks();
-      const myStudentLinks = links.filter(l => l.parent_id === req.user.id);
-      const studentIds = myStudentLinks.map(l => l.student_id);
+      const myStudentLinks = links.filter((l) => l.parent_id === req.user.id);
+      const studentIds = myStudentLinks.map((l) => l.student_id);
 
       const allSubs = [];
       for (const sId of studentIds) {
@@ -33,20 +33,14 @@ export const getAssignments = async (req, res, next) => {
         allSubs.push(...subs);
       }
 
-      const enriched = assignments.map(a => {
-        const childSubs = allSubs.filter(s => s.assignment_id === a.id);
-        return {
-          ...a,
-          childSubmissions: childSubs
-        };
-      });
+      const enriched = assignments.map((a) => ({
+        ...a,
+        childSubmissions: allSubs.filter((s) => s.assignment_id === a.id)
+      }));
       return res.status(200).json({ success: true, assignments: enriched });
     }
 
-    res.status(200).json({
-      success: true,
-      assignments
-    });
+    res.status(200).json({ success: true, assignments });
   } catch (err) {
     next(err);
   }
@@ -60,9 +54,22 @@ export const getAssignmentById = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Assignment not found.' });
     }
 
+    // Zero-trust IDOR defense: students only see their own submissions; parents only see their linked children's submissions
+    let filteredSubmissions = assignment.submissions || [];
+    if (req.user.role === 'student') {
+      filteredSubmissions = filteredSubmissions.filter((s) => s.student_id === req.user.id);
+    } else if (req.user.role === 'parent') {
+      const links = await store.getParentStudentLinks();
+      const childIds = new Set(links.filter((l) => l.parent_id === req.user.id).map((l) => l.student_id));
+      filteredSubmissions = filteredSubmissions.filter((s) => childIds.has(s.student_id));
+    }
+
     res.status(200).json({
       success: true,
-      assignment
+      assignment: {
+        ...assignment,
+        submissions: filteredSubmissions
+      }
     });
   } catch (err) {
     next(err);
@@ -71,35 +78,38 @@ export const getAssignmentById = async (req, res, next) => {
 
 export const createAssignment = async (req, res, next) => {
   try {
-    const { course_id, title, description, due_date, max_score, file_url } = req.body;
+    const { course_id, title, description, due_date, max_score, file_url } = req.body || {};
 
-    if (!course_id || !title || !due_date) {
-      return res.status(400).json({ success: false, message: 'Course, title, and due date are required.' });
+    if (!course_id || !isUuid(course_id) || !title || !due_date) {
+      return res.status(400).json({ success: false, message: 'Valid course, title, and due date are required.' });
     }
+    if (file_url && !isSafeUrl(file_url, { allowRelative: true, allowEmpty: true })) {
+      return res.status(400).json({ success: false, message: 'Invalid assignment attachment URL.' });
+    }
+    const maxScoreNum = Math.min(1000, Math.max(1, parseInt(max_score, 10) || 100));
 
     const newAssignment = await store.createAssignment({
       course_id,
       tutor_id: req.user.id,
-      title,
-      description,
+      title: clampText(title, 200),
+      description: clampText(description || '', 4000),
       due_date,
-      max_score: max_score || 100,
-      file_url
+      max_score: maxScoreNum,
+      file_url: file_url ? String(file_url).trim() : ''
     });
 
-    // Audit log
     await store.logAudit({
       user_id: req.user.id,
       action: 'ASSIGNMENT_CREATED',
       entity_type: 'ASSIGNMENT',
       entity_id: newAssignment.id,
-      ip_address: req.ip || '127.0.0.1',
-      details: { title, course_id, due_date }
+      ip_address: getClientIp(req),
+      details: { title: newAssignment.title, course_id, due_date }
     });
 
     res.status(201).json({
       success: true,
-      message: 'Assignment created successfully. Both students and their parents have been notified via in-app alert and email.',
+      message: 'Assignment created successfully. Enrolled students and parents have been notified.',
       assignment: newAssignment
     });
   } catch (err) {
@@ -114,14 +124,21 @@ export const getSubmissions = async (req, res, next) => {
 
     if (req.user.role === 'student') {
       student_id = req.user.id;
+    } else if (req.user.role === 'parent') {
+      const links = await store.getParentStudentLinks();
+      const childIds = new Set(links.filter((l) => l.parent_id === req.user.id).map((l) => l.student_id));
+      if (student_id && !childIds.has(student_id)) {
+        return res.status(403).json({ success: false, message: 'Forbidden: You can only view submissions for your linked children.' });
+      }
+      const allSubs = await store.getSubmissions({ assignment_id, student_id });
+      return res.status(200).json({
+        success: true,
+        submissions: allSubs.filter((s) => childIds.has(s.student_id))
+      });
     }
 
     const submissions = await store.getSubmissions({ assignment_id, student_id });
-
-    res.status(200).json({
-      success: true,
-      submissions
-    });
+    res.status(200).json({ success: true, submissions });
   } catch (err) {
     next(err);
   }
@@ -129,35 +146,36 @@ export const getSubmissions = async (req, res, next) => {
 
 export const submitAssignment = async (req, res, next) => {
   try {
-    const { id } = req.params; // assignment_id
-    const { submission_text, file_url } = req.body;
+    const { id } = req.params;
+    const { submission_text, file_url } = req.body || {};
 
+    if (!isUuid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid assignment ID.' });
+    }
     if (!submission_text && !file_url) {
       return res.status(400).json({ success: false, message: 'Submission content or file attachment is required.' });
+    }
+    if (file_url && !isSafeUrl(file_url, { allowRelative: true, allowEmpty: true })) {
+      return res.status(400).json({ success: false, message: 'Invalid submission attachment URL.' });
     }
 
     const submission = await store.submitAssignment({
       assignment_id: id,
       student_id: req.user.id,
-      submission_text,
-      file_url
+      submission_text: clampText(submission_text || '', 10000),
+      file_url: file_url ? String(file_url).trim() : ''
     });
 
-    // Audit log
     await store.logAudit({
       user_id: req.user.id,
       action: 'ASSIGNMENT_SUBMITTED',
       entity_type: 'ASSIGNMENT_SUBMISSION',
       entity_id: submission.id,
-      ip_address: req.ip || '127.0.0.1',
+      ip_address: getClientIp(req),
       details: { assignment_id: id, student_id: req.user.id }
     });
 
-    res.status(200).json({
-      success: true,
-      message: 'Assignment submitted successfully!',
-      submission
-    });
+    res.status(200).json({ success: true, message: 'Assignment submitted successfully!', submission });
   } catch (err) {
     next(err);
   }
@@ -165,27 +183,30 @@ export const submitAssignment = async (req, res, next) => {
 
 export const gradeSubmission = async (req, res, next) => {
   try {
-    const { id } = req.params; // submission_id
-    const { score, feedback } = req.body;
+    const { id } = req.params;
+    const { score, feedback } = req.body || {};
 
     if (score === undefined || score === null) {
       return res.status(400).json({ success: false, message: 'Score is required.' });
     }
+    const numericScore = Number(score);
+    if (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > 1000) {
+      return res.status(400).json({ success: false, message: 'Score must be a valid number between 0 and 1000.' });
+    }
 
     const updatedSubmission = await store.gradeSubmission(id, {
-      score,
-      feedback,
+      score: Math.round(numericScore),
+      feedback: clampText(feedback || '', 2000),
       tutorId: req.user.id
     });
 
-    // Audit log
     await store.logAudit({
       user_id: req.user.id,
       action: 'ASSIGNMENT_GRADED',
       entity_type: 'ASSIGNMENT_SUBMISSION',
       entity_id: id,
-      ip_address: req.ip || '127.0.0.1',
-      details: { score, submission_id: id }
+      ip_address: getClientIp(req),
+      details: { score: Math.round(numericScore), submission_id: id }
     });
 
     res.status(200).json({

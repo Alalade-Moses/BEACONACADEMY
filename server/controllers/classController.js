@@ -1,4 +1,12 @@
 import { store } from '../database/store.js';
+import { getClientIp } from '../middleware/securityMiddleware.js';
+import { isSafeUrl, clampText, pickFields, isUuid } from '../utils/validators.js';
+
+const CLASS_EDITABLE_FIELDS = [
+  'course_id', 'title', 'description', 'scheduled_at',
+  'duration_minutes', 'status', 'presentation_url', 'presentation_pages'
+];
+const VALID_CLASS_STATUSES = new Set(['scheduled', 'live', 'completed', 'cancelled']);
 
 export const getAllClasses = async (req, res, next) => {
   try {
@@ -6,25 +14,23 @@ export const getAllClasses = async (req, res, next) => {
     let classes = await store.getClasses();
 
     if (req.user.role === 'tutor') {
-      classes = classes.filter(c => c.tutor_id === req.user.id);
+      classes = classes.filter((c) => c.tutor_id === req.user.id);
     } else if (req.user.role === 'student') {
       const enrollments = await store.getEnrollments();
       const studentCourseIds = enrollments
-        .filter(e => e.student_id === req.user.id)
-        .map(e => e.course_id);
-      classes = classes.filter(c => studentCourseIds.includes(c.course_id));
+        .filter((e) => e.student_id === req.user.id)
+        .map((e) => e.course_id);
+      classes = classes.filter((c) => studentCourseIds.includes(c.course_id));
     }
 
     if (status && status !== 'all') {
-      classes = classes.filter(c => c.status === status);
+      classes = classes.filter((c) => c.status === status);
     }
     if (course_id) {
-      classes = classes.filter(c => c.course_id === course_id);
+      classes = classes.filter((c) => c.course_id === course_id);
     }
 
-    // Sort by scheduled_at ascending for upcoming, descending for completed
     classes.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
-
     res.status(200).json({ success: true, count: classes.length, classes });
   } catch (err) {
     next(err);
@@ -33,36 +39,15 @@ export const getAllClasses = async (req, res, next) => {
 
 export const getClassById = async (req, res, next) => {
   try {
-    let classItem = await store.getClassById(req.params.id);
-    
-    // Resilient fallback for any meeting room ID (e.g. ROOM-CS101-LIVE, ROOM-GCSE-MATH-LIVE, ad-hoc rooms)
+    const classItem = await store.getClassById(req.params.id);
     if (!classItem) {
-      const classes = await store.getClasses();
-      const firstClass = classes[0] || null;
-      classItem = {
-        id: req.params.id,
-        meeting_room_id: req.params.id,
-        title: req.params.id.includes('MATH') 
-          ? 'GCSE Higher Mathematics: Quadratic Graphs & Equations'
-          : req.params.id.includes('CHEM') || req.params.id.includes('SCI')
-          ? 'GCSE Triple Science: Organic Chemistry & Kinetics'
-          : 'Live Virtual Classroom & Interactive Whiteboard Session',
-        description: 'Interactive live teaching session with synchronized slide annotations and whiteboard illustrations.',
-        status: 'live',
-        scheduled_at: new Date().toISOString(),
-        duration_minutes: 75,
-        presentation_url: '/slides/sample-presentation.pdf',
-        presentation_pages: 6,
-        course_id: firstClass?.course_id || '20000000-0000-0000-0000-000000000001',
-        course: firstClass?.course || { title: 'GCSE 5-Subject Core Bundle', level: 'GCSE' },
-        tutor_id: firstClass?.tutor_id || '00000000-0000-0000-0000-000000000002',
-        tutor: firstClass?.tutor || { full_name: 'Dr. Sarah Jenkins' }
-      };
+      return res.status(404).json({ success: false, message: 'Class session not found.' });
     }
 
-    // Attach materials for this class
     const allMaterials = await store.getMaterials();
-    const classMaterials = allMaterials.filter(m => m.class_id === classItem.id || m.course_id === classItem.course_id);
+    const classMaterials = allMaterials.filter(
+      (m) => m.class_id === classItem.id || (classItem.course_id && m.course_id === classItem.course_id)
+    );
 
     res.status(200).json({
       success: true,
@@ -78,61 +63,64 @@ export const getClassById = async (req, res, next) => {
 
 export const createClass = async (req, res, next) => {
   try {
-    const { 
-      course_id, 
-      title, 
-      description, 
-      scheduled_at, 
-      duration_minutes = 60, 
+    const {
+      course_id,
+      title,
+      description,
+      scheduled_at,
+      duration_minutes = 60,
       presentation_url,
       presentation_pages = 6,
       status = 'scheduled',
       isInstant = false
-    } = req.body;
+    } = req.body || {};
 
-    const classTitle = (title && title.trim()) || `Live Teaching Session - ${new Date().toLocaleDateString('en-GB')}`;
-    const scheduledTime = scheduled_at || new Date().toISOString();
-    const classStatus = isInstant || status === 'live' ? 'live' : 'scheduled';
-
-    // Gracefully resolve course_id fallback
-    let resolvedCourseId = course_id;
-    if (!resolvedCourseId || resolvedCourseId === 'general' || resolvedCourseId === 'all') {
-      try {
-        const allCourses = await store.getCourses();
-        resolvedCourseId = allCourses[0]?.id || null;
-      } catch (e) {
-        resolvedCourseId = null;
-      }
+    if (presentation_url && !isSafeUrl(presentation_url, { allowRelative: true, allowEmpty: true })) {
+      return res.status(400).json({ success: false, message: 'Invalid presentation URL.' });
     }
 
-    const tutor_id = req.user.role === 'tutor' ? req.user.id : (req.body.tutor_id || req.user.id);
+    const classTitle = clampText(title || '', 200) || `Live Teaching Session - ${new Date().toLocaleDateString('en-GB')}`;
+    const scheduledTime = scheduled_at || new Date().toISOString();
+    const classStatus = isInstant || status === 'live' ? 'live' : 'scheduled';
+    const dur = Math.min(360, Math.max(15, parseInt(duration_minutes, 10) || 60));
+
+    let resolvedCourseId = isUuid(course_id) ? course_id : null;
+    if (!resolvedCourseId) {
+      const allCourses = await store.getCourses();
+      resolvedCourseId = allCourses[0]?.id || null;
+    }
+
+    const tutor_id = req.user.role === 'tutor'
+      ? req.user.id
+      : (isUuid(req.body.tutor_id) ? req.body.tutor_id : req.user.id);
     const meeting_room_id = `ROOM-${Date.now().toString(36).toUpperCase()}`;
 
     const newClass = await store.createClass({
       course_id: resolvedCourseId,
       tutor_id,
       title: classTitle,
-      description: description || 'Interactive live classroom with synchronized presentation deck and digital whiteboard.',
+      description: clampText(description || 'Interactive live classroom with synchronized presentation deck and digital whiteboard.', 1500),
       scheduled_at: scheduledTime,
-      duration_minutes: parseInt(duration_minutes, 10) || 60,
+      duration_minutes: dur,
       meeting_room_id,
       presentation_url: presentation_url || '/slides/sample-presentation.pdf',
-      presentation_pages: parseInt(presentation_pages, 10) || 6,
+      presentation_pages: Math.min(200, Math.max(1, parseInt(presentation_pages, 10) || 6)),
       status: classStatus
     });
 
-    // Notify all enrolled students in this course
-    const enrollments = await store.getEnrollments();
-    const enrolledStudents = enrollments.filter(e => e.course_id === course_id);
+    if (resolvedCourseId) {
+      const enrollments = await store.getEnrollments();
+      const enrolledStudents = enrollments.filter((e) => e.course_id === resolvedCourseId);
 
-    for (const enr of enrolledStudents) {
-      await store.createNotification({
-        user_id: enr.student_id,
-        title: 'New Class Scheduled',
-        message: `Your tutor scheduled "${title}" on ${new Date(scheduled_at).toLocaleDateString()}.`,
-        type: 'class',
-        link: `/classroom/${newClass.meeting_room_id}`
-      });
+      for (const enr of enrolledStudents) {
+        await store.createNotification({
+          user_id: enr.student_id,
+          title: 'New Class Scheduled',
+          message: `Your tutor scheduled "${classTitle}" on ${new Date(scheduledTime).toLocaleDateString()}.`,
+          type: 'class',
+          link: `/classroom/${newClass.meeting_room_id}`
+        });
+      }
     }
 
     await store.logAudit({
@@ -140,7 +128,7 @@ export const createClass = async (req, res, next) => {
       action: 'SCHEDULE_CLASS',
       entity_type: 'CLASS',
       entity_id: newClass.id,
-      ip_address: req.ip || '127.0.0.1',
+      ip_address: getClientIp(req),
       details: { title: newClass.title, room: newClass.meeting_room_id }
     });
 
@@ -161,7 +149,17 @@ export const updateClass = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'You can only update your own classes.' });
     }
 
-    const updated = await store.updateClass(classItem.id, req.body);
+    const updates = pickFields(req.body, CLASS_EDITABLE_FIELDS);
+    if (updates.status && !VALID_CLASS_STATUSES.has(updates.status)) {
+      return res.status(400).json({ success: false, message: 'Invalid class status.' });
+    }
+    if (updates.presentation_url && !isSafeUrl(updates.presentation_url, { allowRelative: true, allowEmpty: true })) {
+      return res.status(400).json({ success: false, message: 'Invalid presentation URL.' });
+    }
+    if (updates.title) updates.title = clampText(updates.title, 200);
+    if (updates.description) updates.description = clampText(updates.description, 1500);
+
+    const updated = await store.updateClass(classItem.id, updates);
     res.status(200).json({ success: true, message: 'Class updated successfully.', class: updated });
   } catch (err) {
     next(err);
@@ -181,10 +179,8 @@ export const startClass = async (req, res, next) => {
 
     const updated = await store.updateClass(classItem.id, { status: 'live' });
 
-    // Notify enrolled students that class is live now
     const enrollments = await store.getEnrollments();
-    const enrolledStudents = enrollments.filter(e => e.course_id === classItem.course_id);
-
+    const enrolledStudents = enrollments.filter((e) => e.course_id === classItem.course_id);
     for (const enr of enrolledStudents) {
       await store.createNotification({
         user_id: enr.student_id,
@@ -206,6 +202,10 @@ export const endClass = async (req, res, next) => {
     const classItem = await store.getClassById(req.params.id);
     if (!classItem) {
       return res.status(404).json({ success: false, message: 'Class not found.' });
+    }
+
+    if (req.user.role === 'tutor' && classItem.tutor_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Only the assigned tutor can conclude this class.' });
     }
 
     const updated = await store.updateClass(classItem.id, { status: 'completed' });

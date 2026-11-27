@@ -4,7 +4,9 @@ import { authenticate, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+router.use(authenticate);
+
 router.get('/', getAnnouncements);
-router.post('/', authenticate, requireRole(['superadmin', 'tutor']), createAnnouncement);
+router.post('/', requireRole(['superadmin', 'tutor']), createAnnouncement);
 
 export default router;

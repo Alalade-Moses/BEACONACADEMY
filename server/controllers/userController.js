@@ -1,5 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { store } from '../database/store.js';
+import { getClientIp } from '../middleware/securityMiddleware.js';
+import { isValidEmail, normalizeEmail, validatePassword, clampText, isUuid } from '../utils/validators.js';
+
+const VALID_ROLES = new Set(['superadmin', 'admin', 'tutor', 'student', 'parent']);
+const VALID_STATUSES = new Set(['active', 'suspended', 'pending', 'pending_verification']);
 
 export const getAllUsers = async (req, res, next) => {
   try {
@@ -7,20 +12,20 @@ export const getAllUsers = async (req, res, next) => {
     let users = await store.getProfiles();
 
     if (role && role !== 'all') {
-      users = users.filter(u => u.role === role);
+      users = users.filter((u) => u.role === role);
     }
     if (status && status !== 'all') {
-      users = users.filter(u => u.status === status);
+      users = users.filter((u) => u.status === status);
     }
     if (search) {
-      const q = search.toLowerCase();
-      users = users.filter(u => 
-        u.full_name.toLowerCase().includes(q) || 
-        u.email.toLowerCase().includes(q)
+      const q = String(search).toLowerCase();
+      users = users.filter(
+        (u) =>
+          (u.full_name || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q)
       );
     }
 
-    // Strip password hashes
     const sanitized = users.map(({ password_hash, ...rest }) => rest);
     res.status(200).json({ success: true, count: sanitized.length, users: sanitized });
   } catch (err) {
@@ -30,7 +35,27 @@ export const getAllUsers = async (req, res, next) => {
 
 export const getUserById = async (req, res, next) => {
   try {
-    const user = await store.getProfileById(req.params.id);
+    const targetId = req.params.id;
+    if (!isUuid(targetId)) {
+      return res.status(400).json({ success: false, message: 'Invalid user identifier.' });
+    }
+
+    // Zero-trust IDOR protection: users may only access themselves, their linked children, or via superadmin/tutor role
+    const isElevated = req.user.role === 'superadmin' || req.user.role === 'tutor';
+    const isSelf = req.user.id === targetId;
+
+    if (!isElevated && !isSelf) {
+      let isLinkedChild = false;
+      if (req.user.role === 'parent') {
+        const links = await store.getParentStudentLinks();
+        isLinkedChild = links.some((l) => l.parent_id === req.user.id && l.student_id === targetId);
+      }
+      if (!isLinkedChild) {
+        return res.status(403).json({ success: false, message: 'Forbidden: You cannot view this user profile.' });
+      }
+    }
+
+    const user = await store.getProfileById(targetId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
@@ -43,10 +68,23 @@ export const getUserById = async (req, res, next) => {
 
 export const createUser = async (req, res, next) => {
   try {
-    const { email, password, full_name, role, phone, bio, status = 'active' } = req.body;
+    const { email, password, full_name, role, phone, bio, status = 'active' } = req.body || {};
 
     if (!email || !full_name || !role) {
       return res.status(400).json({ success: false, message: 'Email, full name, and role are required.' });
+    }
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    }
+    if (!VALID_ROLES.has(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid user role specified.' });
+    }
+    if (!VALID_STATUSES.has(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid user status specified.' });
+    }
+    if (password) {
+      const pwCheck = validatePassword(password);
+      if (!pwCheck.valid) return res.status(400).json({ success: false, message: pwCheck.message });
     }
 
     const existing = await store.getProfileByEmail(email);
@@ -58,15 +96,16 @@ export const createUser = async (req, res, next) => {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(initialPassword, salt);
 
+    const cleanName = clampText(full_name, 120);
     const newUser = await store.createProfile({
-      email,
+      email: normalizeEmail(email),
       password_hash,
-      full_name,
+      full_name: cleanName,
       role,
-      phone: phone || '',
-      bio: bio || '',
+      phone: clampText(phone || '', 40),
+      bio: clampText(bio || '', 1000),
       status,
-      avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(full_name)}`
+      avatar_url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(cleanName)}`
     });
 
     await store.logAudit({
@@ -74,7 +113,7 @@ export const createUser = async (req, res, next) => {
       action: 'ADMIN_CREATE_USER',
       entity_type: 'USER',
       entity_id: newUser.id,
-      ip_address: req.ip || '127.0.0.1',
+      ip_address: getClientIp(req),
       details: { email: newUser.email, role: newUser.role }
     });
 
@@ -87,13 +126,24 @@ export const createUser = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const { full_name, role, status, phone, bio } = req.body;
+    const { full_name, role, status, phone, bio } = req.body || {};
     const updates = {};
-    if (full_name) updates.full_name = full_name;
-    if (role) updates.role = role;
-    if (status) updates.status = status;
-    if (phone !== undefined) updates.phone = phone;
-    if (bio !== undefined) updates.bio = bio;
+
+    if (full_name !== undefined) updates.full_name = clampText(full_name, 120);
+    if (role !== undefined) {
+      if (!VALID_ROLES.has(role)) {
+        return res.status(400).json({ success: false, message: 'Invalid role specified.' });
+      }
+      updates.role = role;
+    }
+    if (status !== undefined) {
+      if (!VALID_STATUSES.has(status)) {
+        return res.status(400).json({ success: false, message: 'Invalid status specified.' });
+      }
+      updates.status = status;
+    }
+    if (phone !== undefined) updates.phone = clampText(phone, 40);
+    if (bio !== undefined) updates.bio = clampText(bio, 1000);
 
     const existingBefore = await store.getProfileById(req.params.id);
     const updated = await store.updateProfile(req.params.id, updates);
@@ -101,7 +151,6 @@ export const updateUser = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    // If admin activates a pending_verification account, also unlock their linked family member (parent/student)
     if (status === 'active' && existingBefore?.status === 'pending_verification') {
       try {
         const links = await store.getParentStudentLinks();
@@ -129,7 +178,7 @@ export const updateUser = async (req, res, next) => {
       action: 'ADMIN_UPDATE_USER',
       entity_type: 'USER',
       entity_id: req.params.id,
-      ip_address: req.ip || '127.0.0.1',
+      ip_address: getClientIp(req),
       details: updates
     });
 
@@ -158,7 +207,7 @@ export const deleteUser = async (req, res, next) => {
       action: 'ADMIN_DELETE_USER',
       entity_type: 'USER',
       entity_id: req.params.id,
-      ip_address: req.ip || '127.0.0.1',
+      ip_address: getClientIp(req),
       details: { email: user.email }
     });
 
@@ -170,22 +219,23 @@ export const deleteUser = async (req, res, next) => {
 
 export const getPlatformStats = async (req, res, next) => {
   try {
-    const profiles = await store.getProfiles();
-    const courses = await store.getCourses();
-    const classes = await store.getClasses();
-    const enrollments = await store.getEnrollments();
-    const attendance = await store.getAttendance();
+    const [profiles, courses, classes, enrollments, attendance] = await Promise.all([
+      store.getProfiles(),
+      store.getCourses(),
+      store.getClasses(),
+      store.getEnrollments(),
+      store.getAttendance()
+    ]);
 
-    const totalStudents = profiles.filter(p => p.role === 'student').length;
-    const totalTutors = profiles.filter(p => p.role === 'tutor').length;
-    const totalParents = profiles.filter(p => p.role === 'parent').length;
+    const totalStudents = profiles.filter((p) => p.role === 'student').length;
+    const totalTutors = profiles.filter((p) => p.role === 'tutor').length;
+    const totalParents = profiles.filter((p) => p.role === 'parent').length;
     const totalCourses = courses.length;
-    const activeClasses = classes.filter(c => c.status === 'live').length;
-    const scheduledClasses = classes.filter(c => c.status === 'scheduled').length;
+    const activeClasses = classes.filter((c) => c.status === 'live').length;
+    const scheduledClasses = classes.filter((c) => c.status === 'scheduled').length;
 
-    // Calculate approximate platform revenue from course enrollments
     const revenue = enrollments.reduce((sum, enr) => {
-      const course = courses.find(c => c.id === enr.course_id);
+      const course = courses.find((c) => c.id === enr.course_id);
       return sum + (course ? Number(course.price || 0) : 0);
     }, 0);
 

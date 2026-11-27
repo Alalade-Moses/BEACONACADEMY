@@ -6,12 +6,14 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { parsePptx } from '../services/pptxParser.js';
 import { safeDeleteUploadedFile } from '../services/fileCleanup.js';
+import { authenticate, optionalAuthenticate, requireRole } from '../middleware/authMiddleware.js';
+import { uploadRateLimiter } from '../middleware/securityMiddleware.js';
+import { validateMagicBytes } from '../utils/validators.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '../uploads');
 
-// Ensure upload directory and subfolders exist
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -20,45 +22,68 @@ if (!fs.existsSync(decksDir)) {
   fs.mkdirSync(decksDir, { recursive: true });
 }
 
-// Multer Storage Configuration
+// Strict anchored extension + MIME allowlist (blocks HTML, SVG, JS, PHP, EXE, shell scripts)
+const ALLOWED_EXTENSIONS = new Set([
+  'jpeg', 'jpg', 'png', 'gif', 'webp',
+  'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt', 'csv',
+  'mp4', 'webm', 'mov', 'm4v', 'mkv', 'avi'
+]);
+
+const ALLOWED_MIME_PREFIXES = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.ms-excel',
+  'text/plain', 'text/csv',
+  'video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska', 'video/x-msvideo', 'video/x-m4v',
+  'application/octet-stream' // Some mobile browsers send octet-stream for valid PDFs/videos; magic-bytes check enforces true type!
+];
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const safeBaseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const safeBaseName = path.basename(file.originalname || 'file', ext)
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 60) || 'file';
     const uniqueSuffix = `${Date.now()}-${uuidv4().substring(0, 8)}`;
     cb(null, `${safeBaseName}-${uniqueSuffix}${ext}`);
   }
 });
 
-// File type filter
 const fileFilter = (req, file, cb) => {
-  const allowedExtensions = /jpeg|jpg|png|gif|webp|pdf|doc|docx|ppt|pptx|xls|xlsx|txt|csv|mp4|webm|mov|m4v|mkv|avi/;
-  const ext = path.extname(file.originalname).toLowerCase().replace('.', '');
-  if (allowedExtensions.test(ext)) {
-    cb(null, true);
-  } else {
-    cb(new Error(`File type .${ext} is not supported. Please upload a valid document, image, or video.`));
+  const ext = path.extname(file.originalname || '').toLowerCase().replace('.', '');
+  if (!ext || !ALLOWED_EXTENSIONS.has(ext)) {
+    return cb(new Error(`File type .${ext || 'unknown'} is not permitted for security reasons.`));
   }
+  const mime = String(file.mimetype || '').toLowerCase();
+  const mimeOk = ALLOWED_MIME_PREFIXES.some((prefix) => mime.startsWith(prefix));
+  if (!mimeOk) {
+    return cb(new Error('File MIME type is not permitted for security reasons.'));
+  }
+  cb(null, true);
 };
 
 const upload = multer({
   storage,
-  limits: { fileSize: 150 * 1024 * 1024 }, // 150MB limit for video & materials
+  limits: {
+    fileSize: 150 * 1024 * 1024, // 150MB max for authenticated educators; enforced to 30MB for public uploads below
+    files: 10
+  },
   fileFilter
 });
 
 const router = express.Router();
 
-// Helper to format file response with presentation parsing
 function processUploadedFile(file) {
   const ext = path.extname(file.filename).toLowerCase();
   const publicUrl = `/uploads/${file.filename}`;
   const baseName = path.basename(file.filename, ext);
 
-  // If PowerPoint file, parse slides
   if (ext === '.pptx' || ext === '.ppt') {
     const deckId = `deck-${baseName}`;
     const parsed = parsePptx(file.path, deckId);
@@ -81,7 +106,6 @@ function processUploadedFile(file) {
     }
   }
 
-  // If PDF file, generate multi-page structure
   if (ext === '.pdf') {
     const defaultPages = 10;
     return {
@@ -105,11 +129,10 @@ function processUploadedFile(file) {
     };
   }
 
-  // If Video file (.mp4, .webm, .mov, etc.)
   if (/^\.(mp4|webm|mov|m4v|mkv|avi)$/i.test(ext)) {
     return {
       success: true,
-      message: 'Introductory video uploaded successfully.',
+      message: 'Video uploaded successfully.',
       url: publicUrl,
       filename: file.filename,
       originalName: file.originalname,
@@ -120,11 +143,10 @@ function processUploadedFile(file) {
     };
   }
 
-  // If Image file (.png, .jpg, .webp, etc.)
   if (/^\.(png|jpe?g|webp|gif)$/i.test(ext)) {
     return {
       success: true,
-      message: 'Slide image uploaded successfully.',
+      message: 'Image uploaded successfully.',
       url: publicUrl,
       filename: file.filename,
       originalName: file.originalname,
@@ -156,24 +178,47 @@ function processUploadedFile(file) {
   };
 }
 
-// Upload endpoint (accepts single 'file' or multiple 'files')
-router.post('/', (req, res) => {
+// Upload endpoint (rate-limited, extension + MIME + magic-bytes verified)
+router.post('/', uploadRateLimiter, optionalAuthenticate, (req, res) => {
   upload.any()(req, res, (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ success: false, message: 'File is too large. Maximum size is 50MB.' });
+        return res.status(400).json({ success: false, message: 'File is too large.' });
+      }
+      if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({ success: false, message: 'Maximum of 10 files per upload allowed.' });
       }
       return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
     } else if (err) {
       return res.status(400).json({ success: false, message: err.message });
     }
 
-    const files = req.files || [];
-    if (files.length === 0 && !req.file) {
+    const files = req.files || (req.file ? [req.file] : []);
+    if (files.length === 0) {
       return res.status(400).json({ success: false, message: 'No file was provided in the upload request.' });
     }
 
-    // Handle multiple uploaded files (e.g., tutor selects multiple slide image files)
+    // Public unauthenticated uploads (payment proof slips, applicant CVs/videos) capped at 50MB; authenticated users up to 150MB
+    const maxBytes = req.user ? 150 * 1024 * 1024 : 50 * 1024 * 1024;
+
+    // Validate size limit AND real file magic bytes for EVERY uploaded file
+    for (const f of files) {
+      const ext = path.extname(f.filename).toLowerCase().replace('.', '');
+      const validSignature = validateMagicBytes(f.path, ext);
+      if (f.size > maxBytes || !validSignature) {
+        // Delete all files from this rejected request immediately
+        for (const toDelete of files) {
+          try { fs.unlinkSync(toDelete.path); } catch { /* ignore */ }
+        }
+        return res.status(400).json({
+          success: false,
+          message: !validSignature
+            ? 'Security check failed: the uploaded file contents do not match its file extension.'
+            : 'Uploaded file exceeds the maximum allowed file size.'
+        });
+      }
+    }
+
     if (files.length > 1) {
       const slides = files.map((f, i) => {
         const ext = path.extname(f.filename).toLowerCase();
@@ -197,18 +242,22 @@ router.post('/', (req, res) => {
       });
     }
 
-    const singleFile = files[0] || req.file;
-    const result = processUploadedFile(singleFile);
+    const result = processUploadedFile(files[0]);
     return res.status(200).json(result);
   });
 });
 
-// Endpoint to retrieve / re-parse an existing presentation file
-router.get('/presentation/:filename', (req, res) => {
+// Authenticated classroom users only: retrieve / re-parse an existing presentation file
+router.get('/presentation/:filename', authenticate, (req, res) => {
   try {
-    const filename = path.basename(req.params.filename);
-    const filePath = path.join(uploadDir, filename);
-
+    const filename = path.basename(req.params.filename || '');
+    if (!filename || filename.includes('..')) {
+      return res.status(400).json({ success: false, message: 'Invalid filename.' });
+    }
+    const filePath = path.resolve(uploadDir, filename);
+    if (!filePath.startsWith(path.resolve(uploadDir))) {
+      return res.status(403).json({ success: false, message: 'Forbidden file path.' });
+    }
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ success: false, message: 'Presentation file not found.' });
     }
@@ -225,22 +274,25 @@ router.get('/presentation/:filename', (req, res) => {
 
     const result = processUploadedFile(fakeFile);
     return res.status(200).json(result);
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Failed to load presentation file.' });
   }
 });
 
-// Endpoint to delete an uploaded file directly from storage
-router.delete('/:filename', (req, res) => {
+// Superadmin & Tutor ONLY: delete an uploaded file from storage
+router.delete('/:filename', authenticate, requireRole(['superadmin', 'tutor']), (req, res) => {
   try {
-    const filename = path.basename(req.params.filename);
+    const filename = path.basename(req.params.filename || '');
+    if (!filename || filename.includes('..')) {
+      return res.status(400).json({ success: false, message: 'Invalid filename.' });
+    }
     const deleted = safeDeleteUploadedFile(`/uploads/${filename}`);
     if (deleted) {
       return res.status(200).json({ success: true, message: `File ${filename} deleted from storage.` });
     }
     return res.status(404).json({ success: false, message: 'File not found or already deleted.' });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Failed to delete file.' });
   }
 });
 

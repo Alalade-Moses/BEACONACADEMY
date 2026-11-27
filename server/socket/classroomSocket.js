@@ -1,23 +1,61 @@
 import { store } from '../database/store.js';
+import { verifyJwtToken } from '../middleware/authMiddleware.js';
+import { stripDangerousInput, isSafeUrl } from '../utils/validators.js';
 
-// In-memory room state tracking
+// Active classroom room state (ephemeral real-time signaling state only; attendance persists in PostgreSQL)
 const rooms = new Map();
 
-const cleanRoomId = (id) => String(id || '').trim().toUpperCase();
+const cleanRoomId = (id) => String(id || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 64);
+const isInstructor = (user) => Boolean(user && (user.role === 'tutor' || user.role === 'superadmin'));
 
 export const initClassroomSocket = (io) => {
+  // Attach verified user on handshake if a valid JWT token is supplied;
+  // Unauthenticated sockets remain read-only for public real-time blog updates only.
+  io.use(async (socket, next) => {
+    try {
+      const rawToken =
+        socket.handshake.auth?.token ||
+        (typeof socket.handshake.headers?.authorization === 'string' &&
+        socket.handshake.headers.authorization.startsWith('Bearer ')
+          ? socket.handshake.headers.authorization.slice(7).trim()
+          : null);
+
+      if (rawToken && typeof rawToken === 'string' && rawToken.length <= 2048) {
+        const decoded = verifyJwtToken(rawToken);
+        const dbUser = await store.getProfileById(decoded.id);
+        if (dbUser && dbUser.status === 'active') {
+          const { password_hash, ...safeUser } = dbUser;
+          socket.authenticatedUser = safeUser;
+        }
+      }
+    } catch {
+      // Invalid token simply results in unauthenticated (read-only blog) socket
+      socket.authenticatedUser = null;
+    }
+    next();
+  });
+
   io.on('connection', (socket) => {
     let currentRoomId = null;
-    let currentUser = null;
+    let currentUser = socket.authenticatedUser || null;
     let joinTime = null;
 
-    // Join virtual classroom room
-    socket.on('join_room', async ({ roomId, user }) => {
-      const normRoomId = cleanRoomId(roomId);
-      currentRoomId = normRoomId;
-      currentUser = user;
-      joinTime = new Date();
+    const requireClassroomAuth = () => {
+      if (!currentUser || !currentUser.id) {
+        socket.emit('classroom_error', { message: 'Authentication required to participate in live classrooms.' });
+        return false;
+      }
+      return true;
+    };
 
+    // Join virtual classroom room (strictly authenticated — never trusts spoofed client user payload)
+    socket.on('join_room', async ({ roomId } = {}) => {
+      if (!requireClassroomAuth()) return;
+      const normRoomId = cleanRoomId(roomId);
+      if (!normRoomId) return;
+
+      currentRoomId = normRoomId;
+      joinTime = new Date();
       socket.join(normRoomId);
 
       if (!rooms.has(normRoomId)) {
@@ -25,10 +63,10 @@ export const initClassroomSocket = (io) => {
           participants: new Map(),
           currentSlide: 1,
           totalSlides: 6,
-          slideMode: 'presentation', // 'presentation' | 'whiteboard'
+          slideMode: 'presentation',
           presentationUrl: null,
           presentationSlides: [],
-          slideStrokes: {}, // keyed by slideIndex
+          slideStrokes: {},
           handRaises: new Set(),
           isRecording: false,
           screenSharerId: null,
@@ -41,38 +79,37 @@ export const initClassroomSocket = (io) => {
       const room = rooms.get(normRoomId);
       room.participants.set(socket.id, {
         socketId: socket.id,
-        user,
+        user: currentUser,
         joinedAt: joinTime,
         isMuted: false,
         isVideoOff: false,
         isHandRaised: false
       });
 
-      // Auto-log attendance in database
-      const classRecord = await store.getClassById(normRoomId);
-      if (classRecord) {
-        if (classRecord.status) room.status = classRecord.status;
-        if (classRecord.duration_minutes) room.durationMinutes = classRecord.duration_minutes;
-        if (classRecord.status === 'live' && !room.startedAt) {
-          room.startedAt = Date.now();
+      try {
+        const classRecord = await store.getClassById(normRoomId);
+        if (classRecord) {
+          if (classRecord.status) room.status = classRecord.status;
+          if (classRecord.duration_minutes) room.durationMinutes = classRecord.duration_minutes;
+          if (classRecord.status === 'live' && !room.startedAt) {
+            room.startedAt = Date.now();
+          }
+          await store.logAttendance({
+            class_id: classRecord.id,
+            user_id: currentUser.id,
+            role: currentUser.role,
+            status: 'present'
+          });
         }
-      }
-      if (classRecord && user && user.id) {
-        await store.logAttendance({
-          class_id: classRecord.id,
-          user_id: user.id,
-          role: user.role,
-          status: 'present'
-        });
+      } catch (err) {
+        console.warn('[Socket Attendance Notice]:', err.message);
       }
 
-      // Notify others in room for WebRTC mesh connection
       socket.to(normRoomId).emit('user_joined', {
         socketId: socket.id,
-        user
+        user: currentUser
       });
 
-      // Send initial room state to joining participant
       socket.emit('room_init_state', {
         participants: Array.from(room.participants.values()),
         currentSlide: room.currentSlide,
@@ -88,30 +125,30 @@ export const initClassroomSocket = (io) => {
         durationMinutes: room.durationMinutes
       });
 
-      // Broadcast updated roster to entire room
       io.to(normRoomId).emit('roster_update', Array.from(room.participants.values()));
-
-      console.log(`[Socket] User ${user?.full_name || 'Guest'} (${user?.role || 'student'}) joined room: ${normRoomId}`);
     });
 
-    // Slide Navigation
-    socket.on('slide_change', ({ roomId, slideIndex, totalSlides }) => {
+    socket.on('slide_change', ({ roomId, slideIndex, totalSlides } = {}) => {
+      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
-      if (room) {
-        room.currentSlide = slideIndex;
-        if (totalSlides) room.totalSlides = totalSlides;
-        
+      const idx = parseInt(slideIndex, 10);
+      if (room && Number.isFinite(idx) && idx >= 1 && idx <= 500) {
+        room.currentSlide = idx;
+        if (totalSlides && Number.isFinite(Number(totalSlides))) {
+          room.totalSlides = Math.min(500, Math.max(1, parseInt(totalSlides, 10)));
+        }
         io.to(normRoomId).emit('slide_updated', {
-          slideIndex,
+          slideIndex: room.currentSlide,
           totalSlides: room.totalSlides,
-          strokes: room.slideStrokes[slideIndex] || []
+          strokes: room.slideStrokes[room.currentSlide] || []
         });
       }
     });
 
-    // Slide Mode Switch (Presentation Deck vs Digital Whiteboard)
-    socket.on('slide_mode_change', ({ roomId, mode }) => {
+    socket.on('slide_mode_change', ({ roomId, mode } = {}) => {
+      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
+      if (!['presentation', 'whiteboard'].includes(mode)) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
       if (room) {
@@ -120,16 +157,17 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    // Custom Presentation / Slide Deck Upload & Change
-    socket.on('update_presentation', ({ roomId, presentationUrl, slides, totalSlides }) => {
+    socket.on('update_presentation', ({ roomId, presentationUrl, slides, totalSlides } = {}) => {
+      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
+      if (presentationUrl && !isSafeUrl(presentationUrl, { allowRelative: true, allowEmpty: true })) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
       if (room) {
         room.presentationUrl = presentationUrl || null;
-        room.presentationSlides = slides || [];
+        room.presentationSlides = Array.isArray(slides) ? slides.slice(0, 200) : [];
         room.currentSlide = 1;
-        room.totalSlides = totalSlides || (slides && slides.length > 0 ? slides.length : 6);
-        room.slideStrokes = {}; // Clear previous strokes on new presentation
+        room.totalSlides = Math.min(200, parseInt(totalSlides, 10) || (room.presentationSlides.length || 6));
+        room.slideStrokes = {};
 
         io.to(normRoomId).emit('presentation_updated', {
           presentationUrl: room.presentationUrl,
@@ -140,29 +178,30 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    // Live Streaming Stroke Step (60fps continuous drawing sync)
-    socket.on('draw_step', ({ roomId, step }) => {
+    socket.on('draw_step', ({ roomId, step } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
+      if (normRoomId !== currentRoomId) return;
       socket.to(normRoomId).emit('stroke_step_received', step);
     });
 
-    // Synchronized Slide Annotations & Digital Whiteboard (Finalized stroke)
-    socket.on('draw_stroke', ({ roomId, stroke }) => {
+    socket.on('draw_stroke', ({ roomId, stroke } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId || !stroke) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
+      if (normRoomId !== currentRoomId) return;
       const room = rooms.get(normRoomId);
       if (room) {
         const slide = stroke.slideIndex || room.currentSlide;
-        if (!room.slideStrokes[slide]) {
-          room.slideStrokes[slide] = [];
+        if (!room.slideStrokes[slide]) room.slideStrokes[slide] = [];
+        if (room.slideStrokes[slide].length < 500) {
+          room.slideStrokes[slide].push(stroke);
         }
-        room.slideStrokes[slide].push(stroke);
-
-        // Broadcast to other participants in room
         socket.to(normRoomId).emit('stroke_received', stroke);
       }
     });
 
-    socket.on('clear_canvas', ({ roomId, slideIndex }) => {
+    socket.on('clear_canvas', ({ roomId, slideIndex } = {}) => {
+      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
       if (room) {
@@ -172,8 +211,10 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    socket.on('undo_stroke', ({ roomId, slideIndex }) => {
+    socket.on('undo_stroke', ({ roomId, slideIndex } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
+      if (normRoomId !== currentRoomId) return;
       const room = rooms.get(normRoomId);
       if (room) {
         const slide = slideIndex || room.currentSlide;
@@ -187,7 +228,8 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    socket.on('request_canvas_state', ({ roomId, slideIndex }) => {
+    socket.on('request_canvas_state', ({ roomId, slideIndex } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
       if (room) {
@@ -198,35 +240,41 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    // WebRTC Peer Signaling (Offer, Answer, ICE Candidates, Media State)
-    socket.on('webrtc_offer', ({ to, targetSocketId, user: senderUser, offer, isScreen }) => {
+    // WebRTC Peer Signaling (restricted to authenticated participants in same room)
+    socket.on('webrtc_offer', ({ to, targetSocketId, offer, isScreen } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const targetId = to || targetSocketId;
-      if (targetId) {
+      const room = rooms.get(currentRoomId);
+      if (targetId && room?.participants.has(targetId)) {
         io.to(targetId).emit('webrtc_offer', {
           from: socket.id,
           senderSocketId: socket.id,
-          user: senderUser || currentUser,
+          user: currentUser,
           offer,
           isScreen: Boolean(isScreen)
         });
       }
     });
 
-    socket.on('webrtc_answer', ({ to, targetSocketId, user: senderUser, answer }) => {
+    socket.on('webrtc_answer', ({ to, targetSocketId, answer } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const targetId = to || targetSocketId;
-      if (targetId) {
+      const room = rooms.get(currentRoomId);
+      if (targetId && room?.participants.has(targetId)) {
         io.to(targetId).emit('webrtc_answer', {
           from: socket.id,
           senderSocketId: socket.id,
-          user: senderUser || currentUser,
+          user: currentUser,
           answer
         });
       }
     });
 
-    socket.on('ice_candidate', ({ to, targetSocketId, candidate }) => {
+    socket.on('ice_candidate', ({ to, targetSocketId, candidate } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const targetId = to || targetSocketId;
-      if (targetId) {
+      const room = rooms.get(currentRoomId);
+      if (targetId && room?.participants.has(targetId)) {
         io.to(targetId).emit('ice_candidate', {
           from: socket.id,
           senderSocketId: socket.id,
@@ -235,10 +283,12 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    socket.on('media_state_change', ({ roomId, isVideoActive, isMicActive }) => {
+    socket.on('media_state_change', ({ roomId, isVideoActive, isMicActive } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
+      if (normRoomId !== currentRoomId) return;
       const room = rooms.get(normRoomId);
-      if (room && room.participants && room.participants.has(socket.id)) {
+      if (room?.participants.has(socket.id)) {
         const participant = room.participants.get(socket.id);
         participant.isVideoOff = !isVideoActive;
         participant.isMuted = !isMicActive;
@@ -246,81 +296,86 @@ export const initClassroomSocket = (io) => {
       socket.to(normRoomId).emit('participant_media_state_changed', {
         socketId: socket.id,
         user: currentUser,
-        isVideoActive,
-        isMicActive
+        isVideoActive: Boolean(isVideoActive),
+        isMicActive: Boolean(isMicActive)
       });
     });
 
-    // Live Class Session Launch
-    socket.on('launch_class', ({ roomId, durationMinutes }) => {
+    // Instructor-only class lifecycle controls
+    socket.on('launch_class', ({ roomId, durationMinutes } = {}) => {
+      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
       const now = Date.now();
       if (room) {
         room.status = 'live';
         if (!room.startedAt) room.startedAt = now;
-        if (durationMinutes) room.durationMinutes = durationMinutes;
+        if (durationMinutes) room.durationMinutes = Math.min(360, Math.max(15, parseInt(durationMinutes, 10) || 60));
       }
-      io.to(normRoomId).emit('class_status_changed', { 
+      io.to(normRoomId).emit('class_status_changed', {
         status: 'live',
         startedAt: room?.startedAt || now,
-        durationMinutes: room?.durationMinutes || durationMinutes || 60
+        durationMinutes: room?.durationMinutes || 60
       });
     });
 
-    // Conclude / End Class Session
-    socket.on('end_class', ({ roomId }) => {
+    socket.on('end_class', ({ roomId } = {}) => {
+      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
-      if (room) {
-        room.status = 'completed';
-      }
+      if (room) room.status = 'completed';
       io.to(normRoomId).emit('class_status_changed', { status: 'completed' });
       io.to(normRoomId).emit('class_ended', {
         message: 'This live class session has been concluded by the instructor.'
       });
     });
 
-    socket.on('screen_share_status', ({ roomId, isSharing }) => {
+    socket.on('screen_share_status', ({ roomId, isSharing } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
+      if (normRoomId !== currentRoomId) return;
       const room = rooms.get(normRoomId);
       if (room) {
         room.screenSharerId = isSharing ? socket.id : null;
         io.to(normRoomId).emit('screen_share_status', {
           socketId: socket.id,
-          userName: currentUser ? currentUser.full_name : 'Participant',
-          isSharing
+          userName: currentUser.full_name || 'Participant',
+          isSharing: Boolean(isSharing)
         });
       }
     });
 
-    // Recording status sync
-    socket.on('recording_status', ({ roomId, isRecording }) => {
+    socket.on('recording_status', ({ roomId, isRecording } = {}) => {
+      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
       if (room) {
-        room.isRecording = isRecording;
-        io.to(normRoomId).emit('recording_status_changed', { isRecording });
+        room.isRecording = Boolean(isRecording);
+        io.to(normRoomId).emit('recording_status_changed', { isRecording: room.isRecording });
       }
     });
 
-    // In-Class Chat
-    socket.on('chat_message', ({ roomId, message }) => {
+    // Sanitized In-Class Chat
+    socket.on('chat_message', ({ roomId, message } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
-      const payload = {
+      if (normRoomId !== currentRoomId) return;
+      const cleanMsg = stripDangerousInput(String(message || '')).trim().slice(0, 1000);
+      if (!cleanMsg) return;
+
+      io.to(normRoomId).emit('chat_message', {
         id: Date.now().toString(),
         sender: currentUser,
-        text: message,
+        text: cleanMsg,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      io.to(normRoomId).emit('chat_message', payload);
+      });
     });
 
-    // Hand Raising
-    socket.on('toggle_hand_raise', ({ roomId }) => {
+    socket.on('toggle_hand_raise', ({ roomId } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
-      if (room && room.participants.has(socket.id)) {
+      if (room?.participants.has(socket.id)) {
         const participant = room.participants.get(socket.id);
         participant.isHandRaised = !participant.isHandRaised;
         io.to(normRoomId).emit('hand_raise_status', {
@@ -332,11 +387,12 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    // Lower Hand (by Tutor or Participant)
-    socket.on('lower_hand', ({ roomId, targetSocketId }) => {
+    socket.on('lower_hand', ({ roomId, targetSocketId } = {}) => {
+      if (!requireClassroomAuth() || !currentRoomId) return;
+      if (targetSocketId !== socket.id && !isInstructor(currentUser)) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
       const room = rooms.get(normRoomId);
-      if (room && room.participants.has(targetSocketId)) {
+      if (room?.participants.has(targetSocketId)) {
         const participant = room.participants.get(targetSocketId);
         participant.isHandRaised = false;
         io.to(normRoomId).emit('hand_raise_status', {
@@ -348,18 +404,18 @@ export const initClassroomSocket = (io) => {
       }
     });
 
-    // Tutor remote mute
-    socket.on('mute_participant', ({ roomId, targetSocketId }) => {
+    // Instructor-only remote mute
+    socket.on('mute_participant', ({ roomId, targetSocketId } = {}) => {
+      if (!requireClassroomAuth() || !isInstructor(currentUser)) return;
       const normRoomId = cleanRoomId(roomId || currentRoomId);
-      io.to(targetSocketId).emit('force_mute');
       const room = rooms.get(normRoomId);
-      if (room && room.participants.has(targetSocketId)) {
+      if (room?.participants.has(targetSocketId)) {
+        io.to(targetSocketId).emit('force_mute');
         room.participants.get(targetSocketId).isMuted = true;
         io.to(normRoomId).emit('roster_update', Array.from(room.participants.values()));
       }
     });
 
-    // Disconnect cleanup
     socket.on('disconnect', () => {
       if (currentRoomId && rooms.has(currentRoomId)) {
         const room = rooms.get(currentRoomId);
@@ -378,7 +434,6 @@ export const initClassroomSocket = (io) => {
         io.to(currentRoomId).emit('roster_update', Array.from(room.participants.values()));
 
         if (room.participants.size === 0) {
-          // Cleanup empty room after 1 hour grace
           setTimeout(() => {
             if (rooms.has(currentRoomId) && rooms.get(currentRoomId).participants.size === 0) {
               rooms.delete(currentRoomId);
@@ -386,7 +441,6 @@ export const initClassroomSocket = (io) => {
           }, 3600000);
         }
       }
-      console.log(`[Socket] Disconnected: ${socket.id}`);
     });
   });
 };

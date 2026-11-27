@@ -7,11 +7,12 @@ import {
   deleteApplication
 } from '../controllers/tutorApplicationController.js';
 import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { publicFormRateLimiter } from '../middleware/securityMiddleware.js';
 
 const router = express.Router();
 
-// Public: Submit a new teacher application with 3-minute video and safeguarding agreement
-router.post('/', submitApplication);
+// Public (rate-limited): Submit a new teacher application with 3-minute video and safeguarding agreement
+router.post('/', publicFormRateLimiter, submitApplication);
 
 // Superadmin & Admin: List, inspect, evaluate, and delete teacher applications
 router.get('/', authenticate, authorize('superadmin', 'admin'), getAllApplications);

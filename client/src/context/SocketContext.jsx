@@ -6,10 +6,9 @@ const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
-  const { user } = useAuth();
+  const { token } = useAuth();
 
   useEffect(() => {
-    // In local dev, connect directly to port 5000; in production use Railway backend server
     const socketUrl = import.meta.env.VITE_SOCKET_URL && import.meta.env.VITE_SOCKET_URL !== '/'
       ? import.meta.env.VITE_SOCKET_URL
       : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -18,15 +17,12 @@ export const SocketProvider = ({ children }) => {
 
     const newSocket = io(socketUrl, {
       autoConnect: true,
+      auth: token ? { token } : {},
       transports: ['websocket', 'polling'],
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 15000
-    });
-
-    newSocket.on('connect', () => {
-      console.log('⚡ Socket connected to server via WebSocket:', newSocket.id);
     });
 
     newSocket.on('connect_error', (err) => {
@@ -38,7 +34,7 @@ export const SocketProvider = ({ children }) => {
     return () => {
       newSocket.disconnect();
     };
-  }, []);
+  }, [token]);
 
   return (
     <SocketContext.Provider value={{ socket }}>

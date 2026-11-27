@@ -3,7 +3,7 @@ import { store } from '../database/store.js';
 export const getMyNotifications = async (req, res, next) => {
   try {
     const notifications = await store.getNotifications(req.user.id);
-    const unreadCount = notifications.filter(n => !n.is_read).length;
+    const unreadCount = notifications.filter((n) => !n.is_read).length;
 
     res.status(200).json({
       success: true,
@@ -17,7 +17,8 @@ export const getMyNotifications = async (req, res, next) => {
 
 export const markAsRead = async (req, res, next) => {
   try {
-    await store.markNotificationAsRead(req.params.id);
+    // Scoped strictly to req.user.id to prevent IDOR
+    await store.markNotificationAsRead(req.params.id, req.user.id);
     res.status(200).json({ success: true, message: 'Notification marked as read.' });
   } catch (err) {
     next(err);
@@ -29,7 +30,7 @@ export const markAllAsRead = async (req, res, next) => {
     const notifications = await store.getNotifications(req.user.id);
     for (const notif of notifications) {
       if (!notif.is_read) {
-        await store.markNotificationAsRead(notif.id);
+        await store.markNotificationAsRead(notif.id, req.user.id);
       }
     }
     res.status(200).json({ success: true, message: 'All notifications marked as read.' });

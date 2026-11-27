@@ -8,17 +8,18 @@ import {
   sendPaymentInvoice,
   deletePayment
 } from '../controllers/paymentController.js';
-import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import { authenticate, optionalAuthenticate, authorize } from '../middleware/authMiddleware.js';
+import { publicFormRateLimiter } from '../middleware/securityMiddleware.js';
 
 const router = express.Router();
 
-// Public: view official institutional account details for payments
+// Public non-sensitive fee metadata only (zero account numbers/SWIFT/sort code)
 router.get('/bank-details', getBankDetails);
 
-// Submit proof of payment (can be submitted during or after registration)
-router.post('/proof', submitProof);
+// Submit proof of payment (rate-limited, optional auth to bind authenticated parent identity)
+router.post('/proof', publicFormRateLimiter, optionalAuthenticate, submitProof);
 
-// List payments: Superadmins can view all; Parents can view their child's payments
+// List payments: Superadmins can view all; Parents can view only their own payments
 router.get('/', authenticate, authorize('superadmin', 'parent'), getPayments);
 
 // Superadmin verification endpoints
