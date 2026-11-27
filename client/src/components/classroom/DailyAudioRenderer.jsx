@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 
 /**
  * Single Remote Daily Participant Audio Element
- * Handles track transitions, unmute events, screen-share audio, and autoplay unlock recovery.
+ * Handles track transitions, unmute events, screen-share audio, periodic recovery, and autoplay unlock.
  */
 const DailyParticipantAudio = ({ participant, unlockTrigger = 0, onAudioBlocked }) => {
   const audioRef = useRef(null);
@@ -35,6 +35,7 @@ const DailyParticipantAudio = ({ participant, unlockTrigger = 0, onAudioBlocked 
     audioEl.volume = 1.0;
 
     const tryPlay = () => {
+      if (!audioEl.srcObject) return;
       const p = audioEl.play();
       if (p !== undefined) {
         p.catch((err) => {
@@ -51,7 +52,15 @@ const DailyParticipantAudio = ({ participant, unlockTrigger = 0, onAudioBlocked 
     const handleUnmute = () => tryPlay();
     audioTrack.addEventListener?.('unmute', handleUnmute);
 
+    // Gentle recovery check for mobile/Safari browsers that suspend remote WebRTC audio on initial join
+    const recoveryInterval = setInterval(() => {
+      if (audioEl.paused && audioEl.srcObject && audioTrack.readyState === 'live') {
+        tryPlay();
+      }
+    }, 1800);
+
     return () => {
+      clearInterval(recoveryInterval);
       audioTrack.removeEventListener?.('unmute', handleUnmute);
     };
   }, [audioTrack, audioTrack?.id, audioState, isAudioEnabled, unlockTrigger, onAudioBlocked]);

@@ -43,6 +43,17 @@ export const DailyVideoTile = ({
         el.srcObject = new MediaStream([videoTrack]);
       }
       el.play().catch(() => {});
+
+      const handleUnmute = () => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = new MediaStream([videoTrack]);
+          videoRef.current.play().catch(() => {});
+        }
+      };
+      videoTrack.addEventListener?.('unmute', handleUnmute);
+      return () => {
+        videoTrack.removeEventListener?.('unmute', handleUnmute);
+      };
     } else {
       el.srcObject = null;
     }

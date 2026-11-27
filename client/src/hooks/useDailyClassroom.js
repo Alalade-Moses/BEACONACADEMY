@@ -2,10 +2,29 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api/axios';
 import { loadDaily } from '../utils/dailyLoader';
 
+const DAILY_CONNECT_TIMEOUT_MS = 14000;
+
+const withTimeout = (promise, ms, label) =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`));
+    }, ms);
+    promise.then(
+      (val) => {
+        clearTimeout(timer);
+        resolve(val);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+
 /**
  * useDailyClassroom Hook
- * Connects the classroom to Daily.co's WebRTC SFU engine
- * providing crystal-clear bi-directional audio and video for BOTH Tutor and Students.
+ * Connects the classroom to Daily.co's WebRTC SFU engine using strict CSP-safe mode (avoidEval: true)
+ * providing reliable two-way audio and video for BOTH Tutor and Students.
  */
 export const useDailyClassroom = ({ roomId, asRole, enabled = true }) => {
   const [dailyStatus, setDailyStatus] = useState('checking'); // 'checking' | 'connecting' | 'connected' | 'unavailable'
@@ -57,6 +76,17 @@ export const useDailyClassroom = ({ roomId, asRole, enabled = true }) => {
     }
 
     let callObj = null;
+    let cancelled = false;
+
+    const cleanupCallObj = (instance) => {
+      if (!instance) return;
+      try {
+        instance.leave().catch(() => {});
+      } catch (_) {}
+      try {
+        instance.destroy().catch(() => {});
+      } catch (_) {}
+    };
 
     const setupDaily = async () => {
       try {
@@ -64,15 +94,16 @@ export const useDailyClassroom = ({ roomId, asRole, enabled = true }) => {
         setIsJoining(true);
         setDailyError(null);
 
-        // 1. Fetch access token and room URL from backend
-        const res = await api.post('/daily/room-access', {
-          roomId,
-          asRole
-        });
+        // 1. Fetch room URL & signed meeting token from backend
+        const res = await withTimeout(
+          api.post('/daily/room-access', { roomId, asRole }),
+          8000,
+          'Daily room access'
+        );
 
-        if (!isMountedRef.current) return;
+        if (cancelled || !isMountedRef.current) return;
 
-        if (!res.data.success || !res.data.configured || !res.data.roomUrl) {
+        if (!res.data?.success || !res.data?.configured || !res.data?.roomUrl) {
           setDailyConfigured(false);
           setIsDailyActive(false);
           setIsJoining(false);
@@ -87,39 +118,41 @@ export const useDailyClassroom = ({ roomId, asRole, enabled = true }) => {
         setIsOwner(Boolean(ownerFlag));
         setDailyStatus('connecting');
 
-        // 2. Dynamically load Daily SDK
-        const DailyIframe = await loadDaily();
-        if (!isMountedRef.current) return;
+        // 2. Load locally bundled Daily.co SDK (lazy Vite chunk, zero external CDN dependency)
+        const DailyIframe = await withTimeout(loadDaily(), 8000, 'Daily SDK load');
+        if (cancelled || !isMountedRef.current) return;
 
-        // 3. Create call object with two-way audio + camera enabled for both Tutor and Students
+        // 3. Create CSP-safe Call Object (avoidEval: true avoids Function() CSP violation!)
         callObj = DailyIframe.createCallObject({
           subscribeToTracksAutomatically: true,
-          audioSource: true,
-          videoSource: true
+          dailyConfig: {
+            avoidEval: true
+          }
         });
 
         callObjectRef.current = callObj;
 
-        // 4. Attach comprehensive event listeners so track changes ALWAYS propagate
+        // 4. Attach comprehensive event listeners so every audio/video track update reaches React
         callObj
+          .on('started-camera', () => updateParticipants(callObj))
           .on('joined-meeting', () => {
-            if (!isMountedRef.current) return;
+            if (cancelled || !isMountedRef.current) return;
             setIsDailyActive(true);
             setIsJoining(false);
             setDailyStatus('connected');
 
-            // Ensure microphone is explicitly active on join for both Tutor and Student
+            // Explicitly ensure microphone and camera are enabled when available
             try {
               callObj.setLocalAudio(true);
             } catch (_) {}
 
             updateParticipants(callObj);
-            // Delayed refreshes to capture tracks transitioning from 'loading' -> 'playable'
-            setTimeout(() => updateParticipants(callObj), 600);
-            setTimeout(() => updateParticipants(callObj), 1500);
+            setTimeout(() => updateParticipants(callObj), 400);
+            setTimeout(() => updateParticipants(callObj), 1200);
+            setTimeout(() => updateParticipants(callObj), 2500);
           })
           .on('left-meeting', () => {
-            if (!isMountedRef.current) return;
+            if (cancelled || !isMountedRef.current) return;
             setIsDailyActive(false);
             setParticipants({});
             setLocalParticipant(null);
@@ -129,48 +162,58 @@ export const useDailyClassroom = ({ roomId, asRole, enabled = true }) => {
           .on('participant-left', () => updateParticipants(callObj))
           .on('track-started', () => updateParticipants(callObj))
           .on('track-stopped', () => updateParticipants(callObj))
+          .on('local-screen-share-started', () => updateParticipants(callObj))
+          .on('local-screen-share-stopped', () => updateParticipants(callObj))
           .on('active-speaker-change', (e) => {
-            if (isMountedRef.current && e?.activeSpeaker) {
+            if (!cancelled && isMountedRef.current && e?.activeSpeaker) {
               setActiveSpeakerId(e.activeSpeaker.peerId);
             }
           })
           .on('camera-error', (err) => {
             console.warn('[Daily] Camera/Mic hardware notice:', err);
-            // Even if camera is unavailable, keep microphone audio live!
+            // If camera failed (e.g. no webcam or busy), keep microphone active so audio continues
             try {
               callObj.setLocalAudio(true);
             } catch (_) {}
             updateParticipants(callObj);
           })
           .on('error', (err) => {
-            console.error('[Daily] Call Error:', err);
-            if (isMountedRef.current) {
-              setDailyError(err.errorMsg || 'Daily media connection error');
+            console.error('[Daily] Fatal call error:', err);
+            if (!cancelled && isMountedRef.current) {
+              setDailyError(err?.errorMsg || 'Daily media connection error');
+              // If fatal error occurred before joining, cleanly fall back to WebRTC
+              if (!callObj || callObj.meetingState?.() !== 'joined-meeting') {
+                setIsJoining(false);
+                setIsDailyActive(false);
+                setDailyStatus('unavailable');
+              }
             }
           });
 
-        // 5. Join room with explicit audio & camera on; gracefully fallback to audio-only if device has no camera
-        try {
-          await callObj.join({
-            url: targetUrl,
-            token: token || undefined,
-            startAudioOff: false,
-            startVideoOff: false
-          });
-        } catch (joinErr) {
-          console.warn('[Daily] Retrying join in audio-only mode (no camera / cam busy):', joinErr?.message);
-          await callObj.join({
-            url: targetUrl,
-            token: token || undefined,
-            videoSource: false,
-            audioSource: true,
-            startAudioOff: false,
-            startVideoOff: true
-          });
+        // 5. Join room with BOTH microphone and camera enabled (for both Tutor & Student)
+        const joinPayload = {
+          url: targetUrl,
+          token: token || undefined,
+          startAudioOff: false,
+          startVideoOff: false
+        };
+
+        await withTimeout(callObj.join(joinPayload), DAILY_CONNECT_TIMEOUT_MS, 'Daily join');
+
+        if (!cancelled && isMountedRef.current) {
+          setIsDailyActive(true);
+          setIsJoining(false);
+          setDailyStatus('connected');
+          updateParticipants(callObj);
         }
       } catch (err) {
-        console.warn('[useDailyClassroom] Setup failed or Daily unavailable:', err?.message);
-        if (isMountedRef.current) {
+        console.warn('[useDailyClassroom] Falling back to WebRTC because Daily setup failed:', err?.message || err);
+        cleanupCallObj(callObj);
+        callObj = null;
+        if (callObjectRef.current) {
+          callObjectRef.current = null;
+        }
+        if (!cancelled && isMountedRef.current) {
           setDailyError(err?.message || 'Daily connection unavailable');
           setIsJoining(false);
           setIsDailyActive(false);
@@ -182,23 +225,20 @@ export const useDailyClassroom = ({ roomId, asRole, enabled = true }) => {
     setupDaily();
 
     return () => {
+      cancelled = true;
       isMountedRef.current = false;
-      if (callObj) {
-        try {
-          callObj.leave().catch(() => {});
-          callObj.destroy().catch(() => {});
-        } catch (_) {}
-      }
+      cleanupCallObj(callObj);
       callObjectRef.current = null;
     };
   }, [roomId, asRole, enabled, updateParticipants]);
 
   // Audio / Mic Control
   const setLocalAudio = useCallback((enable) => {
-    if (!callObjectRef.current) return;
+    const co = callObjectRef.current;
+    if (!co) return;
     try {
-      callObjectRef.current.setLocalAudio(Boolean(enable));
-      setTimeout(() => updateParticipants(callObjectRef.current), 150);
+      co.setLocalAudio(Boolean(enable));
+      setTimeout(() => updateParticipants(co), 150);
     } catch (e) {
       console.warn('[Daily] setLocalAudio failed:', e);
     }
@@ -206,10 +246,11 @@ export const useDailyClassroom = ({ roomId, asRole, enabled = true }) => {
 
   // Video / Camera Control
   const setLocalVideo = useCallback((enable) => {
-    if (!callObjectRef.current) return;
+    const co = callObjectRef.current;
+    if (!co) return;
     try {
-      callObjectRef.current.setLocalVideo(Boolean(enable));
-      setTimeout(() => updateParticipants(callObjectRef.current), 150);
+      co.setLocalVideo(Boolean(enable));
+      setTimeout(() => updateParticipants(co), 150);
     } catch (e) {
       console.warn('[Daily] setLocalVideo failed:', e);
     }
@@ -217,22 +258,26 @@ export const useDailyClassroom = ({ roomId, asRole, enabled = true }) => {
 
   // Screen Share Control
   const startScreenShare = useCallback(() => {
-    if (!callObjectRef.current || !isDailyActive) return;
+    const co = callObjectRef.current;
+    if (!co || !isDailyActive) return;
     try {
-      callObjectRef.current.startScreenShare();
+      co.startScreenShare();
+      setTimeout(() => updateParticipants(co), 300);
     } catch (e) {
       console.warn('[Daily] startScreenShare failed:', e);
     }
-  }, [isDailyActive]);
+  }, [isDailyActive, updateParticipants]);
 
   const stopScreenShare = useCallback(() => {
-    if (!callObjectRef.current || !isDailyActive) return;
+    const co = callObjectRef.current;
+    if (!co || !isDailyActive) return;
     try {
-      callObjectRef.current.stopScreenShare();
+      co.stopScreenShare();
+      setTimeout(() => updateParticipants(co), 200);
     } catch (e) {
       console.warn('[Daily] stopScreenShare failed:', e);
     }
-  }, [isDailyActive]);
+  }, [isDailyActive, updateParticipants]);
 
   return {
     dailyStatus,

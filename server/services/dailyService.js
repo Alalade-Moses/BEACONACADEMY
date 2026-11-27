@@ -67,6 +67,39 @@ class DailyService {
 
       if (getRes.ok) {
         const existingRoom = await getRes.json();
+        const nowSec = Math.floor(Date.now() / 1000);
+        const existingExp = existingRoom?.config?.exp;
+        // If an existing room has expired or is within 30 minutes of expiry, extend it so participants never hit exp-room
+        if (!existingExp || existingExp < nowSec + 1800) {
+          try {
+            const refreshedExp = nowSec + (4 * 3600);
+            const patchRes = await fetch(`${DAILY_API_BASE}/rooms/${roomName}`, {
+              method: 'POST',
+              headers: this.getHeaders(),
+              body: JSON.stringify({
+                properties: {
+                  exp: refreshedExp,
+                  start_video_off: false,
+                  start_audio_off: false,
+                  enable_screenshare: true,
+                  enable_knocking: false,
+                  eject_at_room_exp: false
+                }
+              })
+            });
+            if (patchRes.ok) {
+              const updatedRoom = await patchRes.json();
+              return {
+                configured: true,
+                room: updatedRoom,
+                url: updatedRoom.url,
+                name: updatedRoom.name
+              };
+            }
+          } catch (refreshErr) {
+            console.warn('[DailyService] Room expiry refresh warning:', refreshErr.message);
+          }
+        }
         return {
           configured: true,
           room: existingRoom,
@@ -153,6 +186,8 @@ class DailyService {
           user_name: userName,
           user_id: String(user.id || 'usr-anonymous'),
           is_owner: Boolean(isOwner),
+          start_video_off: false,
+          start_audio_off: false,
           enable_screenshare: true,
           exp: expTimestamp
         }

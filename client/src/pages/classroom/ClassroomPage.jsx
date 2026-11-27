@@ -162,6 +162,31 @@ const RemoteParticipantVideo = ({ stream, className, mirror = false }) => {
   );
 };
 
+// Memo-safe single-track video player (for Daily.co screen share without stream re-creation flicker)
+const TrackVideoPlayer = ({ track, className, mirror = false }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !track) return;
+    const existing = el.srcObject ? el.srcObject.getVideoTracks() : [];
+    if (existing.length === 0 || existing[0]?.id !== track.id) {
+      el.srcObject = new MediaStream([track]);
+    }
+    el.play().catch(() => {});
+  }, [track, track?.id]);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      muted
+      className={`${className} ${mirror ? 'scale-x-[-1]' : ''}`}
+    />
+  );
+};
+
 // Independent Local Video Component - Avoids Shared Ref Collisions
 const LocalParticipantVideo = ({ stream, isVideoActive, className, mirror = true }) => {
   const videoRef = useRef(null);
@@ -265,6 +290,10 @@ export const ClassroomPage = () => {
 
   // Slide Deck & Presentation State
   const [currentSlide, setCurrentSlide] = useState(1);
+  const currentSlideRef = useRef(1);
+  useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
   const [totalSlides, setTotalSlides] = useState(6);
   const [slideMode, setSlideMode] = useState('presentation'); // 'presentation' | 'whiteboard'
   const [customSlides, setCustomSlides] = useState([]);
@@ -300,6 +329,10 @@ export const ClassroomPage = () => {
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [participants, setParticipants] = useState([]);
+  const participantsRef = useRef([]);
+  useEffect(() => {
+    participantsRef.current = participants;
+  }, [participants]);
   const [isHandRaised, setIsHandRaised] = useState(false);
 
   // Recording State
@@ -439,7 +472,8 @@ export const ClassroomPage = () => {
   }, [isTutor, isTenMinutesOrLess, tenMinNoticePlayed, playTenMinWarningChime]);
 
   // 2. Camera & Microphone Media Management with Robust Track Teardown
-  const stopAllMediaTracks = useCallback(() => {
+  // Tears down ONLY legacy WebRTC tracks/peers WITHOUT resetting Daily.co's live UI toggles
+  const stopLegacyMediaOnly = useCallback(() => {
     try {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => {
@@ -472,12 +506,16 @@ export const ClassroomPage = () => {
       peerAudioElementsRef.current.clear();
       setRemoteStreams(new Map());
       setLocalStream(null);
-      setVideoActive(false);
-      setMicActive(false);
     } catch (err) {
-      console.warn('Error terminating media tracks:', err);
+      console.warn('Error terminating legacy media tracks:', err);
     }
   }, []);
+
+  const stopAllMediaTracks = useCallback(() => {
+    stopLegacyMediaOnly();
+    setVideoActive(false);
+    setMicActive(false);
+  }, [stopLegacyMediaOnly]);
 
   const handleLeaveClass = useCallback(() => {
     stopAllMediaTracks();
@@ -494,7 +532,7 @@ export const ClassroomPage = () => {
     }
   }, [stopAllMediaTracks, socket, normClassId, isTutor, user?.role, queryRole, location.state, navigate]);
 
-  // Sync local audio & video tracks to all active WebRTC peer connections
+  // Sync local audio & video tracks to all active WebRTC peer connections (for BOTH Tutor & Student)
   const updatePeerConnectionsWithStream = useCallback((stream) => {
     if (!stream) return;
     const audioTrack = stream.getAudioTracks()[0] || null;
@@ -503,21 +541,23 @@ export const ClassroomPage = () => {
     peerConnectionsRef.current.forEach((pc) => {
       try {
         const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
-        const audioTransceiver = transceivers.find(t => 
+        const audioTransceiver = transceivers.find(t =>
           t.sender?.track?.kind === 'audio' || t.receiver?.track?.kind === 'audio'
         ) || transceivers[0];
 
         if (audioTransceiver && audioTransceiver.sender) {
+          try { audioTransceiver.direction = 'sendrecv'; } catch (_) {}
           audioTransceiver.sender.replaceTrack(audioTrack || null).catch(err => {
             console.warn('[WebRTC] Replace audio track warning:', err);
           });
         }
 
-        const videoTransceiver = transceivers.find(t => 
+        const videoTransceiver = transceivers.find(t =>
           t.sender?.track?.kind === 'video' || t.receiver?.track?.kind === 'video'
         ) || transceivers[1];
 
         if (videoTransceiver && videoTransceiver.sender && !localScreenStreamRef.current) {
+          try { videoTransceiver.direction = 'sendrecv'; } catch (_) {}
           videoTransceiver.sender.replaceTrack(videoTrack || null).catch(err => {
             console.warn('[WebRTC] Replace video track warning:', err);
           });
@@ -536,7 +576,7 @@ export const ClassroomPage = () => {
     }
   }, [socket, normClassId]);
 
-  // Peer Connection Factory for Full Bi-Directional Audio & Video Mesh
+  // Peer Connection Factory for Full Two-Way Audio & Video Mesh (BOTH Tutor & Student sendrecv)
   const createPeerConnection = useCallback((targetSocketId, targetUser, isInitiator = false) => {
     if (!targetSocketId) return null;
     if (peerConnectionsRef.current.has(targetSocketId)) {
@@ -546,26 +586,38 @@ export const ClassroomPage = () => {
     const pc = new RTCPeerConnection(ICE_CONFIG);
     peerConnectionsRef.current.set(targetSocketId, pc);
 
-    // Pre-create transceivers IN STRICT ORDER: 1st Audio (m-line 0), 2nd Video (m-line 1)
-    try {
-      const audioTrack = localStreamRef.current?.getAudioTracks()[0] || null;
-      const videoTrack = (isTutor && !localScreenStreamRef.current && localStreamRef.current?.getVideoTracks()[0]) || null;
-      const screenTrack = (isTutor && localScreenStreamRef.current?.getVideoTracks()[0]) || null;
-      const initialVideo = screenTrack || videoTrack;
+    // W3C JSEP compliance:
+    // ONLY the Offerer (isInitiator === true) creates transceivers upfront.
+    // The Answerer MUST let setRemoteDescription(offer) create matching transceivers first,
+    // and then attaches its local audio + video tracks before calling createAnswer().
+    if (isInitiator) {
+      try {
+        const audioTrack = localStreamRef.current?.getAudioTracks()[0] || null;
+        const screenTrack = localScreenStreamRef.current?.getVideoTracks()[0] || null;
+        const camTrack = localStreamRef.current?.getVideoTracks()[0] || null;
+        const initialVideo = screenTrack || camTrack;
 
-      // Pass track directly so initial SDP offer synchronously contains media SSRC/MSIDs
-      const audioTransceiver = pc.addTransceiver(audioTrack || 'audio', { direction: 'sendrecv' });
-      if (audioTrack && audioTransceiver.sender && audioTransceiver.sender.track !== audioTrack) {
-        audioTransceiver.sender.replaceTrack(audioTrack).catch(() => {});
-      }
+        // 1st Audio (m-line 0): sendrecv for BOTH Tutor & Student
+        const audioTransceiver = pc.addTransceiver(audioTrack || 'audio', {
+          direction: 'sendrecv',
+          streams: localStreamRef.current ? [localStreamRef.current] : []
+        });
+        if (audioTrack && audioTransceiver.sender && audioTransceiver.sender.track !== audioTrack) {
+          audioTransceiver.sender.replaceTrack(audioTrack).catch(() => {});
+        }
 
-      // Tutor broadcasts video (sendrecv); Students strictly receive video (recvonly)
-      const videoTransceiver = pc.addTransceiver(initialVideo || 'video', { direction: isTutor ? 'sendrecv' : 'recvonly' });
-      if (initialVideo && videoTransceiver.sender && videoTransceiver.sender.track !== initialVideo) {
-        videoTransceiver.sender.replaceTrack(initialVideo).catch(() => {});
+        // 2nd Video (m-line 1): sendrecv for BOTH Tutor & Student so Tutor sees Student AND Student sees Tutor
+        const videoStream = screenTrack ? localScreenStreamRef.current : localStreamRef.current;
+        const videoTransceiver = pc.addTransceiver(initialVideo || 'video', {
+          direction: 'sendrecv',
+          streams: videoStream ? [videoStream] : []
+        });
+        if (initialVideo && videoTransceiver.sender && videoTransceiver.sender.track !== initialVideo) {
+          videoTransceiver.sender.replaceTrack(initialVideo).catch(() => {});
+        }
+      } catch (e) {
+        console.warn('[WebRTC] Transceiver setup warning:', e);
       }
-    } catch (e) {
-      console.warn('[WebRTC] Transceiver setup warning:', e);
     }
 
     // Route ICE candidate through server relay
@@ -843,6 +895,42 @@ export const ClassroomPage = () => {
     }
   }, [acquireMedia]);
 
+  // Initiate a clean two-way WebRTC offer to a specific peer (used in WebRTC fallback mode)
+  const initiateWebRTCOffer = useCallback(async (targetSocketId, targetUser) => {
+    if (dailyActiveRef.current || !socket || !targetSocketId || targetSocketId === socket.id) return;
+    try {
+      const existingPc = peerConnectionsRef.current.get(targetSocketId);
+      if (existingPc && existingPc.connectionState !== 'failed' && existingPc.connectionState !== 'closed') {
+        return;
+      }
+      if (existingPc) {
+        try { existingPc.close(); } catch (_) {}
+        peerConnectionsRef.current.delete(targetSocketId);
+      }
+
+      const pc = createPeerConnection(targetSocketId, targetUser, true);
+      if (!pc) return;
+
+      const offer = await pc.createOffer();
+      if (offer.sdp) offer.sdp = formatSDPForOpus(offer.sdp);
+      await pc.setLocalDescription(offer);
+
+      socket.emit('webrtc_offer', {
+        targetSocketId,
+        user: {
+          id: user?.id,
+          full_name: user?.full_name,
+          role: user?.role,
+          avatar_url: user?.avatar_url
+        },
+        offer: pc.localDescription,
+        isScreen: Boolean(localScreenStreamRef.current)
+      });
+    } catch (err) {
+      console.warn('[WebRTC] Error initiating offer to peer:', err);
+    }
+  }, [socket, createPeerConnection, user?.id, user?.full_name, user?.role, user?.avatar_url]);
+
   // Keep toolbar Mic & Camera buttons 100% synced with real Daily.co local track state
   useEffect(() => {
     if (!isDailyActive || !dailyLocalParticipant) return;
@@ -850,19 +938,31 @@ export const ClassroomPage = () => {
     setVideoActive(Boolean(dailyLocalParticipant.video));
   }, [isDailyActive, dailyLocalParticipant?.audio, dailyLocalParticipant?.video]);
 
-  // If Daily.co connects, release any legacy WebRTC tracks/peers so Daily has exclusive camera & mic access
+  // Coordinate Daily.co primary engine vs WebRTC fallback cleanly:
+  // - When Daily is connecting/connected: release ONLY legacy WebRTC tracks (NEVER clobber Daily's micActive/videoActive!)
+  // - When Daily is unavailable: acquire local camera+mic AND immediately connect to all peers already in the room!
   useEffect(() => {
+    let cancelled = false;
+
     if (dailyStatus === 'connected' || dailyStatus === 'connecting') {
-      stopAllMediaTracks();
-      peerConnectionsRef.current.forEach((pc) => {
-        try { pc.close(); } catch (_) {}
-      });
-      peerConnectionsRef.current.clear();
-      setRemoteStreams(new Map());
+      stopLegacyMediaOnly();
     } else if (dailyStatus === 'unavailable') {
-      startMedia();
+      (async () => {
+        await startMedia();
+        if (cancelled || dailyActiveRef.current) return;
+        const peers = participantsRef.current || [];
+        for (const p of peers) {
+          if (p?.socketId && socket?.id && p.socketId !== socket.id) {
+            initiateWebRTCOffer(p.socketId, p.user);
+          }
+        }
+      })();
     }
-  }, [dailyStatus, startMedia, stopAllMediaTracks]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dailyStatus, startMedia, stopLegacyMediaOnly, initiateWebRTCOffer, socket]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -1015,11 +1115,12 @@ export const ClassroomPage = () => {
         setStrokesBySlide(prev => ({ ...prev, [state.currentSlide || 1]: state.strokes }));
       }
       if (state.participants) {
+        participantsRef.current = state.participants;
         setParticipants(state.participants);
         if (!dailyActiveRef.current && Array.isArray(state.participants)) {
-          state.participants.forEach(p => {
-            if (p.socketId && p.socketId !== socket.id) {
-              createPeerConnection(p.socketId, p.user, false);
+          state.participants.forEach((p) => {
+            if (p.socketId && p.socketId !== socket.id && socket.id < p.socketId) {
+              initiateWebRTCOffer(p.socketId, p.user);
             }
           });
         }
@@ -1061,7 +1162,7 @@ export const ClassroomPage = () => {
 
     // Live continuous drawing stream (Sub-50ms stroke animation)
     socket.on('stroke_step_received', (step) => {
-      if (step.slideIndex !== currentSlide) return;
+      if (step.slideIndex !== currentSlideRef.current) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -1088,6 +1189,7 @@ export const ClassroomPage = () => {
 
     // Roster update
     socket.on('roster_update', (roster) => {
+      participantsRef.current = roster || [];
       setParticipants(roster);
     });
 
@@ -1127,25 +1229,7 @@ export const ClassroomPage = () => {
     // WebRTC Mesh Signaling (fallback ONLY when Daily.co is unavailable)
     socket.on('user_joined', async ({ socketId, user: joinedUser }) => {
       if (dailyActiveRef.current || !socketId || socketId === socket.id) return;
-      try {
-        const pc = createPeerConnection(socketId, joinedUser, true);
-        const offer = await pc.createOffer();
-        if (offer.sdp) offer.sdp = formatSDPForOpus(offer.sdp);
-        await pc.setLocalDescription(offer);
-        socket.emit('webrtc_offer', {
-          targetSocketId: socketId,
-          user: {
-            id: user?.id,
-            full_name: user?.full_name,
-            role: user?.role,
-            avatar_url: user?.avatar_url
-          },
-          offer: pc.localDescription,
-          isScreen: Boolean(localScreenStreamRef.current)
-        });
-      } catch (err) {
-        console.warn('[WebRTC] Error initiating offer to new peer:', err);
-      }
+      await initiateWebRTCOffer(socketId, joinedUser);
     });
 
     // WebRTC Mesh Signaling: Inbound offer (fallback ONLY when Daily.co is unavailable)
@@ -1169,7 +1253,26 @@ export const ClassroomPage = () => {
           }
         }
 
+        // W3C JSEP: setRemoteDescription FIRST so transceivers match offer m-lines cleanly
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+        // Attach local audio & video tracks to matched transceivers BEFORE creating the answer!
+        const localAudio = localStreamRef.current?.getAudioTracks()[0] || null;
+        const localVideo = localScreenStreamRef.current?.getVideoTracks()[0] || localStreamRef.current?.getVideoTracks()[0] || null;
+        for (const transceiver of pc.getTransceivers()) {
+          const kind = transceiver.receiver?.track?.kind || transceiver.sender?.track?.kind;
+          if (kind === 'audio') {
+            try { transceiver.direction = 'sendrecv'; } catch (_) {}
+            if (localAudio && transceiver.sender) {
+              await transceiver.sender.replaceTrack(localAudio).catch(() => {});
+            }
+          } else if (kind === 'video') {
+            try { transceiver.direction = 'sendrecv'; } catch (_) {}
+            if (localVideo && transceiver.sender) {
+              await transceiver.sender.replaceTrack(localVideo).catch(() => {});
+            }
+          }
+        }
 
         // Drain any pending ICE candidates buffered before remote description was set
         const queued = pendingCandidatesRef.current.get(senderSocketId) || [];
@@ -1374,7 +1477,7 @@ export const ClassroomPage = () => {
       socket.off('class_ended');
       socket.off('force_mute');
     };
-  }, [socket, normClassId, user?.id, isTutor, currentSlide, createPeerConnection]);
+  }, [socket, normClassId, user?.id, isTutor, createPeerConnection, initiateWebRTCOffer, dailySetLocalAudio]);
 
   // 4. Slide Navigation
   const goToSlide = (slideIndex) => {
@@ -1791,6 +1894,11 @@ export const ClassroomPage = () => {
 
   // 7. Toggle Mic & Camera (with Daily.co primary & WebRTC fallback)
   const toggleMic = async () => {
+    if (dailyStatus === 'checking' || dailyStatus === 'connecting') {
+      showToast('Connecting classroom audio & video — please wait a moment...', 'info');
+      return;
+    }
+
     if (isDailyActive) {
       const next = !micActive;
       setMicActive(next);
@@ -1826,6 +1934,11 @@ export const ClassroomPage = () => {
   };
 
   const toggleVideo = async () => {
+    if (dailyStatus === 'checking' || dailyStatus === 'connecting') {
+      showToast('Connecting classroom audio & video — please wait a moment...', 'info');
+      return;
+    }
+
     if (isDailyActive) {
       const next = !videoActive;
       setVideoActive(next);
@@ -1865,8 +1978,18 @@ export const ClassroomPage = () => {
     }
   };
 
-  // 8. Screen Sharing Broadcast Engine
+  // 8. Screen Sharing Broadcast Engine (Daily.co + WebRTC fallback)
   const stopScreenSharing = useCallback(() => {
+    if (isDailyActive) {
+      dailyStopScreenShare();
+      setIsScreenSharing(false);
+      setScreenStageMode('whiteboard');
+      if (socket) {
+        socket.emit('screen_share_status', { roomId: normClassId, isSharing: false });
+      }
+      return;
+    }
+
     if (localScreenStreamRef.current) {
       localScreenStreamRef.current.getTracks().forEach(t => t.stop());
       localScreenStreamRef.current = null;
@@ -1902,9 +2025,24 @@ export const ClassroomPage = () => {
     if (socket) {
       socket.emit('screen_share_status', { roomId: normClassId, isSharing: false });
     }
-  }, [socket, normClassId]);
+  }, [socket, normClassId, isDailyActive, dailyStopScreenShare]);
 
   const toggleScreenShare = async () => {
+    if (isDailyActive) {
+      if (!isScreenSharing) {
+        showToast("Select 'Entire Screen' or a window to share with students via Daily.co.", 'info');
+        dailyStartScreenShare();
+        setIsScreenSharing(true);
+        setScreenStageMode('screen');
+        if (socket) {
+          socket.emit('screen_share_status', { roomId: normClassId, isSharing: true });
+        }
+      } else {
+        stopScreenSharing();
+      }
+      return;
+    }
+
     if (!isScreenSharing) {
       try {
         // Guide tutor to select Entire Screen so switching between tabs, apps, Word, PPT and PDFs is captured
@@ -3060,6 +3198,31 @@ export const ClassroomPage = () => {
                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
                 LIVE
               </span>
+              <span
+                className={`hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border shrink-0 ${
+                  dailyStatus === 'connected'
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                    : dailyStatus === 'unavailable'
+                    ? 'bg-sky-500/15 border-sky-500/30 text-sky-300'
+                    : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                }`}
+                title={dailyError || 'Live audio & video engine'}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    dailyStatus === 'connected'
+                      ? 'bg-emerald-400 animate-pulse'
+                      : dailyStatus === 'unavailable'
+                      ? 'bg-sky-400'
+                      : 'bg-amber-400 animate-ping'
+                  }`}
+                />
+                {dailyStatus === 'connected'
+                  ? 'HD Video • Daily.co'
+                  : dailyStatus === 'unavailable'
+                  ? 'Live WebRTC'
+                  : 'Connecting Media...'}
+              </span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-slate-400 hidden sm:block truncate">
               Room: {classId} &bull; Tutor: {classDetails?.tutor?.full_name || 'Course Tutor'}
@@ -3384,36 +3547,55 @@ export const ClassroomPage = () => {
               {/* Underlying Presentation or Screen Broadcast Layer */}
               {screenStageMode === 'screen' ? (
                 <div className="absolute inset-0 z-0 bg-black flex items-center justify-center overflow-hidden">
-                  {isScreenSharing ? (
-                    <video
-                      ref={screenVideoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    (() => {
-                      const screenStream = (screenSharerInfo?.socketId && remoteStreams.get(screenSharerInfo.socketId)?.stream)
-                        || Array.from(remoteStreams.values()).find(p => p.socketId === screenSharerInfo?.socketId)?.stream
-                        || Array.from(remoteStreams.values()).find(p => p.user?.role === 'tutor')?.stream
-                        || Array.from(remoteStreams.values())[0]?.stream;
-
-                      return screenStream ? (
-                        <RemoteParticipantVideo
-                          stream={screenStream}
-                          className="w-full h-full object-contain"
-                          mirror={false}
-                        />
-                      ) : (
-                        <div className="text-center text-slate-400 p-6 max-w-sm">
-                          <ScreenShare className="w-12 h-12 mx-auto mb-3 text-emerald-400 animate-pulse" />
-                          <h4 className="text-sm font-bold text-white mb-1">Live Screen Broadcast</h4>
-                          <p className="text-xs text-slate-400">Receiving presentation display stream from instructor...</p>
-                        </div>
+                  {(() => {
+                    // Check Daily.co screen-share track first when Daily is active
+                    if (isDailyActive) {
+                      const dailySharer = Object.values(dailyParticipants).find(
+                        (p) => p?.tracks?.screenVideo && (p.tracks.screenVideo.persistentTrack || p.tracks.screenVideo.track) && p.tracks.screenVideo.state !== 'off'
                       );
-                    })()
-                  )}
+                      const dailyScreenTrack = dailySharer?.tracks?.screenVideo?.persistentTrack || dailySharer?.tracks?.screenVideo?.track || null;
+                      if (dailyScreenTrack) {
+                        return (
+                          <TrackVideoPlayer
+                            track={dailyScreenTrack}
+                            className="w-full h-full object-contain"
+                            mirror={false}
+                          />
+                        );
+                      }
+                    }
+
+                    if (isScreenSharing && localScreenStreamRef.current) {
+                      return (
+                        <video
+                          ref={screenVideoRef}
+                          autoPlay
+                          muted
+                          playsInline
+                          className="w-full h-full object-contain"
+                        />
+                      );
+                    }
+
+                    const screenStream = (screenSharerInfo?.socketId && remoteStreams.get(screenSharerInfo.socketId)?.stream)
+                      || Array.from(remoteStreams.values()).find(p => p.socketId === screenSharerInfo?.socketId)?.stream
+                      || Array.from(remoteStreams.values()).find(p => p.user?.role === 'tutor')?.stream
+                      || Array.from(remoteStreams.values())[0]?.stream;
+
+                    return screenStream ? (
+                      <RemoteParticipantVideo
+                        stream={screenStream}
+                        className="w-full h-full object-contain"
+                        mirror={false}
+                      />
+                    ) : (
+                      <div className="text-center text-slate-400 p-6 max-w-sm">
+                        <ScreenShare className="w-12 h-12 mx-auto mb-3 text-emerald-400 animate-pulse" />
+                        <h4 className="text-sm font-bold text-white mb-1">Live Screen Broadcast</h4>
+                        <p className="text-xs text-slate-400">Receiving presentation display stream from instructor...</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : slideMode === 'gallery' ? (
                 <div className="absolute inset-0 z-0">
@@ -3605,32 +3787,45 @@ export const ClassroomPage = () => {
                         ));
                       })()
                     ) : Array.from(remoteStreams.values()).length > 0 ? (
-                      Array.from(remoteStreams.values()).map((peer) => {
+                      Array.from(remoteStreams.values()).slice(0, 4).map((peer) => {
+                        const peerHasVideo = Boolean(
+                          peer.stream &&
+                          (peer.isVideoActive || peer.stream.getVideoTracks().some(t => t.readyState === 'live' && t.enabled))
+                        );
                         return (
                           <div
                             key={peer.socketId}
-                            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 shadow-lg backdrop-blur-md"
+                            className="relative w-28 sm:w-44 aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden shadow-xl border border-indigo-400/70 bg-slate-900"
                           >
-                            <div className="w-6 h-6 rounded-full bg-indigo-600/80 text-white border border-indigo-400/50 flex items-center justify-center font-bold text-[10px] shrink-0">
-                              {getTwoInitials(peer.user?.full_name, 'ST')}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-bold text-white truncate">
-                                {peer.user?.full_name || 'Student'}
-                              </p>
-                              <div className="flex items-center space-x-1">
-                                {peer.isMicActive ? (
-                                  <span className="text-[9px] text-emerald-400 font-semibold flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    Voice Connected
-                                  </span>
-                                ) : (
-                                  <span className="text-[9px] text-slate-400 flex items-center gap-1">
-                                    <MicOff className="w-2.5 h-2.5 text-rose-400" />
-                                    Muted
-                                  </span>
-                                )}
+                            {peer.stream && (
+                              <RemoteParticipantVideo
+                                stream={peer.stream}
+                                className={`w-full h-full object-cover ${peerHasVideo ? 'block' : 'hidden'}`}
+                              />
+                            )}
+                            {!peerHasVideo && (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 p-2 text-center select-none">
+                                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-indigo-600/90 text-white border-2 border-indigo-400 flex items-center justify-center font-extrabold text-xs sm:text-sm mb-1 shadow-md">
+                                  {getTwoInitials(peer.user?.full_name, 'ST')}
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-200 truncate max-w-full px-1">
+                                  {peer.user?.full_name || 'Student'}
+                                </span>
                               </div>
+                            )}
+                            <div className="absolute bottom-1 left-1.5 right-1.5 flex items-center justify-between pointer-events-none gap-1">
+                              <span className="px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-white truncate max-w-[78%]">
+                                {peer.user?.full_name || 'Student'}
+                              </span>
+                              {peer.isMicActive ? (
+                                <span className="p-0.5 rounded bg-emerald-500/90 text-white shrink-0" title="Voice Live">
+                                  <Mic className="w-2.5 h-2.5" />
+                                </span>
+                              ) : (
+                                <span className="p-0.5 rounded bg-rose-500/90 text-white shrink-0" title="Muted">
+                                  <MicOff className="w-2.5 h-2.5" />
+                                </span>
+                              )}
                             </div>
                           </div>
                         );
@@ -3773,7 +3968,7 @@ export const ClassroomPage = () => {
                     );
                   })()}
 
-                  {/* Bottom-Right: Student Self Camera Preview (Daily.co) or Status Pill */}
+                  {/* Bottom-Right: Student Self Camera Preview (Daily.co or WebRTC Fallback) */}
                   {isDailyActive && dailyLocalParticipant ? (
                     <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 w-24 sm:w-36 aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-400/80 bg-slate-900">
                       <DailyVideoTile
@@ -3786,16 +3981,34 @@ export const ClassroomPage = () => {
                       />
                     </div>
                   ) : (
-                    <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-slate-700/80 shadow-xl flex items-center space-x-2 pointer-events-none select-none">
-                      <div className="w-6 h-6 rounded-full bg-indigo-600/80 text-white flex items-center justify-center font-bold text-[10px]">
-                        {getTwoInitials(user?.full_name, 'ST')}
+                    <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 w-24 sm:w-36 aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-400/80 bg-slate-900">
+                      <LocalParticipantVideo
+                        stream={localStream}
+                        isVideoActive={videoActive}
+                        className="w-full h-full object-cover"
+                      />
+                      {(!videoActive || !localStream) && (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 p-1.5 text-center select-none">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-600/90 border-2 border-indigo-400 text-white flex items-center justify-center font-extrabold text-xs shadow-md">
+                            {getTwoInitials(user?.full_name, 'ST')}
+                          </div>
+                          <span className="text-[9px] text-slate-400 mt-1">Camera off</span>
+                        </div>
+                      )}
+                      <div className="absolute bottom-1 left-1 right-1 flex items-center justify-between pointer-events-none gap-1">
+                        <span className="px-1.5 py-0.5 rounded bg-black/75 text-[9px] font-bold text-white truncate max-w-[75%]">
+                          {user?.full_name?.split(' ')[0] || 'You'} (You)
+                        </span>
+                        {micActive ? (
+                          <span className="p-0.5 rounded bg-emerald-500/90 text-white shrink-0">
+                            <Mic className="w-2.5 h-2.5" />
+                          </span>
+                        ) : (
+                          <span className="p-0.5 rounded bg-rose-500/90 text-white shrink-0">
+                            <MicOff className="w-2.5 h-2.5" />
+                          </span>
+                        )}
                       </div>
-                      <span className="text-xs font-bold text-slate-200 truncate max-w-[100px] sm:max-w-none">
-                        {user?.full_name?.split(' ')[0] || 'Student'}
-                      </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${micActive ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}`}>
-                        {micActive ? '🎙️ Mic Active' : '🔇 Muted'}
-                      </span>
                     </div>
                   )}
                 </>
