@@ -180,10 +180,10 @@ export const registerJoint = async (req, res, next) => {
       success: true,
       message: 'Joint parent & student registration submitted successfully. Accounts are awaiting admin payment verification before login is permitted.',
       data: {
-        student_id: result.student.id,
-        parent_id: result.parent.id,
-        payment_id: result.payment.id,
-        bank_reference: result.payment.bank_reference,
+        student_id: result.student?.id || null,
+        parent_id: result.parent?.id || null,
+        payment_id: result.payment?.id || null,
+        bank_reference: result.payment?.bank_reference || bank_reference || null,
         status: 'pending_verification'
       }
     });
@@ -229,9 +229,9 @@ export const registerIelts = async (req, res, next) => {
       success: true,
       message: 'IELTS registration & payment proof submitted successfully! Once verified by our bursar team, log in to access your IELTS Virtual Classroom Dashboard.',
       data: {
-        student_id: result.student.id,
-        payment_id: result.payment.id,
-        bank_reference: result.payment.bank_reference,
+        student_id: result.student?.id || null,
+        payment_id: result.payment?.id || null,
+        bank_reference: result.payment?.bank_reference || bank_reference || null,
         status: 'pending_verification'
       }
     });

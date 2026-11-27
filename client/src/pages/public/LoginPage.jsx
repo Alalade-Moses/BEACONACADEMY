@@ -104,8 +104,8 @@ export const LoginPage = () => {
                     to="/payment-proof"
                     className="text-xs font-bold text-amber-900 underline hover:text-amber-700 flex items-center gap-1"
                   >
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>View Bank Details / Update Proof</span>
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Submit or Update Payment Proof</span>
                   </Link>
                 </div>
               </div>

@@ -21,16 +21,10 @@ export const ParentPayments = () => {
   const [bankDetails, setBankDetails] = useState({
     bank_name: 'Barclays Bank UK PLC',
     account_name: 'Beacon Bridge Academics Ltd.',
-    account_number: '83920147',
-    sort_code: '20-45-77',
-    iban: 'GB29BARC20457783920147',
-    swift_bic: 'BARCGB22',
-    tuition_fee: '£299.00 GBP',
-    instructions: 'Include student reference in bank transfer details.'
+    tuition_fee: '£299.00 GBP / month'
   });
 
   const [loading, setLoading] = useState(true);
-  const [copiedField, setCopiedField] = useState(null);
   const [newProofModal, setNewProofModal] = useState(false);
   const proofFileInputRef = useRef(null);
   const [uploadingProof, setUploadingProof] = useState(false);
@@ -131,7 +125,7 @@ export const ParentPayments = () => {
             Tuition Fee Payments & Verification Proof
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Check payment verification records, view institutional bank details, and submit wire transfer slips.
+            Check payment verification records and submit your monthly tuition transfer receipts.
           </p>
         </div>
 
@@ -141,82 +135,6 @@ export const ParentPayments = () => {
         >
           Submit New Payment Slip
         </button>
-      </div>
-
-      {/* Official Bank Account Details */}
-      <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-xl">
-        <div className="absolute -right-8 -top-8 w-44 h-44 bg-brand-500/20 rounded-full blur-2xl pointer-events-none" />
-        
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-800">
-          <div className="flex items-center space-x-2 text-brand-300 text-xs font-bold uppercase tracking-wider">
-            <Building2 className="w-4 h-4" />
-            <span>Official Receiving Bank Account</span>
-          </div>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
-            Institutional Account
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
-          <div>
-            <span className="text-xs text-slate-400 block mb-1">Bank Name</span>
-            <div className="font-bold text-white text-base">{bankDetails.bank_name}</div>
-          </div>
-
-          <div>
-            <span className="text-xs text-slate-400 block mb-1">Account Beneficiary</span>
-            <div className="font-bold text-white text-base">{bankDetails.account_name}</div>
-          </div>
-
-          <div>
-            <span className="text-xs text-slate-400 block mb-1">Account Number</span>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono font-bold text-brand-300 text-lg tracking-wider">
-                {bankDetails.account_number}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleCopy(bankDetails.account_number, 'acc')}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300"
-              >
-                {copiedField === 'acc' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-slate-400 block mb-1">SWIFT / BIC</span>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono font-bold text-white text-base">{bankDetails.swift_code}</span>
-              <button
-                type="button"
-                onClick={() => handleCopy(bankDetails.swift_code, 'swift')}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300"
-              >
-                {copiedField === 'swift' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-slate-400 block mb-1">Routing Code</span>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono font-bold text-white text-base">{bankDetails.routing_code}</span>
-              <button
-                type="button"
-                onClick={() => handleCopy(bankDetails.routing_code, 'rout')}
-                className="p-1 rounded hover:bg-slate-800 text-slate-300"
-              >
-                {copiedField === 'rout' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-slate-400 block mb-1">Standard Tuition Fee</span>
-            <div className="font-black text-emerald-400 text-xl">{bankDetails.tuition_fee}</div>
-          </div>
-        </div>
       </div>
 
       {/* Submitted Payments History */}

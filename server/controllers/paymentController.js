@@ -8,17 +8,14 @@ import {
 export const getBankDetails = async (req, res, next) => {
   try {
     const settings = await store.getSettings();
+    // Security: Do not expose institutional account numbers, sort codes, SWIFT, or IBAN publicly
     const bankDetails = {
       bank_name: settings.bank_name || 'Barclays Bank UK PLC',
       account_name: settings.bank_account_name || 'Beacon Bridge Academics Ltd.',
-      account_number: settings.bank_account_number || '83920147',
-      swift_code: settings.bank_swift_bic || 'BARCGB22',
-      routing_code: settings.bank_routing_sort || '20-45-77',
-      iban: settings.bank_iban || 'GB29BARC20457783920147',
-      tuition_fee: settings.default_tuition_fee || '£299.00 GBP',
+      tuition_fee: settings.default_tuition_fee || '£299.00 GBP / month',
       currency: 'GBP',
       currency_symbol: '£',
-      instructions: settings.bank_instructions || 'Please transfer the term tuition fee in British Pounds (£ GBP) using the Student Full Name and Reference Code in the payment description. Upload your transfer confirmation slip or receipt below.'
+      instructions: 'Please include the Student Full Name and Reference Code in your bank transfer description, then upload your transfer confirmation slip or receipt below.'
     };
 
     res.status(200).json({

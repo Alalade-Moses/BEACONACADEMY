@@ -19,14 +19,22 @@ import {
   FileUp
 } from 'lucide-react';
 
+const FALLBACK_COURSES = [
+  { id: '20000000-0000-0000-0000-000000000009', title: 'Key Stage 2 Foundation & SATs (Year 3–6)', slug: 'ks2-foundation-sats', price: 149.00 },
+  { id: '20000000-0000-0000-0000-000000000005', title: 'Key Stage 3 Foundation Bridge (Year 7–9)', slug: 'ks3-foundation-bridge', price: 249.00 },
+  { id: '20000000-0000-0000-0000-000000000001', title: 'GCSE 5-Subject Core Bundle (Year 10–11)', slug: 'gcse-5-subject-bundle', price: 299.00 },
+  { id: '20000000-0000-0000-0000-000000000002', title: 'UK A-Level 3-Subject Specialist Program (Year 12–13)', slug: 'uk-a-level-3-subject-program', price: 320.00 },
+  { id: '20000000-0000-0000-0000-000000000003', title: 'Canada Senior Secondary & AP Program (Grade 11–12)', slug: 'canada-senior-secondary-program', price: 320.00 },
+  { id: '20000000-0000-0000-0000-000000000004', title: 'US High School Advanced & AP Mastery Program', slug: 'us-high-school-ap-mastery', price: 320.00 },
+  { id: '20000000-0000-0000-0000-000000000006', title: 'Coding (Software Development)', slug: 'software-development', price: 340.00 },
+  { id: '20000000-0000-0000-0000-000000000007', title: 'Graphics Design', slug: 'graphics-design', price: 200.00 },
+  { id: '20000000-0000-0000-0000-000000000008', title: 'IELTS Academic & UKVI Exam Preparation', slug: 'ielts-academic-exam-preparation', price: 100.00 }
+];
+
 export const PaymentProofPage = () => {
   const [bankDetails, setBankDetails] = useState({
     bank_name: 'Barclays Bank UK PLC',
     account_name: 'Beacon Bridge Academics Ltd.',
-    account_number: '83920147',
-    swift_code: 'BARCGB22',
-    routing_code: '20-45-77',
-    iban: 'GB29BARC20457783920147',
     tuition_fee: '£299.00 GBP / month',
     instructions: 'Please include your student or parent name and reference code in the bank transfer description. Upload your transaction receipt/wire slip below to expedite verification.'
   });
@@ -34,8 +42,8 @@ export const PaymentProofPage = () => {
   const proofFileInputRef = useRef(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofFileName, setProofFileName] = useState('');
-  const [courses, setCourses] = useState([]);
-  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [courses, setCourses] = useState(FALLBACK_COURSES);
+  const [selectedCourseId, setSelectedCourseId] = useState(FALLBACK_COURSES[2].id);
   const [selectedTrack, setSelectedTrack] = useState('Frontend Coding');
 
   const [formData, setFormData] = useState({
@@ -90,22 +98,20 @@ export const PaymentProofPage = () => {
 
   useEffect(() => {
     const fetchBankDetails = async () => {
-      try {
-        const [bankRes, courseRes] = await Promise.all([
-          api.get('/payments/bank-details'),
-          api.get('/courses')
-        ]);
-        if (bankRes.data.success && bankRes.data.bankDetails) {
-          setBankDetails(bankRes.data.bankDetails);
-        }
-        if (courseRes.data.success && courseRes.data.courses.length > 0) {
-          setCourses(courseRes.data.courses);
-          const first = courseRes.data.courses[0];
-          setSelectedCourseId(first.id);
-          setFormData(prev => ({ ...prev, amount: Number(first.price || 299).toFixed(2) }));
-        }
-      } catch (err) {
-        console.error('Failed to load bank details', err);
+      const [bankResult, courseResult] = await Promise.allSettled([
+        api.get('/payments/bank-details'),
+        api.get('/courses')
+      ]);
+
+      if (bankResult.status === 'fulfilled' && bankResult.value.data?.success && bankResult.value.data.bankDetails) {
+        setBankDetails(prev => ({ ...prev, ...bankResult.value.data.bankDetails }));
+      }
+      if (courseResult.status === 'fulfilled' && courseResult.value.data?.success && Array.isArray(courseResult.value.data.courses) && courseResult.value.data.courses.length > 0) {
+        const fetched = courseResult.value.data.courses;
+        setCourses(fetched);
+        const defaultCourse = fetched.find(c => c.slug === 'gcse-5-subject-bundle') || fetched[0];
+        setSelectedCourseId(defaultCourse.id);
+        setFormData(prev => ({ ...prev, amount: Number(defaultCourse.price || 299).toFixed(2) }));
       }
     };
     fetchBankDetails();
@@ -200,102 +206,11 @@ export const PaymentProofPage = () => {
           <span>Institutional Tuition Payment</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-[#001f3f] tracking-tight">
-          Tuition Payment & Proof Submission
+          Tuition Payment Proof Submission
         </h1>
         <p className="mt-3 text-[#001f3f]/75 text-sm sm:text-base">
-          View official bank wire coordinates to process tuition, or submit your transfer receipt for administrator verification.
+          Submit or update your tuition transfer reference and payment receipt slip for administrator verification.
         </p>
-      </div>
-
-      {/* Bank Account Coordinates */}
-      <div className="bg-[#001f3f] text-[#f0faff] rounded-3xl p-6 sm:p-8 mb-10 relative overflow-hidden shadow-xl border border-[#40ffa7]/20">
-        <div className="absolute -right-8 -top-8 w-44 h-44 bg-[#40ffa7]/10 rounded-full blur-2xl pointer-events-none" />
-        
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-white/10">
-          <div className="flex items-center space-x-2 text-[#40ffa7] text-xs font-bold uppercase tracking-wider">
-            <Building2 className="w-4 h-4" />
-            <span>Official Receiving Bank Account</span>
-          </div>
-          <span className="text-xs px-2.5 py-1 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] border border-[#40ffa7]/30 font-bold">
-            Status: Active & Verified
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
-          <div>
-            <span className="text-xs text-[#f0faff]/60 block mb-1">Bank Institution</span>
-            <div className="font-bold text-white text-base">
-              {bankDetails.bank_name}
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-[#f0faff]/60 block mb-1">Beneficiary Account Name</span>
-            <div className="font-bold text-white text-base">
-              {bankDetails.account_name}
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-[#f0faff]/60 block mb-1">Account Number</span>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono font-bold text-[#40ffa7] text-lg tracking-wider">
-                {bankDetails.account_number}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleCopy(bankDetails.account_number, 'acc')}
-                className="p-1 rounded hover:bg-[#050167] text-[#f0faff]/80 transition-colors"
-              >
-                {copiedField === 'acc' ? <Check className="w-4 h-4 text-[#40ffa7]" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-[#f0faff]/60 block mb-1">SWIFT / BIC Code</span>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono font-bold text-white text-base">
-                {bankDetails.swift_code}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleCopy(bankDetails.swift_code, 'swift')}
-                className="p-1 rounded hover:bg-[#050167] text-[#f0faff]/80 transition-colors"
-              >
-                {copiedField === 'swift' ? <Check className="w-4 h-4 text-[#40ffa7]" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-[#f0faff]/60 block mb-1">Routing / Sort Code</span>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono font-bold text-white text-base">
-                {bankDetails.routing_code}
-              </span>
-              <button
-                type="button"
-                onClick={() => handleCopy(bankDetails.routing_code, 'rout')}
-                className="p-1 rounded hover:bg-[#050167] text-[#f0faff]/80 transition-colors"
-              >
-                {copiedField === 'rout' ? <Check className="w-4 h-4 text-[#40ffa7]" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <span className="text-xs text-[#f0faff]/60 block mb-1">Monthly Tuition Due</span>
-            <div className="font-black text-[#40ffa7] text-xl">
-              {bankDetails.tuition_fee}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-white/10 text-xs text-[#f0faff]/80 flex items-center gap-2">
-          <HelpCircle className="w-4 h-4 text-[#40ffa7] shrink-0" />
-          <span>{bankDetails.instructions}</span>
-        </div>
       </div>
 
       {/* Proof Submission Form */}

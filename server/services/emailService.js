@@ -401,15 +401,14 @@ export const sendRegistrationWelcome = async ({ student, parent, course, track, 
         <p style="margin: 4px 0;"><strong>Parent Oversight Portal:</strong> ${parent?.email}</p>
       </div>
 
-      <p>To finalize your enrollment and activate live classroom access, please transfer the monthly tuition to our UK bank account and submit your proof of payment on the portal:</p>
+      <p>To finalize your enrollment and activate live classroom access, please complete your tuition transfer to <strong>Beacon Bridge Academics Ltd (Barclays Bank UK PLC)</strong> using the payment instructions provided by our admissions desk and submit your proof of payment on the portal:</p>
       
       <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
-        <h4 style="margin: 0 0 8px 0; color: #065f46;">UK Bank Transfer Details:</h4>
-        <p style="margin: 2px 0;"><strong>Bank:</strong> Barclays Bank UK</p>
-        <p style="margin: 2px 0;"><strong>Account Name:</strong> Beacon Bridge Academics Ltd</p>
-        <p style="margin: 2px 0;"><strong>Sort Code:</strong> 20-00-00</p>
-        <p style="margin: 2px 0;"><strong>Account Number:</strong> 55443322</p>
+        <h4 style="margin: 0 0 8px 0; color: #065f46;">Beneficiary Summary:</h4>
+        <p style="margin: 2px 0;"><strong>Beneficiary Bank:</strong> Barclays Bank UK PLC</p>
+        <p style="margin: 2px 0;"><strong>Beneficiary Name:</strong> Beacon Bridge Academics Ltd</p>
         <p style="margin: 2px 0;"><strong>Payment Reference:</strong> ${student?.full_name ? student.full_name.toUpperCase().replace(/\s+/g, '-') : 'TUITION'}</p>
+        <p style="margin: 6px 0 0 0; font-size: 12px; color: #475569;">For security reasons, full transfer coordinates are issued directly by our admissions desk at <a href="mailto:info@beaconbridgeacademics.co.uk" style="color: #059669;">info@beaconbridgeacademics.co.uk</a>.</p>
       </div>
     `,
     callToAction: {

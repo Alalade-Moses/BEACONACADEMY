@@ -1740,19 +1740,105 @@ export const store = {
     const existingStudent = await store.getProfileByEmail(student.email);
     const existingParent = await store.getProfileByEmail(parent.email);
 
-    // If both accounts already exist and both are pending verification, update the payment proof idempotently
+    // If both accounts already exist and both are pending verification, update or create the payment proof idempotently
     if (existingStudent && existingParent && existingStudent.status === 'pending_verification' && existingParent.status === 'pending_verification') {
-      const existingPayment = memoryData.payments.find(p => p.student_id === existingStudent.id || p.parent_id === existingParent.id);
+      const chosenCourse = memoryData.courses.find(c => c.id === course_id);
+      let courseNameWithTrack = chosenCourse ? chosenCourse.title : 'Academic Program';
+      if (course_track) {
+        courseNameWithTrack = `${courseNameWithTrack} (${course_track})`;
+      }
+      const subjectsList = Array.isArray(selected_subjects) && selected_subjects.length > 0
+        ? selected_subjects.join(', ')
+        : (student.grade || 'Curriculum Program');
+
+      let existingPayment = memoryData.payments.find(p => p.student_id === existingStudent.id || p.parent_id === existingParent.id);
+      if (!existingPayment && pool) {
+        try {
+          const pgPay = await pool.query(
+            'SELECT * FROM payments WHERE student_id = $1 OR parent_id = $2 ORDER BY created_at DESC LIMIT 1',
+            [existingStudent.id, existingParent.id]
+          );
+          if (pgPay.rows && pgPay.rows[0]) {
+            existingPayment = pgPay.rows[0];
+            memoryData.payments.unshift(existingPayment);
+          }
+        } catch (dbErr) {
+          console.warn('[store] PostgreSQL registerJoint payment lookup notice:', dbErr.message);
+        }
+      }
+
       if (existingPayment) {
         if (payment_proof_url) existingPayment.proof_url = payment_proof_url;
         if (bank_reference) existingPayment.bank_reference = bank_reference;
         if (amount) existingPayment.amount = parseFloat(amount);
         existingPayment.admin_notes = `Payment proof updated. Bank Ref: ${bank_reference || existingPayment.bank_reference}. Awaiting bursar confirmation.`;
+        if (pool) {
+          try {
+            await pool.query(
+              'UPDATE payments SET proof_url = $1, bank_reference = $2, amount = $3, admin_notes = $4 WHERE id = $5',
+              [existingPayment.proof_url, existingPayment.bank_reference, existingPayment.amount, existingPayment.admin_notes, existingPayment.id]
+            );
+          } catch (dbErr) {
+            console.warn('[store] PostgreSQL registerJoint payment update notice:', dbErr.message);
+          }
+        }
+      } else {
+        // No payment row existed yet (e.g. from prior restart); create & persist one now so payment is never null
+        existingPayment = {
+          id: uuidv4(),
+          parent_id: existingParent.id,
+          student_id: existingStudent.id,
+          course_id: course_id || (memoryData.courses[0] ? memoryData.courses[0].id : null),
+          course_track: course_track || null,
+          course_name: courseNameWithTrack,
+          amount: parseFloat(amount) || 299.00,
+          currency: 'GBP',
+          selected_subjects: selected_subjects || [],
+          bank_reference: bank_reference || `BBA-${Date.now().toString(36).toUpperCase()}`,
+          proof_url: payment_proof_url || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600',
+          status: 'pending',
+          admin_notes: `Program: ${courseNameWithTrack}. Subjects: ${subjectsList}. Monthly tuition awaiting bursar payment confirmation.`,
+          verified_by: null,
+          created_at: new Date().toISOString(),
+          verified_at: null
+        };
+        memoryData.payments.unshift(existingPayment);
+        if (pool) {
+          try {
+            await pool.query(`
+              INSERT INTO payments (id, parent_id, student_id, course_id, amount, currency, bank_reference, proof_url, status, admin_notes, created_at)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+              ON CONFLICT (id) DO NOTHING
+            `, [
+              existingPayment.id, existingPayment.parent_id, existingPayment.student_id, existingPayment.course_id,
+              existingPayment.amount, existingPayment.currency, existingPayment.bank_reference, existingPayment.proof_url,
+              existingPayment.status, existingPayment.admin_notes, existingPayment.created_at
+            ]);
+          } catch (dbErr) {
+            console.warn('[store] PostgreSQL registerJoint idempotent payment insert notice:', dbErr.message);
+          }
+        }
       }
+
+      await store.createParentStudentLink({
+        parent_id: existingParent.id,
+        student_id: existingStudent.id,
+        relationship: parent.relationship || 'Parent'
+      });
+      if (course_id) {
+        await store.createEnrollment({
+          course_id,
+          course_track: course_track || null,
+          student_id: existingStudent.id,
+          status: 'enrolled',
+          progress_pct: 0
+        });
+      }
+
       return {
         student: existingStudent,
         parent: existingParent,
-        payment: existingPayment || null,
+        payment: existingPayment,
         idempotent: true
       };
     }
@@ -1888,15 +1974,78 @@ export const store = {
 
   registerIelts: async ({ candidate, ielts_track, target_band, exam_date, focus_modules, payment_proof_url, bank_reference, amount }) => {
     const existingCandidate = await store.getProfileByEmail(candidate.email);
+    const ieltsCourseId = '20000000-0000-0000-0000-000000000008';
+    const trackLabel = ielts_track || 'IELTS Academic';
+    const bandStr = target_band ? `Target Band ${target_band}` : 'Target Band 7.5+';
+
     if (existingCandidate && existingCandidate.status === 'pending_verification') {
-      const existingPayment = memoryData.payments.find(p => p.student_id === existingCandidate.id);
+      let existingPayment = memoryData.payments.find(p => p.student_id === existingCandidate.id);
+      if (!existingPayment && pool) {
+        try {
+          const pgPay = await pool.query(
+            'SELECT * FROM payments WHERE student_id = $1 ORDER BY created_at DESC LIMIT 1',
+            [existingCandidate.id]
+          );
+          if (pgPay.rows && pgPay.rows[0]) {
+            existingPayment = pgPay.rows[0];
+            memoryData.payments.unshift(existingPayment);
+          }
+        } catch (dbErr) {
+          console.warn('[store] PostgreSQL registerIelts payment lookup notice:', dbErr.message);
+        }
+      }
       if (existingPayment) {
         if (payment_proof_url) existingPayment.proof_url = payment_proof_url;
         if (bank_reference) existingPayment.bank_reference = bank_reference;
         if (amount) existingPayment.amount = parseFloat(amount);
-        existingPayment.admin_notes = `IELTS Candidate proof updated. Track: ${ielts_track}. Bank Ref: ${bank_reference || existingPayment.bank_reference}.`;
+        existingPayment.admin_notes = `IELTS Candidate proof updated. Track: ${trackLabel}. Bank Ref: ${bank_reference || existingPayment.bank_reference}.`;
+        if (pool) {
+          try {
+            await pool.query(
+              'UPDATE payments SET proof_url = $1, bank_reference = $2, amount = $3, admin_notes = $4 WHERE id = $5',
+              [existingPayment.proof_url, existingPayment.bank_reference, existingPayment.amount, existingPayment.admin_notes, existingPayment.id]
+            );
+          } catch (dbErr) {
+            console.warn('[store] PostgreSQL registerIelts payment update notice:', dbErr.message);
+          }
+        }
+      } else {
+        existingPayment = {
+          id: uuidv4(),
+          parent_id: existingCandidate.id,
+          student_id: existingCandidate.id,
+          course_id: ieltsCourseId,
+          course_track: trackLabel,
+          course_name: `IELTS Academic & UKVI Exam Preparation (${trackLabel})`,
+          amount: parseFloat(amount) || 100.00,
+          currency: 'GBP',
+          selected_subjects: focus_modules || ['Speaking', 'Writing Task 1 & 2', 'Reading', 'Listening'],
+          bank_reference: bank_reference || `IELTS-${Date.now().toString(36).toUpperCase()}`,
+          proof_url: payment_proof_url || 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600',
+          status: 'pending',
+          admin_notes: `IELTS Candidate: ${candidate.full_name} (${trackLabel}, ${bandStr}). Monthly £100 GBP awaiting verification.`,
+          verified_by: null,
+          created_at: new Date().toISOString(),
+          verified_at: null
+        };
+        memoryData.payments.unshift(existingPayment);
+        if (pool) {
+          try {
+            await pool.query(`
+              INSERT INTO payments (id, parent_id, student_id, course_id, amount, currency, bank_reference, proof_url, status, admin_notes, created_at)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+              ON CONFLICT (id) DO NOTHING
+            `, [
+              existingPayment.id, existingPayment.parent_id, existingPayment.student_id, existingPayment.course_id,
+              existingPayment.amount, existingPayment.currency, existingPayment.bank_reference, existingPayment.proof_url,
+              existingPayment.status, existingPayment.admin_notes, existingPayment.created_at
+            ]);
+          } catch (dbErr) {
+            console.warn('[store] PostgreSQL registerIelts idempotent payment insert notice:', dbErr.message);
+          }
+        }
       }
-      return { student: existingCandidate, payment: existingPayment || null, idempotent: true };
+      return { student: existingCandidate, payment: existingPayment, idempotent: true };
     }
     if (existingCandidate) throw new Error(`Candidate email '${candidate.email}' is already registered.`);
 
@@ -1904,10 +2053,7 @@ export const store = {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(candidate.password, salt);
 
-    const ieltsCourseId = '20000000-0000-0000-0000-000000000008';
-    const trackLabel = ielts_track || 'IELTS Academic';
     const modulesStr = Array.isArray(focus_modules) && focus_modules.length > 0 ? focus_modules.join(', ') : 'All 4 IELTS Modules';
-    const bandStr = target_band ? `Target Band ${target_band}` : 'Target Band 7.5+';
 
     const studentProfile = await store.createProfile({
       email: candidate.email,
