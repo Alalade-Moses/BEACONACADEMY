@@ -120,6 +120,13 @@ export const IeltsRegisterPage = () => {
       return;
     }
 
+    if (!formData.email.trim().toLowerCase().endsWith('@gmail.com')) {
+      const msg = 'Only valid @gmail.com email addresses are allowed for IELTS registration (e.g. yourname@gmail.com).';
+      setError(msg);
+      showWarning('Gmail Address Required', msg);
+      return;
+    }
+
     if (formData.password !== formData.confirm_password) {
       showWarning('Password Mismatch', 'Your passwords do not match. Please verify both fields.');
       return;

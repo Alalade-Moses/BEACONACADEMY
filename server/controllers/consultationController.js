@@ -1,6 +1,6 @@
 import { store } from '../database/store.js';
 import { sendConsultationBookingNotifications } from '../services/emailService.js';
-import { isValidEmail, normalizeEmail, clampText, isUuid } from '../utils/validators.js';
+import { isAllowedGmail, GMAIL_ONLY_MESSAGE, normalizeEmail, clampText, isUuid } from '../utils/validators.js';
 
 const VALID_CONSULTATION_STATUSES = new Set(['pending', 'confirmed', 'completed', 'cancelled']);
 
@@ -55,8 +55,8 @@ export const createConsultation = async (req, res, next) => {
       });
     }
 
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    if (!isAllowedGmail(email)) {
+      return res.status(400).json({ success: false, message: GMAIL_ONLY_MESSAGE });
     }
 
     const newConsultation = await store.createConsultation({

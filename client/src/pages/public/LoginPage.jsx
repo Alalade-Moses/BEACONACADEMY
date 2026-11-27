@@ -37,6 +37,13 @@ export const LoginPage = () => {
     setError('');
     setPendingVerification(false);
     setPendingAccountType('family');
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.endsWith('@gmail.com') && !normalizedEmail.endsWith('@beaconbridgeacademics.co.uk')) {
+      setError('Only valid @gmail.com email addresses are allowed (official @beaconbridgeacademics.co.uk staff accounts are also permitted).');
+      return;
+    }
+
     setLoading(true);
 
     try {

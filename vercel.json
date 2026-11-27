@@ -44,6 +44,10 @@
       "destination": "/blog/index.html"
     },
     {
+      "source": "/faq",
+      "destination": "/faq/index.html"
+    },
+    {
       "source": "/apply-to-teach",
       "destination": "/apply-to-teach/index.html"
     },

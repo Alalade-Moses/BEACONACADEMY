@@ -24,32 +24,20 @@ export const PublicNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [faqActive, setFaqActive] = useState(false);
-
-  // Scroll header state + scroll-spy for the on-page FAQ anchor
+  // Scroll header elevation state
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
-      if (location.pathname === '/') {
-        const faq = document.getElementById('faq');
-        if (faq) {
-          const rect = faq.getBoundingClientRect();
-          setFaqActive(rect.top <= 140 && rect.bottom > 140);
-          return;
-        }
-      }
-      setFaqActive(false);
     };
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [location.pathname]);
+  }, []);
 
   // Which top-level tab is currently active
   const isActive = (key) => {
     const path = location.pathname.replace(/\/+$/, '') || '/';
-    if (key === 'faq') return path === '/' && faqActive;
-    if (key === '/') return path === '/' && !faqActive;
+    if (key === '/') return path === '/';
     if (key === '/book-consultation' && (path === '/consultation' || path.startsWith('/consultation/'))) return true;
     if (key === '/apply-to-teach' && (path === '/tutor/apply' || path.startsWith('/tutor/apply/'))) return true;
     if (key === '/register' && (path === '/ielts-registration' || path.startsWith('/register/'))) return true;
@@ -96,7 +84,7 @@ export const PublicNavbar = () => {
     { key: '/book-consultation', to: '/book-consultation', label: <><span className="hidden 2xl:inline">Book a </span>Free Consultation</>, mobileLabel: 'Book a Free Consultation', icon: CalendarCheck, iconClass: 'text-emerald-600' },
     { key: '/how-it-works', to: '/how-it-works', label: <>How It Works</>, icon: HelpCircle, iconClass: 'text-[#050167]' },
     { key: '/blog', to: '/blog', label: <>Blog</>, mobileLabel: 'Blog & Event Flyers', icon: BookOpen, iconClass: 'text-purple-600' },
-    { key: 'faq', anchor: 'faq', label: <>FAQ</>, mobileLabel: 'Frequently Asked Questions', icon: HelpCircle, iconClass: 'text-[#050167]' },
+    { key: '/faq', to: '/faq', label: <>FAQ</>, mobileLabel: 'Frequently Asked Questions', icon: HelpCircle, iconClass: 'text-[#050167]' },
     { key: '/contact', to: '/contact', label: <>Contact Us</>, icon: Mail, iconClass: 'text-[#050167]' },
     { key: '/apply-to-teach', to: '/apply-to-teach', label: <>Teach With Us</>, icon: Sparkles, iconClass: 'text-emerald-600', accent: true }
   ];

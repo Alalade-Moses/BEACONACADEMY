@@ -139,6 +139,12 @@ export const BookConsultationPage = () => {
       return;
     }
 
+    if (!formData.email.trim().toLowerCase().endsWith('@gmail.com')) {
+      setError('Only valid @gmail.com email addresses are allowed (e.g. yourname@gmail.com).');
+      window.scrollTo({ top: 300, behavior: 'smooth' });
+      return;
+    }
+
     setLoading(true);
 
     try {

@@ -278,11 +278,11 @@ export const uploadRateLimiter = createRateLimiter({
 
 /**
  * Per-(IP + email) consecutive failed login tracker & temporary lockout
- * Locks after 5 wrong passwords for 15 minutes; resets immediately on valid login.
+ * Locks after 5 wrong passwords for 3 minutes; resets immediately on valid login.
  */
 const failedLoginStore = new Map();
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
-const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+const LOGIN_LOCKOUT_MS = 3 * 60 * 1000;
 
 const failedLoginKey = (ip, email) => `${ip || 'unknown'}:${normalizeEmail(email)}`;
 

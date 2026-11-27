@@ -16,6 +16,28 @@ export const isValidEmail = (value) => {
 
 export const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 
+export const GMAIL_ONLY_MESSAGE = 'Only valid @gmail.com email addresses are allowed (e.g. yourname@gmail.com).';
+
+/**
+ * Strict @gmail.com domain validator.
+ * Optionally allows official institutional domain (@beaconbridgeacademics.co.uk / SUPERADMIN_EMAIL)
+ * for staff & superadmin login / provisioning so platform admins are never locked out.
+ */
+export const isAllowedGmail = (value, { allowOfficialStaff = false } = {}) => {
+  if (!isValidEmail(value)) return false;
+  const normalized = normalizeEmail(value);
+  if (normalized.endsWith('@gmail.com')) return true;
+
+  if (allowOfficialStaff) {
+    const officialDomain = (process.env.EMAIL_DOMAIN || 'beaconbridgeacademics.co.uk').trim().toLowerCase();
+    const superadminEmail = (process.env.SUPERADMIN_EMAIL || process.env.ADMIN_EMAIL || `admin@${officialDomain}`).trim().toLowerCase();
+    if (normalized === superadminEmail || normalized.endsWith(`@${officialDomain}`)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const validatePassword = (password) => {
   if (typeof password !== 'string') {
     return { valid: false, message: 'Password must be a valid text string.' };

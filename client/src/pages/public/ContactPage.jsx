@@ -33,6 +33,10 @@ export const ContactPage = () => {
       showError('Required Fields Missing', 'Please provide your name, email, and a message.');
       return;
     }
+    if (!form.email.trim().toLowerCase().endsWith('@gmail.com')) {
+      showError('Gmail Address Required', 'Only valid @gmail.com email addresses are allowed (e.g. yourname@gmail.com).');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -266,7 +270,7 @@ export const ContactPage = () => {
                     <input 
                       type="email"
                       required
-                      placeholder="eleanor@example.com"
+                      placeholder="yourname@gmail.com"
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#050167] text-sm text-slate-900"

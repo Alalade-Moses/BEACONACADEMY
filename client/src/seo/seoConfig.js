@@ -367,6 +367,22 @@ export const PAGE_SEO = {
       }
     }
   },
+  '/faq': {
+    title: 'Frequently Asked Questions (FAQ) | Beacon Bridge Academics',
+    description: 'Answers to common parent and student questions about UK GCSE, A-Level, KS2, KS3, IELTS online tutoring, safeguarding, virtual classrooms, and tuition plans.',
+    canonicalPath: '/faq',
+    robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      '@id': `${BASE_URL}/faq#faqpage`,
+      'url': `${BASE_URL}/faq`,
+      'name': 'Frequently Asked Questions | Beacon Bridge Academics',
+      'publisher': {
+        '@id': `${BASE_URL}/#organization`
+      }
+    }
+  },
   '/payment-proof': {
     title: 'Payment Proof Submission | Beacon Bridge Academics',
     description: 'Submit or update your monthly tuition bank transfer reference and receipt slip for Beacon Bridge Academics verification.',

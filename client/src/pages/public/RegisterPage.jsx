@@ -507,6 +507,13 @@ export const RegisterPage = () => {
       return;
     }
 
+    if (!formData.student_email.trim().toLowerCase().endsWith('@gmail.com') || !formData.parent_email.trim().toLowerCase().endsWith('@gmail.com')) {
+      const msg = 'Only valid @gmail.com email addresses are allowed for student and parent registration (e.g. yourname@gmail.com).';
+      setError(msg);
+      showWarning('Gmail Address Required', msg);
+      return;
+    }
+
     if (formData.student_email.toLowerCase() === formData.parent_email.toLowerCase()) {
       const msg = 'Student and Parent must use different email addresses for separate dashboard accounts.';
       setError(msg);

@@ -251,6 +251,13 @@ export const TeacherApplicationPage = () => {
       return;
     }
 
+    if (!formData.email.trim().toLowerCase().endsWith('@gmail.com')) {
+      const msg = 'Only valid @gmail.com email addresses are allowed (e.g. yourname@gmail.com).';
+      setErrorMsg(msg);
+      showWarning('Gmail Address Required', msg);
+      return;
+    }
+
     if (formData.selected_subjects.length === 0) {
       const msg = 'Please select at least one A-Level subject you are qualified to teach.';
       setErrorMsg(msg);

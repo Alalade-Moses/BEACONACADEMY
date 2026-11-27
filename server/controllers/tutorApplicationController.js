@@ -1,6 +1,6 @@
 import { store } from '../database/store.js';
 import { getClientIp } from '../middleware/securityMiddleware.js';
-import { isValidEmail, normalizeEmail, isSafeUrl, clampText } from '../utils/validators.js';
+import { isAllowedGmail, GMAIL_ONLY_MESSAGE, normalizeEmail, isSafeUrl, clampText } from '../utils/validators.js';
 import { sendTutorApplicationReceived, sendTutorApplicationAdminAlert, sendTutorApprovalEmail } from '../services/emailService.js';
 import { safeDeleteUploadedFile } from '../services/fileCleanup.js';
 
@@ -51,8 +51,8 @@ export const submitApplication = async (req, res, next) => {
       });
     }
 
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    if (!isAllowedGmail(email)) {
+      return res.status(400).json({ success: false, message: GMAIL_ONLY_MESSAGE });
     }
 
     if (!selected_subjects || !Array.isArray(selected_subjects) || selected_subjects.length === 0) {

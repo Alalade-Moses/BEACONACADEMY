@@ -372,58 +372,6 @@ export const LandingPage = () => {
     }
   ];
 
-  // FAQs Data
-  const faqs = [
-    {
-      q: "What is Beacon Bridge Academics?",
-      a: "Beacon Bridge Academics is an online academic support company for students in the UK, the US, Canada and Australia. We provide live online lessons with teachers trained in your child's curriculum, and a parent account so you can follow their progress."
-    },
-    {
-      q: "How does online tutoring work?",
-      a: "Lessons take place live in our virtual classroom, with video, audio, a digital whiteboard and real-time annotation of slides and PDFs. Your child joins from a laptop or tablet at a time that suits your family."
-    },
-    {
-      q: "Which curricula and exam boards do you support?",
-      a: "We support GCSE and A-Level for UK students, along with the US, Canadian and Australian curricula. Tell us your child's exam board at your consultation (AQA, Edexcel, OCR, WJEC/Eduqas), and we will match the teaching to it."
-    },
-    {
-      q: "Can online tutoring help my child pass their GCSEs?",
-      a: "Targeted tutoring helps students fill gaps, practise exam technique and build confidence. We cannot promise a particular grade, but we can promise teaching focused on exactly what your child's exam requires."
-    },
-    {
-      q: "Is online tutoring with Beacon Bridge Academics safe?",
-      a: "Safeguarding is built into how we work. Parents register with their child, every family has a consultation first, and every teacher is checked (including DBS and document verification) before working with children. Lessons take place inside our own secure classroom."
-    },
-    {
-      q: "Do you help homeschooled students?",
-      a: "Yes. Teachers can provide subject expertise, structure and exam preparation for homeschooled students at GCSE and A-Level."
-    },
-    {
-      q: "How do I follow my child's progress?",
-      a: "Your parent account shows progress, attendance and announcements. You also receive an email whenever a teacher sets homework, and again when it has been completed."
-    },
-    {
-      q: "How much does online tutoring cost?",
-      a: "Lesson prices depend on the subject, level and plan, and we explain them clearly at your consultation so there are no surprises. Payment is by bank transfer, and you receive an email confirmation once it has been checked."
-    },
-    {
-      q: "What does my child need to join lessons?",
-      a: "A laptop or tablet with a camera, a microphone and a reliable internet connection is enough. Your child joins our live classroom from a web browser, and a quiet space helps them concentrate."
-    },
-    {
-      q: "Can you help if my child has moved from another school system?",
-      a: "Yes. This is one of the things we do best. Our teachers are trained across UK, US, Canadian and Australian curricula, so they understand what your child has already learned and what they need to catch up on."
-    },
-    {
-      q: "What age groups and year groups do you teach?",
-      a: "We teach students starting from Key Stage 2 (KS2 / Primary, Year 3–6, ages 7+) through Key Stage 3 (Year 7–9), GCSE (Year 10–11), and A-Level (Year 12–13), as well as Canadian Grade 11–12, US AP, IELTS Academic & UKVI, Coding (Software Development), and Graphics Design. Tell us your child's year group, subjects and exam board when you book your consultation."
-    },
-    {
-      q: "How do I get started?",
-      a: "Register as a family, book a consultation with a teacher, and our team will complete your onboarding. It takes a few minutes to begin."
-    }
-  ];
-
   const homeSchema = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -1721,59 +1669,6 @@ export const LandingPage = () => {
             <p>
               Teachers are not limited to your postcode either, so you can find specialist knowledge of a particular subject or exam board wherever it is. Recorded sessions mean a student can revisit a difficult explanation as many times as they need.
             </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================= */}
-      {/* SECTION 17: FREQUENTLY ASKED QUESTIONS                    */}
-      {/* ========================================================= */}
-      <section id="faq" className="scroll-mt-24 sm:scroll-mt-28 py-24 sm:py-32 bg-gradient-to-b from-[#f0faff] to-white border-b border-[#050167]/10 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#050167] text-[#40ffa7] text-xs font-bold uppercase tracking-wider mb-3 shadow-sm">
-              <HelpCircle className="w-3.5 h-3.5 text-[#40ffa7]" />
-              <span>Got Questions?</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#001f3f] tracking-tight">
-              Frequently Asked Questions
-            </h2>
-          </div>
-
-          <div className="space-y-3.5">
-            {faqs.map((faq, index) => {
-              const isOpen = activeFaq === index;
-              return (
-                <div
-                  key={index}
-                  className={`rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden ${
-                    isOpen 
-                      ? 'border-[#40ffa7] bg-white ring-2 ring-[#40ffa7]/30 shadow-xl' 
-                      : 'border-[#050167]/15 bg-white hover:border-[#40ffa7]/50 hover:shadow-md'
-                  }`}
-                >
-                  <button
-                    onClick={() => setActiveFaq(isOpen ? null : index)}
-                    className="w-full py-5 px-6 sm:px-8 text-left font-bold text-base sm:text-lg text-[#050167] flex items-center justify-between hover:bg-[#f0faff]/60 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${isOpen ? 'bg-[#050167] text-[#40ffa7]' : 'bg-[#f0faff] text-[#050167]'}`}>
-                        {index + 1 < 10 ? `0${index + 1}` : index + 1}
-                      </span>
-                      <span>{faq.q}</span>
-                    </div>
-                    {isOpen ? <ChevronUp className="w-5 h-5 text-[#050167] shrink-0 ml-3" /> : <ChevronDown className="w-5 h-5 text-slate-400 shrink-0 ml-3" />}
-                  </button>
-                  {isOpen && (
-                    <div className="px-6 sm:px-8 pb-6 pt-2 text-sm sm:text-base text-[#001f3f]/80 leading-relaxed border-t border-[#050167]/10 bg-slate-50/50">
-                      {faq.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
           </div>
 
         </div>

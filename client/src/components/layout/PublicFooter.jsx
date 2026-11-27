@@ -160,6 +160,7 @@ export const PublicFooter = () => {
             <ul className="space-y-2.5">
               <li><Link to="/about" className="hover:text-[#40ffa7] transition-colors">About Us</Link></li>
               <li><Link to="/blog" className="hover:text-[#40ffa7] transition-colors">Academic Blog</Link></li>
+              <li><Link to="/faq" className="hover:text-[#40ffa7] transition-colors">Frequently Asked Questions (FAQ)</Link></li>
               <li><Link to="/contact" className="hover:text-[#40ffa7] transition-colors">Contact Us</Link></li>
               <li><Link to="/book-consultation" className="hover:text-[#40ffa7] transition-colors">Book a Free Consultation</Link></li>
               <li><Link to="/register" className="hover:text-[#40ffa7] transition-colors">Register with Us</Link></li>

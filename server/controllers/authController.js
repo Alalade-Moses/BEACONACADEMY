@@ -9,6 +9,8 @@ import {
 } from '../middleware/securityMiddleware.js';
 import {
   isValidEmail,
+  isAllowedGmail,
+  GMAIL_ONLY_MESSAGE,
   normalizeEmail,
   validatePassword,
   isSafeUrl,
@@ -67,6 +69,13 @@ export const login = async (req, res, next) => {
     const email = normalizeEmail(rawEmail);
     if (email.length > 254 || password.length > 128) {
       return res.status(400).json({ success: false, message: 'Invalid email or password format.' });
+    }
+
+    if (!isAllowedGmail(email, { allowOfficialStaff: true })) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only valid @gmail.com email addresses are allowed (official @beaconbridgeacademics.co.uk staff accounts are also permitted).'
+      });
     }
 
     // 1. Check per-(IP + email) lockout BEFORE doing password work
@@ -172,8 +181,8 @@ export const register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Full name, email, and password are required.' });
     }
 
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    if (!isAllowedGmail(email)) {
+      return res.status(400).json({ success: false, message: GMAIL_ONLY_MESSAGE });
     }
 
     const pwCheck = validatePassword(password);
@@ -258,8 +267,11 @@ export const registerJoint = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Parent full name, email, and password are required.' });
     }
 
-    if (!isValidEmail(student.email) || !isValidEmail(parent.email)) {
-      return res.status(400).json({ success: false, message: 'Please provide valid email addresses for both student and parent.' });
+    if (!isAllowedGmail(student.email) || !isAllowedGmail(parent.email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both student and parent accounts must use valid @gmail.com email addresses (e.g. yourname@gmail.com).'
+      });
     }
 
     if (normalizeEmail(student.email) === normalizeEmail(parent.email)) {
@@ -357,8 +369,8 @@ export const registerIelts = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Candidate full name, email, and password are required.' });
     }
 
-    if (!isValidEmail(candidate.email)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid candidate email address.' });
+    if (!isAllowedGmail(candidate.email)) {
+      return res.status(400).json({ success: false, message: GMAIL_ONLY_MESSAGE });
     }
 
     const pwCheck = validatePassword(candidate.password);

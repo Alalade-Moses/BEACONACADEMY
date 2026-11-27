@@ -1,6 +1,6 @@
 import { store } from '../database/store.js';
 import { sendEmail, sendTutorMessage, sendContactInquiryEmail, resolveSenderIdentity } from '../services/emailService.js';
-import { isValidEmail, normalizeEmail, clampText, isUuid } from '../utils/validators.js';
+import { isValidEmail, isAllowedGmail, GMAIL_ONLY_MESSAGE, normalizeEmail, clampText, isUuid } from '../utils/validators.js';
 import nodemailer from 'nodemailer';
 
 /**
@@ -21,10 +21,10 @@ export const submitContactInquiry = async (req, res, next) => {
       });
     }
 
-    if (!isValidEmail(cleanEmail)) {
+    if (!isAllowedGmail(cleanEmail)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid email address.'
+        message: GMAIL_ONLY_MESSAGE
       });
     }
 

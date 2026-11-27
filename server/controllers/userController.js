@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { store } from '../database/store.js';
 import { getClientIp } from '../middleware/securityMiddleware.js';
-import { isValidEmail, normalizeEmail, validatePassword, clampText, isUuid } from '../utils/validators.js';
+import { isAllowedGmail, normalizeEmail, validatePassword, clampText, isUuid } from '../utils/validators.js';
 
 const VALID_ROLES = new Set(['superadmin', 'admin', 'tutor', 'student', 'parent']);
 const VALID_STATUSES = new Set(['active', 'suspended', 'pending', 'pending_verification']);
@@ -73,8 +73,11 @@ export const createUser = async (req, res, next) => {
     if (!email || !full_name || !role) {
       return res.status(400).json({ success: false, message: 'Email, full name, and role are required.' });
     }
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    if (!isAllowedGmail(email, { allowOfficialStaff: true })) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only valid @gmail.com email addresses (or @beaconbridgeacademics.co.uk staff emails) are allowed.'
+      });
     }
     if (!VALID_ROLES.has(role)) {
       return res.status(400).json({ success: false, message: 'Invalid user role specified.' });

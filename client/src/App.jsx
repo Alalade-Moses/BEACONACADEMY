@@ -23,6 +23,7 @@ import { PaymentProofPage } from './pages/public/PaymentProofPage';
 import { TeacherApplicationPage } from './pages/public/TeacherApplicationPage';
 import { BookConsultationPage } from './pages/public/BookConsultationPage';
 import { IeltsRegisterPage } from './pages/public/IeltsRegisterPage';
+import { FaqPage } from './pages/public/FaqPage';
 
 // Admin Portal Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -81,6 +82,7 @@ export const App = () => {
         <Route path="/book-consultation" element={<BookConsultationPage />} />
         <Route path="/consultation" element={<BookConsultationPage />} />
         <Route path="/blog" element={<BlogPage />} />
+        <Route path="/faq" element={<FaqPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsPage />} />
