@@ -1,6 +1,7 @@
 import { store } from '../database/store.js';
 import { getClientIp } from '../middleware/securityMiddleware.js';
 import { isSafeUrl, clampText, pickFields, isUuid } from '../utils/validators.js';
+import { sendClassScheduledEmail, sendClassLiveNowEmail } from '../services/emailService.js';
 
 const CLASS_EDITABLE_FIELDS = [
   'course_id', 'title', 'description', 'scheduled_at',
@@ -40,7 +41,19 @@ const notifyAssignedStudentsForClass = async ({ io, classItem, tutor, eventType 
       });
     }
 
-    // Also notify linked parents of this student
+    // Send automatic email to the assigned Student
+    if (student.email) {
+      const studentEmailFn = isLive ? sendClassLiveNowEmail : sendClassScheduledEmail;
+      studentEmailFn({
+        recipient: student,
+        recipientRole: 'student',
+        student,
+        tutor: tutor || classItem.tutor,
+        classInfo: classItem
+      }).catch((err) => console.warn(`[Class Email -> Student Error] ${student.email}:`, err.message));
+    }
+
+    // Also notify & email ALL linked parents of this student
     const linkedParents = allParentLinks.filter((l) => l.student_id === studentId && l.status === 'active');
     for (const pLink of linkedParents) {
       await store.createNotification({
@@ -63,6 +76,21 @@ const notifyAssignedStudentsForClass = async ({ io, classItem, tutor, eventType 
             tutor: tutor || classItem.tutor || null
           }
         });
+      }
+
+      const parentProfile = pLink.parent || (await store.getProfileById(pLink.parent_id));
+      if (
+        parentProfile?.email &&
+        parentProfile.email.toLowerCase() !== (student.email || '').toLowerCase()
+      ) {
+        const parentEmailFn = isLive ? sendClassLiveNowEmail : sendClassScheduledEmail;
+        parentEmailFn({
+          recipient: parentProfile,
+          recipientRole: 'parent',
+          student,
+          tutor: tutor || classItem.tutor,
+          classInfo: classItem
+        }).catch((err) => console.warn(`[Class Email -> Parent Error] ${parentProfile.email}:`, err.message));
       }
     }
   }

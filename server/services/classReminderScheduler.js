@@ -40,30 +40,45 @@ export const checkAndDispatchUpcomingClassReminders = async () => {
         const student = await store.getProfileById(studentId);
         if (!student || student.status !== 'active') continue;
 
-        // Find linked parent
-        const link = allLinks.find(l => l.student_id === student.id && l.status === 'active');
-        const parent = link ? await store.getProfileById(link.parent_id) : null;
+        // Find all active linked parents for this student
+        const studentParentLinks = allLinks.filter(l => l.student_id === student.id && l.status === 'active');
+        const firstParent = studentParentLinks[0] ? await store.getProfileById(studentParentLinks[0].parent_id) : null;
 
-        // 1. Dispatch reminder to Student
+        // 1. Dispatch 1-hour reminder email to Student
         sendClassUpcomingReminderEmail({
           recipient: student,
+          recipientRole: 'student',
           student,
-          parent,
+          parent: firstParent,
           tutor: classItem.tutor,
           classInfo: classItem,
           roomUrl
         }).catch(err => console.warn(`[Reminder Student Email Error] ${student.email}:`, err.message));
 
-        // 2. Dispatch reminder to Parent (if available)
-        if (parent && parent.email && parent.email !== student.email) {
-          sendClassUpcomingReminderEmail({
-            recipient: parent,
-            student,
-            parent,
-            tutor: classItem.tutor,
-            classInfo: classItem,
-            roomUrl
-          }).catch(err => console.warn(`[Reminder Parent Email Error] ${parent.email}:`, err.message));
+        // 2. Dispatch 1-hour reminder email & notification to ALL Linked Parents
+        for (const pLink of studentParentLinks) {
+          const parent = pLink.parent || (await store.getProfileById(pLink.parent_id));
+          if (!parent) continue;
+
+          if (parent.email && parent.email.toLowerCase() !== (student.email || '').toLowerCase()) {
+            sendClassUpcomingReminderEmail({
+              recipient: parent,
+              recipientRole: 'parent',
+              student,
+              parent,
+              tutor: classItem.tutor,
+              classInfo: classItem,
+              roomUrl: `${clientUrl}/parent/dashboard`
+            }).catch(err => console.warn(`[Reminder Parent Email Error] ${parent.email}:`, err.message));
+          }
+
+          store.createNotification({
+            user_id: parent.id,
+            title: `Class Reminder for ${student.full_name}`,
+            message: `"${classItem.title}" begins in 1 hour.`,
+            type: 'class_reminder',
+            link: '/parent/dashboard'
+          }).catch(() => {});
         }
 
         // 3. Create In-App Notification for Student
@@ -72,19 +87,8 @@ export const checkAndDispatchUpcomingClassReminders = async () => {
           title: 'Class Starting in 1 Hour',
           message: `Your live class "${classItem.title}" starts in approx. 60 minutes. Click to join the room.`,
           type: 'class_reminder',
-          link: `/classroom/${classItem.id}`
+          link: `/classroom/${classItem.meeting_room_id}?as=student`
         }).catch(() => {});
-
-        // 4. Create In-App Notification for Parent (if available)
-        if (parent) {
-          store.createNotification({
-            user_id: parent.id,
-            title: `Class Reminder for ${student.full_name}`,
-            message: `"${classItem.title}" begins in 1 hour.`,
-            type: 'class_reminder',
-            link: `/classroom/${classItem.id}`
-          }).catch(() => {});
-        }
       }
     }
   } catch (err) {

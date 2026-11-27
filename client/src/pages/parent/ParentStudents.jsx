@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   Users,
   UserPlus,
@@ -88,10 +89,11 @@ export const ParentStudents = () => {
           children.map((c) => (
             <div key={c.link_id} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm flex flex-col justify-between space-y-6">
               <div className="flex items-start space-x-4">
-                <img
-                  src={c.student.avatar_url}
-                  alt={c.student.full_name}
-                  className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-500 shrink-0"
+                <UserAvatar
+                  name={c.student.full_name}
+                  avatarUrl={c.student.avatar_url}
+                  role="student"
+                  className="w-14 h-14 rounded-2xl text-lg border-2 border-amber-500"
                 />
                 <div className="overflow-hidden">
                   <div className="flex items-center space-x-2">

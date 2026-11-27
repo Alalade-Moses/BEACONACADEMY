@@ -53,6 +53,8 @@ import { showError, showWarning, showSuccess, showToast, showPermissionBlockedAl
 import { useDailyClassroom } from '../../hooks/useDailyClassroom';
 import { DailyVideoTile } from '../../components/classroom/DailyVideoTile';
 import { DailyGridStage } from '../../components/classroom/DailyGridStage';
+import { DailyAudioRenderer } from '../../components/classroom/DailyAudioRenderer';
+import { getTwoInitials } from '../../components/common/UserAvatar';
 
 const ICE_CONFIG = {
   iceServers: [
@@ -211,6 +213,7 @@ export const ClassroomPage = () => {
 
   // Daily.co Enterprise WebRTC Video & Audio Engine
   const {
+    dailyStatus,
     dailyConfigured,
     isDailyActive,
     isJoining: isDailyJoining,
@@ -227,6 +230,12 @@ export const ClassroomPage = () => {
     asRole: isTutor ? 'tutor' : 'student',
     enabled: true
   });
+
+  const [audioUnlockTick, setAudioUnlockTick] = useState(0);
+  const dailyActiveRef = useRef(true);
+  useEffect(() => {
+    dailyActiveRef.current = dailyStatus !== 'unavailable';
+  }, [dailyStatus]);
 
   // Class Session Details
   const [classDetails, setClassDetails] = useState(null);
@@ -667,15 +676,9 @@ export const ClassroomPage = () => {
     return pc;
   }, [socket]);
 
-  // Dynamic media acquisition engine with user-gesture safety
+  // Dynamic media acquisition engine (fallback ONLY when Daily.co is unavailable)
   const acquireMedia = useCallback(async (requestVideo = true, requestAudio = true) => {
     setCameraError(null);
-
-    // CRITICAL: Students do NOT broadcast video. They strictly transmit microphone audio.
-    // This guarantees students are NEVER prompted for camera permissions on phone or desktop!
-    if (!isTutor) {
-      requestVideo = false;
-    }
 
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       const msg = 'Media access not supported in this browser environment.';
@@ -824,7 +827,7 @@ export const ClassroomPage = () => {
     }
   }, [updatePeerConnectionsWithStream]);
 
-  // Initial auto-stream on classroom entrance: displays video and audio straight away if permitted
+  // Fallback media acquisition ONLY when Daily.co is unavailable (prevents hardware conflict with Daily.co)
   const startMedia = useCallback(async () => {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setCameraError('Media access not supported in this browser.');
@@ -834,18 +837,34 @@ export const ClassroomPage = () => {
     }
 
     try {
-      if (isTutor) {
-        await acquireMedia(true, true);
-      } else {
-        await acquireMedia(false, true); // Students strictly acquire microphone voice stream
-      }
+      await acquireMedia(true, true);
     } catch (e) {
       console.warn('Initial media acquire warning:', e);
     }
-  }, [acquireMedia, isTutor]);
+  }, [acquireMedia]);
+
+  // Keep toolbar Mic & Camera buttons 100% synced with real Daily.co local track state
+  useEffect(() => {
+    if (!isDailyActive || !dailyLocalParticipant) return;
+    setMicActive(Boolean(dailyLocalParticipant.audio));
+    setVideoActive(Boolean(dailyLocalParticipant.video));
+  }, [isDailyActive, dailyLocalParticipant?.audio, dailyLocalParticipant?.video]);
+
+  // If Daily.co connects, release any legacy WebRTC tracks/peers so Daily has exclusive camera & mic access
+  useEffect(() => {
+    if (dailyStatus === 'connected' || dailyStatus === 'connecting') {
+      stopAllMediaTracks();
+      peerConnectionsRef.current.forEach((pc) => {
+        try { pc.close(); } catch (_) {}
+      });
+      peerConnectionsRef.current.clear();
+      setRemoteStreams(new Map());
+    } else if (dailyStatus === 'unavailable') {
+      startMedia();
+    }
+  }, [dailyStatus, startMedia, stopAllMediaTracks]);
 
   useEffect(() => {
-    startMedia();
     const handleBeforeUnload = () => {
       stopAllMediaTracks();
     };
@@ -854,9 +873,9 @@ export const ClassroomPage = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       stopAllMediaTracks();
     };
-  }, [startMedia, stopAllMediaTracks]);
+  }, [stopAllMediaTracks]);
 
-  // Mobile & Desktop Universal Audio Context & Native Pipeline Unlocker (Google Meet Standard)
+  // Mobile & Desktop Universal Audio Context & Native Pipeline Unlocker (Daily.co + WebRTC)
   const unlockAudioPipeline = useCallback(() => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -879,8 +898,8 @@ export const ClassroomPage = () => {
       }
     });
 
-    // 2. Play all document audio tags
-    document.querySelectorAll('audio').forEach(a => {
+    // 2. Play all document audio tags (including DailyAudioRenderer remote tutor/student tracks)
+    document.querySelectorAll('audio').forEach((a) => {
       a.muted = false;
       a.volume = 1.0;
       if (a.srcObject) {
@@ -888,6 +907,7 @@ export const ClassroomPage = () => {
       }
     });
 
+    setAudioUnlockTick((t) => t + 1);
     setAudioBlocked(false);
   }, []);
 
@@ -996,7 +1016,7 @@ export const ClassroomPage = () => {
       }
       if (state.participants) {
         setParticipants(state.participants);
-        if (Array.isArray(state.participants)) {
+        if (!dailyActiveRef.current && Array.isArray(state.participants)) {
           state.participants.forEach(p => {
             if (p.socketId && p.socketId !== socket.id) {
               createPeerConnection(p.socketId, p.user, false);
@@ -1104,9 +1124,9 @@ export const ClassroomPage = () => {
       setUnreadMessages(count => count + 1);
     });
 
-    // WebRTC Mesh Signaling: User joined room
+    // WebRTC Mesh Signaling (fallback ONLY when Daily.co is unavailable)
     socket.on('user_joined', async ({ socketId, user: joinedUser }) => {
-      if (!socketId || socketId === socket.id) return;
+      if (dailyActiveRef.current || !socketId || socketId === socket.id) return;
       try {
         const pc = createPeerConnection(socketId, joinedUser, true);
         const offer = await pc.createOffer();
@@ -1128,9 +1148,9 @@ export const ClassroomPage = () => {
       }
     });
 
-    // WebRTC Mesh Signaling: Inbound offer
+    // WebRTC Mesh Signaling: Inbound offer (fallback ONLY when Daily.co is unavailable)
     socket.on('webrtc_offer', async ({ senderSocketId, user: senderUser, offer }) => {
-      if (!senderSocketId || senderSocketId === socket.id) return;
+      if (dailyActiveRef.current || !senderSocketId || senderSocketId === socket.id) return;
       try {
         let pc = peerConnectionsRef.current.get(senderSocketId);
         if (!pc) {
@@ -1325,6 +1345,7 @@ export const ClassroomPage = () => {
     // Remote mute
     socket.on('force_mute', () => {
       setMicActive(false);
+      dailySetLocalAudio(false);
       if (localStreamRef.current) {
         localStreamRef.current.getAudioTracks().forEach(t => t.enabled = false);
       }
@@ -1805,8 +1826,6 @@ export const ClassroomPage = () => {
   };
 
   const toggleVideo = async () => {
-    if (!isTutor) return; // Students strictly do not broadcast camera
-
     if (isDailyActive) {
       const next = !videoActive;
       setVideoActive(next);
@@ -2833,31 +2852,39 @@ export const ClassroomPage = () => {
             </div>
           </div>
 
-          {/* Device Self-Check while waiting */}
+          {/* Device Self-Check while waiting (Camera & Mic enabled for BOTH Tutor & Student) */}
           <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between">
             <div className="flex items-center space-x-3 text-left">
-              {isTutor && (
-                <div className="w-16 h-12 bg-black rounded-lg overflow-hidden border border-slate-700">
-                  <LocalParticipantVideo
-                    stream={localStream}
-                    isVideoActive={videoActive}
-                    className="w-full h-full object-cover"
+              <div className="w-16 h-12 bg-black rounded-lg overflow-hidden border border-slate-700 shrink-0">
+                {isDailyActive && dailyLocalParticipant ? (
+                  <DailyVideoTile
+                    participant={dailyLocalParticipant}
+                    isLocal={true}
+                    isTutor={isTutor}
+                    className="w-full h-full"
+                    showAudio={false}
                   />
-                  {(!videoActive || !localStream) && (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-500">
-                      <VideoOff className="w-4 h-4" />
-                    </div>
-                  )}
-                </div>
-              )}
+                ) : (
+                  <>
+                    <LocalParticipantVideo
+                      stream={localStream}
+                      isVideoActive={videoActive}
+                      className="w-full h-full object-cover"
+                    />
+                    {(!videoActive || !localStream) && (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-300 font-bold text-xs">
+                        {getTwoInitials(user?.full_name, isTutor ? 'TU' : 'ST')}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
               <div>
                 <span className="text-xs font-bold text-white block">
-                  {isTutor ? 'Device Pre-Check' : 'Microphone Voice Pre-Check'}
+                  Camera & Microphone Pre-Check
                 </span>
                 <span className="text-[11px] text-slate-400">
-                  {isTutor 
-                    ? `${videoActive ? 'Camera Ready' : 'Camera Muted'} • ${micActive ? 'Mic Ready' : 'Mic Muted'}`
-                    : (micActive ? '🎙️ Microphone Ready & Active' : '🔇 Microphone Muted')}
+                  {`${videoActive ? 'Camera Ready' : 'Camera Off'} • ${micActive ? 'Mic Ready' : 'Mic Muted'}`}
                 </span>
               </div>
             </div>
@@ -2870,15 +2897,13 @@ export const ClassroomPage = () => {
               >
                 {micActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
               </button>
-              {isTutor && (
-                <button
-                  onClick={toggleVideo}
-                  className={`p-2 rounded-xl transition-all ${videoActive ? 'bg-slate-700 text-white' : 'bg-rose-600 text-white'}`}
-                  title={videoActive ? 'Camera Off' : 'Camera On'}
-                >
-                  {videoActive ? <VideoIcon className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-                </button>
-              )}
+              <button
+                onClick={toggleVideo}
+                className={`p-2 rounded-xl transition-all ${videoActive ? 'bg-slate-700 text-white' : 'bg-rose-600 text-white'}`}
+                title={videoActive ? 'Camera Off' : 'Camera On'}
+              >
+                {videoActive ? <VideoIcon className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -2898,16 +2923,27 @@ export const ClassroomPage = () => {
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none font-sans relative">
       
-      {/* UNIVERSAL BACKGROUND AUDIO ENGINE (Guarantees Bi-Directional Audio Stream Delivery) */}
-      <div style={{ position: 'fixed', top: -100, left: -100, width: 1, height: 1, opacity: 0.001, pointerEvents: 'none', zIndex: -1 }}>
-        {Array.from(remoteStreams.values()).map((peer) => (
-          <RemoteParticipantAudio
-            key={`audio-global-${peer.socketId}`}
-            stream={peer.stream}
-            onAudioBlocked={() => setAudioBlocked(true)}
-          />
-        ))}
-      </div>
+      {/* ALWAYS-MOUNTED DAILY.CO TWO-WAY AUDIO ENGINE (Tutor <-> Student in ALL views & mobile/desktop) */}
+      {isDailyActive && (
+        <DailyAudioRenderer
+          participants={dailyParticipants}
+          unlockTrigger={audioUnlockTick}
+          onAudioBlocked={() => setAudioBlocked(true)}
+        />
+      )}
+
+      {/* LEGACY WEBRTC FALLBACK BACKGROUND AUDIO ENGINE (Active only if Daily.co unavailable) */}
+      {!isDailyActive && (
+        <div style={{ position: 'fixed', top: -100, left: -100, width: 1, height: 1, opacity: 0.001, pointerEvents: 'none', zIndex: -1 }}>
+          {Array.from(remoteStreams.values()).map((peer) => (
+            <RemoteParticipantAudio
+              key={`audio-global-${peer.socketId}`}
+              stream={peer.stream}
+              onAudioBlocked={() => setAudioBlocked(true)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* MOBILE AUTOPLAY AUDIO PERMISSION UNBLOCK BANNER */}
       {audioBlocked && (
@@ -3539,17 +3575,44 @@ export const ClassroomPage = () => {
                     )}
                   </div>
 
-                  {/* Connected Students Voice & Presence Chips (Top-Left) for Tutor */}
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-4 z-20 flex flex-col gap-1.5 pointer-events-auto max-w-[200px] sm:max-w-xs">
-                    {Array.from(remoteStreams.values()).length > 0 ? (
+                  {/* Connected Students Live Camera Feeds (Top-Left) for Tutor */}
+                  <div className="absolute top-2 left-2 sm:top-3 sm:left-4 z-20 flex flex-wrap sm:flex-col gap-1.5 sm:gap-2 pointer-events-auto max-w-[220px] sm:max-w-[200px]">
+                    {isDailyActive ? (
+                      (() => {
+                        const remoteDailyStudents = Object.values(dailyParticipants).filter((p) => p && !p.local);
+                        if (remoteDailyStudents.length === 0) {
+                          return (
+                            <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-[11px] text-slate-400 shadow-md backdrop-blur-xs">
+                              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                              <span>Awaiting students...</span>
+                            </div>
+                          );
+                        }
+                        return remoteDailyStudents.slice(0, 4).map((studentDaily) => (
+                          <div
+                            key={studentDaily.session_id || studentDaily.user_id}
+                            className="w-28 sm:w-44 aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden shadow-xl border border-indigo-400/70 bg-slate-900"
+                          >
+                            <DailyVideoTile
+                              participant={studentDaily}
+                              isLocal={false}
+                              isTutor={Boolean(studentDaily.owner)}
+                              isActiveSpeaker={dailyActiveSpeakerId === studentDaily.session_id}
+                              className="w-full h-full"
+                              showAudio={false}
+                            />
+                          </div>
+                        ));
+                      })()
+                    ) : Array.from(remoteStreams.values()).length > 0 ? (
                       Array.from(remoteStreams.values()).map((peer) => {
                         return (
                           <div
                             key={peer.socketId}
                             className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700/80 shadow-lg backdrop-blur-md"
                           >
-                            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-[10px] shrink-0">
-                              {peer.user?.full_name?.charAt(0) || 'S'}
+                            <div className="w-6 h-6 rounded-full bg-indigo-600/80 text-white border border-indigo-400/50 flex items-center justify-center font-bold text-[10px] shrink-0">
+                              {getTwoInitials(peer.user?.full_name, 'ST')}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-[11px] font-bold text-white truncate">
@@ -3581,12 +3644,17 @@ export const ClassroomPage = () => {
                   </div>
                 </>
               ) : (
-                /* Student View: Prominent Tutor Tile (Top-Right) + Student Self PIP (Bottom-Right) */
+                /* Student View: Prominent Tutor Tile (Top-Right) + Student Self Camera Preview (Bottom-Right) */
                 <>
                   {/* Top-Right: Tutor Broadcast Tile (Prominent Live Teacher View) */}
                   {(() => {
                     if (isDailyActive) {
-                      const tutorDaily = Object.values(dailyParticipants).find(p => p.owner || !p.local) || Object.values(dailyParticipants)[0];
+                      const tutorDaily =
+                        Object.values(dailyParticipants).find((p) => p && !p.local && p.owner) ||
+                        Object.values(dailyParticipants).find((p) => p && !p.local) ||
+                        null;
+                      const tutorDisplayName = tutorDaily?.user_name || classDetails?.tutor?.full_name || 'Course Tutor';
+
                       return (
                         <div className={`absolute top-2 right-2 sm:top-3 sm:right-3 z-20 transition-all ${
                           videoMinimized ? 'w-auto' : 'w-32 sm:w-56 aspect-[4/3] sm:aspect-video'
@@ -3598,17 +3666,18 @@ export const ClassroomPage = () => {
                               className="px-2.5 py-1.5 bg-emerald-950/90 text-[10px] font-bold text-emerald-300 flex items-center space-x-1.5 border border-emerald-500/40"
                             >
                               <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                              <span>Tutor: {classDetails?.tutor?.full_name?.split(' ')[0] || 'Dr. Sarah'}</span>
+                              <span>Tutor: {tutorDisplayName.split(' ')[0]}</span>
                               <Maximize2 className="w-2.5 h-2.5 text-slate-400" />
                             </button>
-                          ) : (
+                          ) : tutorDaily ? (
                             <div className="w-full h-full relative">
                               <DailyVideoTile
                                 participant={tutorDaily}
                                 isLocal={false}
                                 isTutor={true}
+                                isActiveSpeaker={dailyActiveSpeakerId === tutorDaily.session_id}
                                 className="w-full h-full"
-                                showAudio={true}
+                                showAudio={false}
                               />
                               <button
                                 onClick={() => setVideoMinimized(true)}
@@ -3617,6 +3686,18 @@ export const ClassroomPage = () => {
                               >
                                 <Minimize2 className="w-3 h-3" />
                               </button>
+                            </div>
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-2 text-center select-none">
+                              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-emerald-600/90 border-2 border-emerald-400 flex items-center justify-center text-white font-extrabold text-xs sm:text-base mb-1 shadow-lg">
+                                {getTwoInitials(tutorDisplayName, 'TU')}
+                              </div>
+                              <span className="text-[10px] sm:text-xs font-bold text-white truncate max-w-full px-1">
+                                {tutorDisplayName}
+                              </span>
+                              <span className="text-[9px] text-amber-300 font-semibold mt-0.5">
+                                Connecting audio...
+                              </span>
                             </div>
                           )}
                         </div>
@@ -3646,12 +3727,11 @@ export const ClassroomPage = () => {
                             className="px-2.5 py-1.5 bg-emerald-950/90 text-[10px] font-bold text-emerald-300 flex items-center space-x-1.5 border border-emerald-500/40"
                           >
                             <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                            <span>Tutor: {classDetails?.tutor?.full_name?.split(' ')[0] || 'Dr. Sarah'}</span>
+                            <span>Tutor: {classDetails?.tutor?.full_name?.split(' ')[0] || 'Tutor'}</span>
                             <Maximize2 className="w-2.5 h-2.5 text-slate-400" />
                           </button>
                         ) : (
                           <div className="w-full h-full relative">
-                            {/* Always mount RemoteParticipantVideo so media pipeline is never destroyed */}
                             {tutorStream && (
                               <RemoteParticipantVideo
                                 stream={tutorStream}
@@ -3659,11 +3739,10 @@ export const ClassroomPage = () => {
                               />
                             )}
 
-                            {/* Show Teaching Live Card when video is not broadcasting */}
                             {!hasTutorVideo && (
                               <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-2 text-center relative overflow-hidden select-none min-h-[92px]">
-                                <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-emerald-600/30 border border-emerald-400 flex items-center justify-center text-white font-extrabold text-xs sm:text-sm mb-0.5 shadow-lg shrink-0">
-                                  {classDetails?.tutor?.full_name?.charAt(0) || 'T'}
+                                <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-emerald-600/90 border-2 border-emerald-400 flex items-center justify-center text-white font-extrabold text-xs sm:text-sm mb-0.5 shadow-lg shrink-0">
+                                  {getTwoInitials(classDetails?.tutor?.full_name, 'TU')}
                                 </div>
                                 <span className="text-[10px] sm:text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[160px]">
                                   {classDetails?.tutor?.full_name || 'Course Tutor'}
@@ -3674,18 +3753,9 @@ export const ClassroomPage = () => {
                                     Teaching Live
                                   </span>
                                 </div>
-                                {/* Dynamic Live Audio Equalizer */}
-                                <div className="flex items-center gap-1 mt-1">
-                                  <span className="w-1 h-2 sm:h-2.5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                  <span className="w-1 h-3 sm:h-4 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                  <span className="w-1 h-1.5 sm:h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                  <span className="w-1 h-3.5 sm:h-5 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '100ms' }} />
-                                  <span className="w-1 h-2 sm:h-3 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
-                                </div>
                               </div>
                             )}
 
-                            {/* Badge and controls */}
                             <div className="absolute bottom-1 left-1.5 bg-black/75 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold text-emerald-400 flex items-center space-x-1 pointer-events-none">
                               <span>👨‍🏫 {classDetails?.tutor?.full_name?.split(' ')[0] || 'Tutor'}</span>
                               {!tutorPeer?.isMicActive && <MicOff className="w-2.5 h-2.5 text-rose-400" />}
@@ -3703,18 +3773,31 @@ export const ClassroomPage = () => {
                     );
                   })()}
 
-                  {/* Bottom-Right: Student Voice Status Badge */}
-                  <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-slate-700/80 shadow-xl flex items-center space-x-2 pointer-events-none select-none">
-                    <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">
-                      {user?.full_name?.charAt(0) || 'S'}
+                  {/* Bottom-Right: Student Self Camera Preview (Daily.co) or Status Pill */}
+                  {isDailyActive && dailyLocalParticipant ? (
+                    <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 w-24 sm:w-36 aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden shadow-2xl border-2 border-indigo-400/80 bg-slate-900">
+                      <DailyVideoTile
+                        participant={dailyLocalParticipant}
+                        isLocal={true}
+                        isTutor={false}
+                        isActiveSpeaker={dailyActiveSpeakerId === dailyLocalParticipant.session_id}
+                        className="w-full h-full"
+                        showAudio={false}
+                      />
                     </div>
-                    <span className="text-xs font-bold text-slate-200 truncate max-w-[100px] sm:max-w-none">
-                      {user?.full_name?.split(' ')[0] || 'Student'}
-                    </span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${micActive ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}`}>
-                      {micActive ? '🎙️ Mic Active' : '🔇 Muted'}
-                    </span>
-                  </div>
+                  ) : (
+                    <div className="absolute bottom-20 sm:bottom-4 right-2 sm:right-4 z-20 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-slate-700/80 shadow-xl flex items-center space-x-2 pointer-events-none select-none">
+                      <div className="w-6 h-6 rounded-full bg-indigo-600/80 text-white flex items-center justify-center font-bold text-[10px]">
+                        {getTwoInitials(user?.full_name, 'ST')}
+                      </div>
+                      <span className="text-xs font-bold text-slate-200 truncate max-w-[100px] sm:max-w-none">
+                        {user?.full_name?.split(' ')[0] || 'Student'}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${micActive ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-rose-950 text-rose-300 border border-rose-500/30'}`}>
+                        {micActive ? '🎙️ Mic Active' : '🔇 Muted'}
+                      </span>
+                    </div>
+                  )}
                 </>
               ))}
 
@@ -4043,7 +4126,7 @@ export const ClassroomPage = () => {
                         <div className={`w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
                           hasHandUp ? 'bg-amber-500 text-slate-950 font-extrabold' : 'bg-slate-700 text-white'
                         }`}>
-                          {p.user?.full_name?.charAt(0) || 'U'}
+                          {getTwoInitials(p.user?.full_name, 'BB')}
                         </div>
                         <div className="overflow-hidden">
                           <div className="flex items-center space-x-1.5">
@@ -4179,27 +4262,25 @@ export const ClassroomPage = () => {
             {micActive ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
 
-          {/* Camera (Tutor Only - Students strictly view the instructor and presentation) */}
-          {isTutor && (
-            <button
-              onClick={toggleVideo}
-              disabled={isCameraStarting}
-              className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
-                videoActive 
-                  ? 'bg-slate-800 text-white hover:bg-slate-700' 
-                  : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/30'
-              } ${isCameraStarting ? 'opacity-70 animate-pulse' : ''}`}
-              title={videoActive ? 'Turn Off Camera' : 'Turn On Camera'}
-            >
-              {isCameraStarting ? (
-                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
-              ) : videoActive ? (
-                <VideoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              ) : (
-                <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />
-              )}
-            </button>
-          )}
+          {/* Camera (Enabled for BOTH Tutor & Student via Daily.co) */}
+          <button
+            onClick={toggleVideo}
+            disabled={isCameraStarting}
+            className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition-all ${
+              videoActive
+                ? 'bg-slate-800 text-white hover:bg-slate-700'
+                : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md shadow-rose-600/30'
+            } ${isCameraStarting ? 'opacity-70 animate-pulse' : ''}`}
+            title={videoActive ? 'Turn Off Camera' : 'Turn On Camera'}
+          >
+            {isCameraStarting ? (
+              <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-white" />
+            ) : videoActive ? (
+              <VideoIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            ) : (
+              <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />
+            )}
+          </button>
 
           {/* Screen Share (Tutor Only) */}
           {isTutor && (

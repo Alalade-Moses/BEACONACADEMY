@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   BookOpen,
   Users,
@@ -332,10 +333,11 @@ export const TutorDashboard = () => {
               <div className="space-y-2.5 max-h-64 overflow-y-auto">
                 {uniqueStudents.map(({ student, courses: stuCourses }) => (
                   <div key={student.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center space-x-3">
-                    <img
-                      src={student.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(student.full_name)}`}
-                      alt={student.full_name}
-                      className="w-8 h-8 rounded-full object-cover border border-emerald-200 shrink-0"
+                    <UserAvatar
+                      name={student.full_name}
+                      avatarUrl={student.avatar_url}
+                      role="student"
+                      className="w-8 h-8 rounded-full text-xs"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-slate-900 truncate">{student.full_name}</p>

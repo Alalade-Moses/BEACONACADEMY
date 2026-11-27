@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   BookOpen,
   Video,
@@ -332,10 +333,11 @@ export const StudentDashboard = () => {
 
                     {enr.assigned_tutor ? (
                       <div className="flex items-center space-x-2 mt-1.5">
-                        <img
-                          src={enr.assigned_tutor.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(enr.assigned_tutor.full_name)}`}
-                          alt={enr.assigned_tutor.full_name}
-                          className="w-5 h-5 rounded-full object-cover border border-emerald-300"
+                        <UserAvatar
+                          name={enr.assigned_tutor.full_name}
+                          avatarUrl={enr.assigned_tutor.avatar_url}
+                          role="tutor"
+                          className="w-6 h-6 rounded-full text-[10px]"
                         />
                         <p className="text-xs text-emerald-700 font-semibold">
                           Assigned Tutor: {enr.assigned_tutor.full_name}

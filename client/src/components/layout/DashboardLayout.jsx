@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import api from '../../api/axios';
+import { UserAvatar } from '../common/UserAvatar';
 import {
   LayoutDashboard,
   Users,
@@ -282,10 +283,11 @@ export const DashboardLayout = () => {
           <div className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200/90 shadow-xs hover:border-slate-300 transition-colors">
             <div className="flex items-center space-x-2.5 overflow-hidden min-w-0">
               <div className="relative shrink-0">
-                <img
-                  src={user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'U')}`}
-                  alt={user?.full_name}
-                  className="w-8 h-8 rounded-xl object-cover border border-slate-200"
+                <UserAvatar
+                  name={user?.full_name}
+                  avatarUrl={user?.avatar_url}
+                  role={user?.role}
+                  className="w-8 h-8 rounded-xl text-xs"
                 />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
               </div>
@@ -481,10 +483,11 @@ export const DashboardLayout = () => {
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                 className="flex items-center space-x-2 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
               >
-                <img
-                  src={user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'U')}`}
-                  alt={user?.full_name}
-                  className="w-9 h-9 rounded-full object-cover border border-slate-200"
+                <UserAvatar
+                  name={user?.full_name}
+                  avatarUrl={user?.avatar_url}
+                  role={user?.role}
+                  className="w-9 h-9 rounded-full text-xs"
                 />
                 <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
               </button>

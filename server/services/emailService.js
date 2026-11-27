@@ -652,53 +652,166 @@ export const sendPaymentVerifiedReceipt = async ({ payment, student, parent }) =
 
 export const sendPaymentInvoiceAndCredentials = sendPaymentVerifiedReceipt;
 
-// 4b. Automated 1-Hour Class Reminder Email
-export const sendClassUpcomingReminderEmail = async ({ recipient, student, parent, tutor, classInfo, roomUrl }) => {
+// 4b. Automated 1-Hour Class Reminder Email (Sent to BOTH Student and Linked Parent)
+export const sendClassUpcomingReminderEmail = async ({ recipient, recipientRole, student, parent, tutor, classInfo, roomUrl }) => {
   const targetEmail = recipient?.email || student?.email || parent?.email;
   if (!targetEmail) return;
 
-  const recipientName = recipient?.full_name || student?.full_name || 'Student';
+  const isParent = recipientRole === 'parent' || (parent?.email && targetEmail.toLowerCase() === parent.email.toLowerCase() && student?.email && targetEmail.toLowerCase() !== student.email.toLowerCase());
+  const recipientName = recipient?.full_name || (isParent ? parent?.full_name : student?.full_name) || 'Student';
+  const studentName = student?.full_name || 'your child';
   const tutorName = tutor?.full_name || classInfo?.tutor?.full_name || 'Your Assigned Tutor';
   const classTitle = classInfo?.title || 'Scheduled Live Lecture';
-  const scheduledTime = new Date(classInfo?.scheduled_at || Date.now() + 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const scheduledDate = new Date(classInfo?.scheduled_at || Date.now() + 3600000).toLocaleDateString();
-  const directRoomUrl = roomUrl || `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/classroom/${classInfo?.id || 'ROOM-LIVE'}`;
+  const schedObj = new Date(classInfo?.scheduled_at || Date.now() + 3600000);
+  const scheduledTime = schedObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+  const scheduledDate = schedObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/London' });
+  const roomCode = classInfo?.meeting_room_id || classInfo?.id || 'ROOM-LIVE';
+  const clientUrl = process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk';
+  const directRoomUrl = roomUrl || (isParent ? `${clientUrl}/parent/dashboard` : `${clientUrl}/classroom/${roomCode}?as=student`);
+
+  const introText = isParent
+    ? `This is an automated reminder that <strong>${studentName}</strong>'s scheduled live interactive class starts in <strong>approximately 1 hour</strong>:`
+    : `This is an automated reminder that your scheduled live interactive class begins in <strong>approximately 1 hour</strong>:`;
 
   const html = buildEmailTemplate({
     headerTitle: 'Live Class Starting in 1 Hour',
     contentHtml: `
       <p>Dear <strong>${recipientName}</strong>,</p>
-      <p>This is an automated reminder that your scheduled live interactive class begins in <strong>approximately 1 hour</strong>:</p>
+      <p>${introText}</p>
       
       <div class="card" style="border-left: 4px solid #40ffa7; background: #f8fafc;">
         <h3 style="margin: 0 0 8px 0; color: #001f3f; font-size: 16px;">${classTitle}</h3>
+        ${isParent ? `<p style="margin: 4px 0;"><strong>Student:</strong> ${studentName}</p>` : ''}
         <p style="margin: 4px 0;"><strong>Course:</strong> ${classInfo?.course?.title || 'Enrolled Course'}</p>
-        <p style="margin: 4px 0;"><strong>Tutor:</strong> ${tutorName}</p>
+        <p style="margin: 4px 0;"><strong>Assigned Tutor:</strong> ${tutorName}</p>
         <p style="margin: 4px 0;"><strong>Date:</strong> ${scheduledDate}</p>
-        <p style="margin: 4px 0;"><strong>Start Time:</strong> ${scheduledTime} UK GMT (approx. 60 minutes from now)</p>
+        <p style="margin: 4px 0;"><strong>Start Time:</strong> ${scheduledTime} UK Time (approx. 60 minutes from now)</p>
         <p style="margin: 4px 0;"><strong>Duration:</strong> ${classInfo?.duration_minutes || 60} Minutes</p>
       </div>
 
       <div style="margin: 16px 0; padding: 12px; background: #ecfdf5; border-radius: 8px; border: 1px solid #a7f3d0; font-size: 13px; color: #065f46;">
         <strong>Quick Checklist before joining:</strong>
         <ul style="margin: 6px 0 0 16px; padding: 0;">
-          <li>A working microphone and camera are recommended.</li>
-          <li>Have your notebook or stylus ready for the interactive whiteboard.</li>
-          <li>Join 3–5 minutes early to test your audio connection.</li>
+          <li>Ensure camera and microphone permissions are allowed in the browser.</li>
+          <li>Have a notebook ready for the live interactive whiteboard session.</li>
+          <li>Log in 3–5 minutes early to confirm audio and video are ready.</li>
         </ul>
       </div>
 
-      <p>Click the button below to enter your private virtual classroom room directly:</p>
+      <p>${isParent ? 'You can monitor live class attendance directly from your Parent Portal:' : 'Click the button below to enter your private virtual classroom room:'}</p>
     `,
     callToAction: {
-      label: 'Enter Virtual Classroom Now',
+      label: isParent ? 'Open Parent Portal' : 'Enter Virtual Classroom Now',
       url: directRoomUrl
     }
   });
 
   return await sendEmail({
     to: targetEmail,
-    subject: `⏰ Reminder: "${classTitle}" starts in 1 hour (${scheduledTime} UK GMT) — Beacon Bridge Academics`,
+    subject: `⏰ 1-Hour Reminder: "${classTitle}" (${scheduledTime} UK) — Beacon Bridge Academics`,
+    html,
+    senderType: 'admin'
+  });
+};
+
+// 4c. Automatic Email When a Tutor Schedules a Live Class (Sent to BOTH Student and Linked Parent)
+export const sendClassScheduledEmail = async ({ recipient, recipientRole = 'student', student, tutor, classInfo }) => {
+  const targetEmail = recipient?.email;
+  if (!targetEmail) return;
+
+  const isParent = recipientRole === 'parent';
+  const recipientName = recipient?.full_name || (isParent ? 'Parent / Guardian' : 'Student');
+  const studentName = student?.full_name || 'Student';
+  const tutorName = tutor?.full_name || classInfo?.tutor?.full_name || 'Your Assigned Tutor';
+  const classTitle = classInfo?.title || 'Scheduled Live Class';
+  const courseTitle = classInfo?.course?.title || 'Enrolled Course';
+  const schedObj = new Date(classInfo?.scheduled_at || Date.now());
+  const scheduledDate = schedObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' });
+  const scheduledTime = schedObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+  const clientUrl = process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk';
+  const ctaUrl = isParent ? `${clientUrl}/parent/dashboard` : `${clientUrl}/student/classes`;
+
+  const introLine = isParent
+    ? `Your child's assigned tutor, <strong>${tutorName}</strong>, has scheduled a new live class for <strong>${studentName}</strong>:`
+    : `Your assigned tutor, <strong>${tutorName}</strong>, has scheduled a new live class for you:`;
+
+  const html = buildEmailTemplate({
+    headerTitle: 'New Live Class Scheduled',
+    contentHtml: `
+      <p>Dear <strong>${recipientName}</strong>,</p>
+      <p>${introLine}</p>
+
+      <div class="card" style="border-left: 4px solid #050167; background: #f8fafc;">
+        <h3 style="margin: 0 0 8px 0; color: #050167; font-size: 16px;">${classTitle}</h3>
+        ${isParent ? `<p style="margin: 4px 0;"><strong>Student:</strong> ${studentName}</p>` : ''}
+        <p style="margin: 4px 0;"><strong>Course:</strong> ${courseTitle}</p>
+        <p style="margin: 4px 0;"><strong>Tutor:</strong> ${tutorName}</p>
+        <p style="margin: 4px 0;"><strong>Date:</strong> ${scheduledDate}</p>
+        <p style="margin: 4px 0;"><strong>Time:</strong> ${scheduledTime} (UK Time)</p>
+        <p style="margin: 4px 0;"><strong>Duration:</strong> ${classInfo?.duration_minutes || 60} Minutes</p>
+      </div>
+
+      <p style="font-size: 13px; color: #475569;">
+        An automatic reminder email will also be sent <strong>1 hour before the class starts</strong>. When ${tutorName} starts the classroom, the live join button will unlock automatically in the portal.
+      </p>
+    `,
+    callToAction: {
+      label: isParent ? 'View Schedule in Parent Portal' : 'View My Live Class Schedule',
+      url: ctaUrl
+    }
+  });
+
+  return await sendEmail({
+    to: targetEmail,
+    subject: `📅 Live Class Scheduled: "${classTitle}" on ${scheduledDate} at ${scheduledTime} UK — Beacon Bridge Academics`,
+    html,
+    senderType: 'admin'
+  });
+};
+
+// 4d. Automatic Email When a Tutor Starts a Live Class Immediately (Sent to BOTH Student and Linked Parent)
+export const sendClassLiveNowEmail = async ({ recipient, recipientRole = 'student', student, tutor, classInfo }) => {
+  const targetEmail = recipient?.email;
+  if (!targetEmail) return;
+
+  const isParent = recipientRole === 'parent';
+  const recipientName = recipient?.full_name || (isParent ? 'Parent / Guardian' : 'Student');
+  const studentName = student?.full_name || 'Student';
+  const tutorName = tutor?.full_name || classInfo?.tutor?.full_name || 'Your Assigned Tutor';
+  const classTitle = classInfo?.title || 'Live Class Session';
+  const courseTitle = classInfo?.course?.title || 'Enrolled Course';
+  const clientUrl = process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk';
+  const roomUrl = isParent
+    ? `${clientUrl}/parent/dashboard`
+    : `${clientUrl}/classroom/${classInfo?.meeting_room_id}?as=student`;
+
+  const introLine = isParent
+    ? `<strong>${tutorName}</strong> has just started a <strong>LIVE classroom session</strong> with <strong>${studentName}</strong>:`
+    : `Your assigned tutor, <strong>${tutorName}</strong>, has just started your <strong>LIVE classroom session</strong>. Please join now:`;
+
+  const html = buildEmailTemplate({
+    headerTitle: '🔴 Live Class Started Now',
+    contentHtml: `
+      <p>Dear <strong>${recipientName}</strong>,</p>
+      <p>${introLine}</p>
+
+      <div class="card" style="border-left: 4px solid #e11d48; background: #fff1f2;">
+        <h3 style="margin: 0 0 8px 0; color: #9f1239; font-size: 16px;">${classTitle}</h3>
+        ${isParent ? `<p style="margin: 4px 0;"><strong>Student:</strong> ${studentName}</p>` : ''}
+        <p style="margin: 4px 0;"><strong>Course:</strong> ${courseTitle}</p>
+        <p style="margin: 4px 0;"><strong>Tutor:</strong> ${tutorName}</p>
+        <p style="margin: 4px 0;"><strong>Status:</strong> <strong style="color: #e11d48;">LIVE NOW</strong></p>
+      </div>
+    `,
+    callToAction: {
+      label: isParent ? 'Open Parent Portal' : 'Join Live Classroom Now',
+      url: roomUrl
+    }
+  });
+
+  return await sendEmail({
+    to: targetEmail,
+    subject: `🔴 LIVE NOW: "${classTitle}" with ${tutorName} — Beacon Bridge Academics`,
     html,
     senderType: 'admin'
   });

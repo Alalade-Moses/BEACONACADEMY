@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import { showConfirm, showSuccess, showError } from '../../utils/swal';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   CreditCard,
   CheckCircle2,
@@ -291,9 +292,12 @@ export const AdminPayments = () => {
                     {/* Student */}
                     <td className="py-4 px-6">
                       <div className="flex items-center space-x-2">
-                        <div className="w-7 h-7 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-xs">
-                          {payment.student?.full_name?.charAt(0) || 'S'}
-                        </div>
+                        <UserAvatar
+                          name={payment.student?.full_name || 'Student'}
+                          avatarUrl={payment.student?.avatar_url}
+                          role="student"
+                          className="w-7 h-7 rounded-full text-[10px]"
+                        />
                         <div>
                           <span className="font-bold text-slate-900 block">
                             {payment.student?.full_name || 'Student Account'}

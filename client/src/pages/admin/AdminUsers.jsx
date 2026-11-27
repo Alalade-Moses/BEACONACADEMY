@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { showConfirm, showSuccess, showError } from '../../utils/swal';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   Search,
   UserPlus,
@@ -326,10 +327,11 @@ export const AdminUsers = () => {
                     <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3.5 px-5">
                         <div className="flex items-center space-x-3">
-                          <img
-                            src={u.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.full_name)}`}
-                            alt={u.full_name}
-                            className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0"
+                          <UserAvatar
+                            name={u.full_name}
+                            avatarUrl={u.avatar_url}
+                            role={u.role}
+                            className="w-8 h-8 rounded-full text-xs"
                           />
                           <div>
                             <span className="font-bold text-slate-900 block">{u.full_name}</span>

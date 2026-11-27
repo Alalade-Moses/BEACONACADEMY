@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   CheckCircle2,
   Calendar,
@@ -47,10 +48,11 @@ export const ParentAttendance = () => {
           children.map((child) => (
             <div key={child.student.id} className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
               <div className="flex items-center space-x-3 pb-3 border-b border-slate-100">
-                <img
-                  src={child.student.avatar_url}
-                  alt={child.student.full_name}
-                  className="w-10 h-10 rounded-full object-cover border border-amber-400"
+                <UserAvatar
+                  name={child.student.full_name}
+                  avatarUrl={child.student.avatar_url}
+                  role="student"
+                  className="w-10 h-10 rounded-full text-xs border border-amber-400"
                 />
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">{child.student.full_name}</h3>

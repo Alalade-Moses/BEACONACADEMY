@@ -1,9 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { MicOff, VideoOff, Crown } from 'lucide-react';
+import { Mic, MicOff, VideoOff, Crown } from 'lucide-react';
+import { getTwoInitials } from '../common/UserAvatar';
 
 /**
  * DailyVideoTile
- * Renders an individual participant's audio and video stream from Daily.co
+ * Renders an individual participant's video stream (or two-initial avatar when camera is off)
+ * from Daily.co. Remote audio is handled globally by DailyAudioRenderer so audio is never
+ * duplicated or dropped when switching classroom layouts or minimizing tiles.
  */
 export const DailyVideoTile = ({
   participant,
@@ -11,41 +14,53 @@ export const DailyVideoTile = ({
   isTutor = false,
   isActiveSpeaker = false,
   className = '',
-  showAudio = true,
+  showAudio = false,
   objectFit = 'cover'
 }) => {
   const videoRef = useRef(null);
   const audioRef = useRef(null);
 
-  const videoTrack = participant?.tracks?.video?.persistentTrack;
-  const audioTrack = participant?.tracks?.audio?.persistentTrack;
+  const videoTrackObj = participant?.tracks?.video;
+  const videoTrack = videoTrackObj?.persistentTrack || videoTrackObj?.track || null;
+  const videoState = videoTrackObj?.state || 'off';
 
-  const isVideoOff = !participant?.video || !videoTrack;
-  const isAudioOff = !participant?.audio;
-  const userName = participant?.user_name || (isLocal ? 'You' : 'Attendee');
+  const audioTrackObj = participant?.tracks?.audio;
+  const audioTrack = audioTrackObj?.persistentTrack || audioTrackObj?.track || null;
+  const audioState = audioTrackObj?.state || 'off';
 
-  // Attach video track
+  const isVideoOff = !participant?.video || !videoTrack || videoState === 'off' || videoState === 'blocked';
+  const isAudioOff = !participant?.audio || audioState === 'off' || audioState === 'blocked';
+  const userName = participant?.user_name || (isLocal ? 'You' : isTutor ? 'Course Tutor' : 'Student');
+  const initials = getTwoInitials(userName, isTutor ? 'TU' : 'ST');
+
+  // Attach video track (always muted on <video> element; audio plays via dedicated <audio> pipeline)
   useEffect(() => {
-    if (videoRef.current && videoTrack) {
-      const stream = new MediaStream([videoTrack]);
-      videoRef.current.srcObject = stream;
-    } else if (videoRef.current) {
-      videoRef.current.srcObject = null;
+    const el = videoRef.current;
+    if (!el) return;
+    if (!isVideoOff && videoTrack) {
+      const existing = el.srcObject ? el.srcObject.getVideoTracks() : [];
+      if (existing.length === 0 || existing[0]?.id !== videoTrack.id) {
+        el.srcObject = new MediaStream([videoTrack]);
+      }
+      el.play().catch(() => {});
+    } else {
+      el.srcObject = null;
     }
-  }, [videoTrack]);
+  }, [videoTrack, videoTrack?.id, isVideoOff]);
 
-  // Attach audio track (for remote participants only)
+  // Optional local-tile audio fallback (disabled by default since DailyAudioRenderer owns remote audio)
   useEffect(() => {
-    if (!isLocal && showAudio && audioRef.current && audioTrack) {
-      const stream = new MediaStream([audioTrack]);
-      audioRef.current.srcObject = stream;
-      audioRef.current.play().catch((err) => {
-        console.warn('[DailyVideoTile] Audio autoplay blocked or failed:', err);
-      });
-    } else if (audioRef.current) {
-      audioRef.current.srcObject = null;
+    const el = audioRef.current;
+    if (!el) return;
+    if (!isLocal && showAudio && audioTrack && audioState !== 'off') {
+      el.srcObject = new MediaStream([audioTrack]);
+      el.muted = false;
+      el.volume = 1.0;
+      el.play().catch(() => {});
+    } else {
+      el.srcObject = null;
     }
-  }, [audioTrack, isLocal, showAudio]);
+  }, [audioTrack, audioTrack?.id, audioState, isLocal, showAudio]);
 
   return (
     <div
@@ -53,51 +68,55 @@ export const DailyVideoTile = ({
         isActiveSpeaker ? 'ring-2 ring-emerald-400 border-emerald-400' : 'border-slate-800'
       } ${className}`}
     >
-      {/* Remote Audio Element */}
       {!isLocal && showAudio && (
-        <audio
-          ref={audioRef}
-          autoPlay
-          playsInline
-        />
+        <audio ref={audioRef} autoPlay playsInline />
       )}
 
-      {/* Video Element */}
       {!isVideoOff ? (
         <video
           ref={videoRef}
           autoPlay
-          muted={isLocal} // Always mute local video playback to avoid feedback
+          muted
           playsInline
           style={{ objectFit }}
           className={`w-full h-full ${isLocal ? 'scale-x-[-1]' : ''}`}
         />
       ) : (
-        /* Video Off Avatar Placeholder */
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 p-2 text-center select-none">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-slate-300 text-sm sm:text-base shadow-inner mb-1.5">
-            {userName.charAt(0).toUpperCase()}
+        /* Camera Off Two-Initials Placeholder (Mobile & Desktop) */
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-2 text-center select-none">
+          <div
+            className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center font-extrabold tracking-tight text-sm sm:text-lg shadow-lg mb-1.5 border-2 ${
+              isTutor
+                ? 'bg-emerald-600/90 border-emerald-400 text-white'
+                : 'bg-indigo-600/90 border-indigo-400 text-white'
+            }`}
+          >
+            {initials}
           </div>
-          <span className="text-[11px] font-bold text-slate-300 truncate max-w-full px-2">
+          <span className="text-[10px] sm:text-xs font-bold text-slate-200 truncate max-w-full px-2">
             {userName}
           </span>
-          <span className="text-[9px] text-slate-500 flex items-center gap-1 mt-0.5">
-            <VideoOff className="w-3 h-3 text-slate-500" />
-            Camera off
+          <span className="text-[9px] text-slate-400 flex items-center gap-1 mt-0.5">
+            <VideoOff className="w-2.5 h-2.5 text-slate-500" />
+            <span>Camera off</span>
           </span>
         </div>
       )}
 
-      {/* Badges Overlay */}
-      <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between pointer-events-none">
+      {/* Name & Audio Status Badges Overlay */}
+      <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between pointer-events-none gap-1">
         <div className="px-2 py-0.5 rounded-lg bg-black/75 backdrop-blur-xs text-[10px] font-bold text-white flex items-center space-x-1 truncate max-w-[80%]">
           {isTutor && <Crown className="w-3 h-3 text-amber-400 shrink-0" />}
           <span className="truncate">{userName} {isLocal ? '(You)' : ''}</span>
         </div>
 
-        {isAudioOff && (
-          <div className="p-1 rounded-md bg-rose-500/80 text-white shadow-xs">
+        {isAudioOff ? (
+          <div className="p-1 rounded-md bg-rose-500/90 text-white shadow-xs shrink-0" title="Microphone Muted">
             <MicOff className="w-3 h-3" />
+          </div>
+        ) : (
+          <div className="p-1 rounded-md bg-emerald-500/90 text-white shadow-xs shrink-0" title="Microphone Live">
+            <Mic className="w-3 h-3" />
           </div>
         )}
       </div>

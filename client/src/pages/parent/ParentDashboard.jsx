@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   Users,
   BookOpen,
@@ -110,10 +111,11 @@ export const ParentDashboard = () => {
                       : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                   }`}
                 >
-                  <img
-                    src={c.student.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(c.student.full_name)}`}
-                    alt={c.student.full_name}
-                    className="w-5 h-5 rounded-full object-cover"
+                  <UserAvatar
+                    name={c.student.full_name}
+                    avatarUrl={c.student.avatar_url}
+                    role="student"
+                    className="w-5 h-5 rounded-full text-[9px]"
                   />
                   <span>{c.student.full_name}</span>
                 </button>

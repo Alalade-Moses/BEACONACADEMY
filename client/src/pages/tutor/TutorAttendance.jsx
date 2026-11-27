@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   UserCheck,
   CheckCircle2,
@@ -89,9 +90,12 @@ export const TutorAttendance = () => {
                 filtered.map((record) => (
                   <tr key={record.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3.5 px-6 flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center shrink-0">
-                        {record.user?.full_name?.charAt(0) || 'S'}
-                      </div>
+                      <UserAvatar
+                        name={record.user?.full_name || 'Student'}
+                        avatarUrl={record.user?.avatar_url}
+                        role="student"
+                        className="w-8 h-8 rounded-full text-xs"
+                      />
                       <div>
                         <span className="font-bold text-slate-900 block">{record.user?.full_name || 'Student Attendee'}</span>
                         <span className="text-[11px] text-slate-400">{record.user?.email}</span>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   BookOpen,
   Plus,
@@ -252,10 +253,11 @@ export const AdminCourses = () => {
                   <div className="flex items-center space-x-2 pt-3 border-t border-slate-100">
                     {course.tutor ? (
                       <>
-                        <img
-                          src={course.tutor.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(course.tutor.full_name)}`}
-                          alt={course.tutor.full_name}
-                          className="w-6 h-6 rounded-full object-cover border border-slate-200"
+                        <UserAvatar
+                          name={course.tutor.full_name}
+                          avatarUrl={course.tutor.avatar_url}
+                          role="tutor"
+                          className="w-6 h-6 rounded-full text-[10px]"
                         />
                         <span className="text-xs text-slate-700 font-medium">
                           Lead Tutor: {course.tutor.full_name}

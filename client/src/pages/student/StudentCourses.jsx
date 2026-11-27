@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
 import { useSocket } from '../../context/SocketContext';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   BookOpen,
   Clock,
@@ -120,13 +121,11 @@ export const StudentCourses = () => {
                 {enr.assigned_tutor ? (
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center space-x-2.5 min-w-0">
-                      <img
-                        src={
-                          enr.assigned_tutor.avatar_url ||
-                          `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(enr.assigned_tutor.full_name)}`
-                        }
-                        alt={enr.assigned_tutor.full_name}
-                        className="w-7 h-7 rounded-full object-cover border border-emerald-300 shrink-0"
+                      <UserAvatar
+                        name={enr.assigned_tutor.full_name}
+                        avatarUrl={enr.assigned_tutor.avatar_url}
+                        role="tutor"
+                        className="w-8 h-8 rounded-full text-xs"
                       />
                       <div className="min-w-0">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">

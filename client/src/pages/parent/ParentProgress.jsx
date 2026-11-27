@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import { UserAvatar } from '../../components/common/UserAvatar';
 import {
   TrendingUp,
   BookOpen,
@@ -63,10 +64,11 @@ export const ParentProgress = () => {
               {/* Student Header & Quick Summary */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-4">
                 <div className="flex items-center space-x-3.5">
-                  <img
-                    src={child.student.avatar_url}
-                    alt={child.student.full_name}
-                    className="w-14 h-14 rounded-2xl object-cover border-2 border-[#050167] shadow-sm"
+                  <UserAvatar
+                    name={child.student.full_name}
+                    avatarUrl={child.student.avatar_url}
+                    role="student"
+                    className="w-14 h-14 rounded-2xl text-lg border-2 border-[#050167] shadow-sm"
                   />
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">{child.student.full_name}</h3>
