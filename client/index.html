@@ -26,10 +26,15 @@
 
     <!-- UK Geographic Meta Tags -->
     <meta name="geo.region" content="GB" />
-    <meta name="geo.placename" content="London, United Kingdom" />
-    <meta name="geo.position" content="51.5074;-0.1278" />
-    <meta name="ICBM" content="51.5074, -0.1278" />
+    <meta name="geo.placename" content="Gainsborough, United Kingdom" />
+    <meta name="geo.position" content="53.4000;-0.7750" />
+    <meta name="ICBM" content="53.4000, -0.7750" />
     <meta name="language" content="English" />
+
+    <!-- Preload Above-the-Fold Brand & Hero Assets for Fast First Paint -->
+    <link rel="preload" as="image" href="/logo.png" />
+    <link rel="preload" as="image" href="/hero/slide-live-lessons.jpg" fetchpriority="high" />
+    <link rel="preload" as="image" href="/hero/side-student.jpg" fetchpriority="high" />
 
     <!-- Open Graph / Facebook / LinkedIn -->
     <meta property="og:type" content="website" />
@@ -68,15 +73,24 @@
           "url": "https://beaconbridgeacademics.co.uk",
           "logo": "https://beaconbridgeacademics.co.uk/logo.png",
           "email": "info@beaconbridgeacademics.co.uk",
+          "telephone": "+44 7414 663735",
           "description": "Leading online academic institution providing curriculum-aligned tutoring and live interactive virtual classrooms for students in the UK, Canada, the US, and worldwide.",
+          "sameAs": [
+            "https://www.facebook.com/BeaconAcademics",
+            "https://www.youtube.com/@BeaconBridgeAcademics",
+            "https://www.tiktok.com/@beacon.academics.uk",
+            "https://x.com/BBacademicsuk"
+          ],
           "address": {
             "@type": "PostalAddress",
-            "addressLocality": "London",
+            "streetAddress": "41 Great Oaks Avenue, Warren Wood",
+            "addressLocality": "Gainsborough",
+            "postalCode": "DN21 1AE",
             "addressCountry": "GB"
           },
           "priceRange": "££",
           "currenciesAccepted": "GBP",
-          "paymentAccepted": "Bank Transfer, Barclays Bank Wire",
+          "paymentAccepted": "Bank Transfer",
           "areaServed": ["United Kingdom", "Canada", "United States", "International"],
           "hasOfferCatalog": {
             "@type": "OfferCatalog",
@@ -109,7 +123,7 @@
                   },
                   "offers": {
                     "@type": "Offer",
-                    "price": "349.00",
+                    "price": "320.00",
                     "priceCurrency": "GBP"
                   }
                 }
@@ -125,7 +139,7 @@
                   },
                   "offers": {
                     "@type": "Offer",
-                    "price": "349.00",
+                    "price": "320.00",
                     "priceCurrency": "GBP"
                   }
                 }
@@ -141,7 +155,7 @@
                   },
                   "offers": {
                     "@type": "Offer",
-                    "price": "349.00",
+                    "price": "320.00",
                     "priceCurrency": "GBP"
                   }
                 }

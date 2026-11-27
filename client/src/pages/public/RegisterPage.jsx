@@ -243,12 +243,6 @@ export const RegisterPage = () => {
 
   // Courses list initialized with full curriculum and technology tracks
   const [courses, setCourses] = useState(INITIAL_COURSES);
-  const [bankDetails, setBankDetails] = useState({
-    bank_name: 'Barclays Bank UK PLC',
-    account_name: 'Beacon Bridge Academics Ltd.',
-    tuition_fee: '£299.00 GBP / month',
-    instructions: 'Upload your bank transfer confirmation receipt or payment slip below.'
-  });
 
   // Track state for Coding (Software Development) — £340/month (£35/hour)
   const [softwareTrack, setSoftwareTrack] = useState('Frontend Coding');
@@ -332,12 +326,9 @@ export const RegisterPage = () => {
 
   useEffect(() => {
     // Fetch available courses from database (excluding IELTS, which has its dedicated onboarding page)
-    const fetchCoursesAndBank = async () => {
+    const fetchCourses = async () => {
       try {
-        const [courseRes, bankRes] = await Promise.all([
-          api.get('/courses'),
-          api.get('/payments/bank-details')
-        ]);
+        const courseRes = await api.get('/courses');
         if (courseRes.data.success && Array.isArray(courseRes.data.courses) && courseRes.data.courses.length > 0) {
           const initialById = new Map(INITIAL_COURSES.map(ic => [ic.id, ic]));
           const initialBySlug = new Map(INITIAL_COURSES.map(ic => [ic.slug, ic]));
@@ -366,15 +357,12 @@ export const RegisterPage = () => {
             });
           }
         }
-        if (bankRes.data.success && bankRes.data.bankDetails) {
-          setBankDetails(bankRes.data.bankDetails);
-        }
       } catch (err) {
-        console.error('Failed to load initial data:', err);
+        console.error('Failed to load initial courses:', err);
       }
     };
 
-    fetchCoursesAndBank();
+    fetchCourses();
   }, []);
 
   // When selected course changes, update subjects & pricing dynamically
@@ -1649,33 +1637,33 @@ export const RegisterPage = () => {
           </div>
         </div>
 
-        {/* Payment Proof Upload with Beneficiary & Auto-Picked Monthly Tuition Banner */}
+        {/* Payment Proof Upload & Auto-Picked Monthly Tuition Summary */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#050167]/20 shadow-lg shadow-[#050167]/5">
-          {/* Top Summary Banner: Beneficiary Bank Name & Automatically Selected Monthly Tuition Due */}
-          <div className="bg-[#001f3f] text-white rounded-2xl p-5 sm:p-6 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#40ffa7]/30 shadow-md">
+          {/* Top Summary Bar: Selected Program & Monthly Tuition Due */}
+          <div className="bg-[#f0faff] rounded-2xl p-5 sm:p-6 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#050167]/15">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-[#40ffa7] font-bold uppercase tracking-wider">
-                <Building2 className="w-4 h-4" />
-                <span>Beneficiary Bank Name</span>
+              <div className="flex items-center gap-2 text-xs text-[#050167] font-bold uppercase tracking-wider">
+                <CreditCard className="w-4 h-4" />
+                <span>Selected Tuition Plan</span>
               </div>
-              <div className="font-bold text-base sm:text-lg text-white">
-                {bankDetails.bank_name || 'Barclays Bank UK PLC'} &mdash; {bankDetails.account_name || 'Beacon Bridge Academics Ltd.'}
-              </div>
-              <p className="text-xs text-[#f0faff]/80">
-                Selected Program: <strong className="text-white">{currentCourse?.title || 'Academic Program'}</strong>
+              <div className="font-bold text-base sm:text-lg text-[#001f3f]">
+                {currentCourse?.title || 'Academic Program'}
                 {isSoftwareCourse ? ` (${softwareTrack})` : ''}
+              </div>
+              <p className="text-xs text-[#001f3f]/70">
+                Need transfer instructions? Email <a href="mailto:info@beaconbridgeacademics.co.uk" className="font-semibold text-[#050167] underline">info@beaconbridgeacademics.co.uk</a> or WhatsApp +44 7414 663735.
               </p>
             </div>
 
-            <div className="sm:text-right bg-white/10 rounded-xl px-5 py-3 border border-white/15 shrink-0">
-              <span className="text-[11px] uppercase tracking-wider text-[#f0faff]/75 block font-bold">
+            <div className="sm:text-right bg-white rounded-xl px-5 py-3 border border-[#050167]/15 shrink-0 shadow-xs">
+              <span className="text-[11px] uppercase tracking-wider text-[#001f3f]/65 block font-bold">
                 Monthly Tuition Due
               </span>
-              <div className="text-2xl font-black text-[#40ffa7]">
-                £{formData.amount} <span className="text-xs font-bold text-white">GBP / month</span>
+              <div className="text-2xl font-black text-[#050167]">
+                £{formData.amount} <span className="text-xs font-bold text-[#001f3f]">GBP / month</span>
               </div>
               {getHourlyLabelForCourse(currentCourse) && (
-                <span className="text-[10px] text-[#f0faff]/80 block mt-0.5 font-semibold">
+                <span className="text-[10px] text-[#001f3f]/70 block mt-0.5 font-semibold">
                   Or {getHourlyLabelForCourse(currentCourse)}
                 </span>
               )}

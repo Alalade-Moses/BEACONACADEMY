@@ -1,6 +1,53 @@
 import { store } from '../database/store.js';
-import { sendEmail, sendTutorMessage, resolveSenderIdentity } from '../services/emailService.js';
+import { sendEmail, sendTutorMessage, sendContactInquiryEmail, resolveSenderIdentity } from '../services/emailService.js';
 import nodemailer from 'nodemailer';
+
+/**
+ * Public endpoint: Sends Contact Us page enquiries directly to info@beaconbridgeacademics.co.uk
+ */
+export const submitContactInquiry = async (req, res, next) => {
+  try {
+    const { name, email, phone, curriculum, subject, message } = req.body || {};
+
+    if (!name?.trim() || !email?.trim() || !message?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your full name, email address, and enquiry message.'
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address.'
+      });
+    }
+
+    const result = await sendContactInquiryEmail({
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone?.trim() || '',
+      curriculum: curriculum?.trim() || 'General',
+      subject: subject?.trim() || 'General Academic Enquiry',
+      message: message.trim()
+    });
+
+    if (result?.staffNotice && result.staffNotice.success === false) {
+      return res.status(502).json({
+        success: false,
+        message: 'We could not deliver your enquiry at this moment. Please email info@beaconbridgeacademics.co.uk directly or message us on WhatsApp (+44 7414 663735).'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Thank you! Your enquiry has been sent directly to info@beaconbridgeacademics.co.uk. An academic coordinator will respond within one business day.'
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 /**
  * Diagnostic test endpoint to test Hostinger SMTP configuration from Superadmin portal.

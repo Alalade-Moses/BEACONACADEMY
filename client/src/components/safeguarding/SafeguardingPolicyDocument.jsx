@@ -188,7 +188,7 @@ export const SafeguardingPolicyDocument = ({ compact = false }) => {
             <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2">
               <div>
                 <span className="font-bold text-slate-900 block text-xs">Designated Safeguarding Lead (DSL) Contact:</span>
-                <span className="text-[11px] text-slate-600">Beacon Bridge Academics Safeguarding Team &bull; London, UK</span>
+                <span className="text-[11px] text-slate-600">Beacon Bridge Academics Safeguarding Team &bull; Gainsborough, DN21 1AE, UK</span>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <a href="mailto:safeguarding@beaconbridgeacademics.co.uk" className="text-brand-600 hover:text-brand-700 font-bold flex items-center gap-1">

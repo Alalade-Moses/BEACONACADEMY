@@ -434,10 +434,13 @@ export const LandingPage = () => {
         'url': 'https://beaconbridgeacademics.co.uk',
         'logo': 'https://beaconbridgeacademics.co.uk/logo.png',
         'email': 'info@beaconbridgeacademics.co.uk',
+        'telephone': '+44 7414 663735',
         'description': 'Premier online tutoring institution for UK GCSE, A-Level and international curricula with live virtual classrooms.',
         'address': {
           '@type': 'PostalAddress',
-          'addressLocality': 'London',
+          'streetAddress': '41 Great Oaks Avenue, Warren Wood',
+          'addressLocality': 'Gainsborough',
+          'postalCode': 'DN21 1AE',
           'addressCountry': 'GB'
         }
       },
@@ -490,7 +493,8 @@ export const LandingPage = () => {
                 className="h-full w-full object-cover object-[70%_center]"
                 style={heroSlide === index ? { animation: 'heroKenBurns 9s ease-out forwards' } : undefined}
                 loading={index === 0 ? 'eager' : 'lazy'}
-                fetchpriority={index === 0 ? 'high' : 'auto'}
+                decoding="async"
+                fetchPriority={index === 0 ? 'high' : 'low'}
               />
             </div>
           ))}
@@ -595,6 +599,8 @@ export const LandingPage = () => {
                   alt="Smiling UK student having a live 1-to-1 online lesson with a tutor on a laptop"
                   className="h-[22rem] sm:h-[24rem] xl:h-[27rem] w-full object-cover object-[60%_30%]"
                   loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                 />
                 <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#001f3f]/40 to-transparent" />
               </div>

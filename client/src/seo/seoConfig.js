@@ -7,11 +7,19 @@ export const ORGANIZATION_SCHEMA = {
   'url': BASE_URL,
   'logo': `${BASE_URL}/logo.png`,
   'email': 'info@beaconbridgeacademics.co.uk',
-  'telephone': '+44 7438 411831',
+  'telephone': '+44 7414 663735',
   'description': 'Leading online academic institution providing curriculum-aligned tutoring and live interactive virtual classrooms for students in the UK, Canada, the US, and worldwide.',
+  'sameAs': [
+    'https://www.facebook.com/BeaconAcademics',
+    'https://www.youtube.com/@BeaconBridgeAcademics',
+    'https://www.tiktok.com/@beacon.academics.uk',
+    'https://x.com/BBacademicsuk'
+  ],
   'address': {
     '@type': 'PostalAddress',
-    'addressLocality': 'London',
+    'streetAddress': '41 Great Oaks Avenue, Warren Wood',
+    'addressLocality': 'Gainsborough',
+    'postalCode': 'DN21 1AE',
     'addressCountry': 'GB'
   },
   'priceRange': '££',
@@ -20,7 +28,7 @@ export const ORGANIZATION_SCHEMA = {
   'contactPoint': [
     {
       '@type': 'ContactPoint',
-      'telephone': '+44 7438 411831',
+      'telephone': '+44 7414 663735',
       'contactType': 'admissions and customer service',
       'email': 'info@beaconbridgeacademics.co.uk',
       'availableLanguage': ['English'],

@@ -1,8 +1,11 @@
 import express from 'express';
-import { testSmtpSettings, sendTutorAcademicEmail } from '../controllers/emailController.js';
+import { testSmtpSettings, sendTutorAcademicEmail, submitContactInquiry } from '../controllers/emailController.js';
 import { authenticate, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+// Public Contact Us academic enquiry -> direct to info@beaconbridgeacademics.co.uk
+router.post('/contact-inquiry', submitContactInquiry);
 
 router.use(authenticate);
 

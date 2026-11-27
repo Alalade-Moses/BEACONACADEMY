@@ -128,6 +128,9 @@ export const AboutPage = () => {
           alt="Beacon Bridge Academics UK educators collaborating with teenage students in a bright classroom"
           className="absolute inset-0 w-full h-full object-cover object-center z-0"
           style={{ animation: 'aboutHeroZoom 18s ease-in-out infinite' }}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/80 via-[#050167]/60 to-[#001f3f]/75 z-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/35 z-0" />
@@ -229,6 +232,8 @@ export const AboutPage = () => {
                         alt={cls.alt}
                         className="w-full h-full object-cover"
                         style={classroomSlide === idx ? { animation: 'classroomCardZoom 4.2s ease-out forwards' } : undefined}
+                        loading={idx === 0 ? 'eager' : 'lazy'}
+                        decoding="async"
                       />
                     </div>
                   ))}

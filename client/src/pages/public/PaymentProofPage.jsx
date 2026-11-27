@@ -32,13 +32,6 @@ const FALLBACK_COURSES = [
 ];
 
 export const PaymentProofPage = () => {
-  const [bankDetails, setBankDetails] = useState({
-    bank_name: 'Barclays Bank UK PLC',
-    account_name: 'Beacon Bridge Academics Ltd.',
-    tuition_fee: '£299.00 GBP / month',
-    instructions: 'Please include your student or parent name and reference code in the bank transfer description. Upload your transaction receipt/wire slip below to expedite verification.'
-  });
-
   const proofFileInputRef = useRef(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [proofFileName, setProofFileName] = useState('');
@@ -91,30 +84,26 @@ export const PaymentProofPage = () => {
     }
   };
 
-  const [copiedField, setCopiedField] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchBankDetails = async () => {
-      const [bankResult, courseResult] = await Promise.allSettled([
-        api.get('/payments/bank-details'),
-        api.get('/courses')
-      ]);
-
-      if (bankResult.status === 'fulfilled' && bankResult.value.data?.success && bankResult.value.data.bankDetails) {
-        setBankDetails(prev => ({ ...prev, ...bankResult.value.data.bankDetails }));
-      }
-      if (courseResult.status === 'fulfilled' && courseResult.value.data?.success && Array.isArray(courseResult.value.data.courses) && courseResult.value.data.courses.length > 0) {
-        const fetched = courseResult.value.data.courses;
-        setCourses(fetched);
-        const defaultCourse = fetched.find(c => c.slug === 'gcse-5-subject-bundle') || fetched[0];
-        setSelectedCourseId(defaultCourse.id);
-        setFormData(prev => ({ ...prev, amount: Number(defaultCourse.price || 299).toFixed(2) }));
+    const fetchCourses = async () => {
+      try {
+        const res = await api.get('/courses');
+        if (res.data?.success && Array.isArray(res.data.courses) && res.data.courses.length > 0) {
+          const fetched = res.data.courses;
+          setCourses(fetched);
+          const defaultCourse = fetched.find(c => c.slug === 'gcse-5-subject-bundle') || fetched[0];
+          setSelectedCourseId(defaultCourse.id);
+          setFormData(prev => ({ ...prev, amount: Number(defaultCourse.price || 299).toFixed(2) }));
+        }
+      } catch (err) {
+        console.warn('Using fallback course list for payment proof:', err.message);
       }
     };
-    fetchBankDetails();
+    fetchCourses();
   }, []);
 
   const handleCourseSelect = (courseId) => {
@@ -143,11 +132,11 @@ export const PaymentProofPage = () => {
     setFormData(prev => ({ ...prev, amount: '340.00' }));
   };
 
-  const handleCopy = (text, field) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
+  const selectedCourseObj = courses.find(c => c.id === selectedCourseId);
+  const isSelectedIelts = Boolean(
+    selectedCourseObj?.slug?.toLowerCase().includes('ielts') ||
+    selectedCourseObj?.title?.toLowerCase().includes('ielts')
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -228,8 +217,10 @@ export const PaymentProofPage = () => {
             <CheckCircle2 className="w-12 h-12 text-[#050167] mx-auto mb-3" />
             <h4 className="text-lg font-bold text-[#001f3f]">Proof Submitted Successfully!</h4>
             <p className="text-xs text-[#001f3f]/80 mt-1 max-w-md mx-auto">
-              Our administrative bursar office will review your transaction reference ({formData.bank_reference}). 
-              Both student and parent accounts will be activated immediately once confirmed.
+              Our administrative bursar office will review your transaction reference ({formData.bank_reference}).{' '}
+              {isSelectedIelts
+                ? 'Your IELTS Student Dashboard and live tutor classroom will be activated immediately once confirmed.'
+                : 'Both student and parent accounts will be activated immediately once confirmed.'}
             </p>
             <div className="mt-5 flex justify-center gap-3">
               <Link to="/login" className="px-5 py-2.5 rounded-xl bg-[#40ffa7] hover:bg-[#2be08d] text-[#001f3f] font-bold text-xs transition-all shadow-md shadow-[#40ffa7]/30">
@@ -246,19 +237,19 @@ export const PaymentProofPage = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Beneficiary & Dynamic Monthly Tuition Summary Banner */}
-            <div className="bg-[#001f3f] text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#40ffa7]/30">
+            {/* Selected Monthly Tuition Summary */}
+            <div className="bg-[#f0faff] rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#050167]/15">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#40ffa7] block">
-                  Beneficiary Bank Name
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#050167] block">
+                  Selected Program
                 </span>
-                <div className="font-bold text-sm sm:text-base text-white">
-                  {bankDetails.bank_name || 'Barclays Bank UK PLC'} &mdash; {bankDetails.account_name || 'Beacon Bridge Academics Ltd.'}
+                <div className="font-bold text-sm sm:text-base text-[#001f3f]">
+                  {selectedCourseObj?.title || 'Enrolled Academic Program'}
                 </div>
               </div>
-              <div className="sm:text-right bg-white/10 px-4 py-2 rounded-xl border border-white/15 shrink-0">
-                <span className="text-[10px] uppercase tracking-wider text-slate-300 block font-bold">Monthly Tuition Due</span>
-                <span className="text-lg font-black text-[#40ffa7]">£{formData.amount} GBP / month</span>
+              <div className="sm:text-right bg-white px-4 py-2 rounded-xl border border-[#050167]/15 shrink-0">
+                <span className="text-[10px] uppercase tracking-wider text-[#001f3f]/65 block font-bold">Monthly Tuition Due</span>
+                <span className="text-lg font-black text-[#050167]">£{formData.amount} GBP / month</span>
               </div>
             </div>
 

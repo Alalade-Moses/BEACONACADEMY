@@ -371,7 +371,7 @@ const buildEmailTemplate = ({ headerTitle, contentHtml, callToAction }) => {
       ${callToAction ? `<div style="text-align: center; margin: 24px 0;"><a href="${callToAction.url}" class="button">${callToAction.label}</a></div>` : ''}
     </div>
     <div class="footer">
-      <p><strong>Beacon Bridge Academics Ltd</strong> &bull; United Kingdom</p>
+      <p><strong>Beacon Bridge Academics Ltd</strong> &bull; 41 Great Oaks Avenue, Warren Wood, Gainsborough, DN21 1AE, United Kingdom</p>
       <p>Official Platform Communications &bull; <a href="https://beaconbridgeacademics.co.uk" style="color: #059669; text-decoration: none;">beaconbridgeacademics.co.uk</a></p>
       <p style="margin-top: 8px; color: #94a3b8;">This communication is subject to UK GDPR and our Educational Safeguarding Policy. If you received this email in error, please contact info@beaconbridgeacademics.co.uk.</p>
     </div>
@@ -401,18 +401,16 @@ export const sendRegistrationWelcome = async ({ student, parent, course, track, 
         <p style="margin: 4px 0;"><strong>Parent Oversight Portal:</strong> ${parent?.email}</p>
       </div>
 
-      <p>To finalize your enrollment and activate live classroom access, please complete your tuition transfer to <strong>Beacon Bridge Academics Ltd (Barclays Bank UK PLC)</strong> using the payment instructions provided by our admissions desk and submit your proof of payment on the portal:</p>
+      <p>Your registration and tuition proof are currently being reviewed by our admissions and finance team. Both your parent and student portals will be unlocked automatically as soon as your payment is confirmed.</p>
       
       <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
-        <h4 style="margin: 0 0 8px 0; color: #065f46;">Beneficiary Summary:</h4>
-        <p style="margin: 2px 0;"><strong>Beneficiary Bank:</strong> Barclays Bank UK PLC</p>
-        <p style="margin: 2px 0;"><strong>Beneficiary Name:</strong> Beacon Bridge Academics Ltd</p>
+        <h4 style="margin: 0 0 8px 0; color: #065f46;">Next Steps:</h4>
         <p style="margin: 2px 0;"><strong>Payment Reference:</strong> ${student?.full_name ? student.full_name.toUpperCase().replace(/\s+/g, '-') : 'TUITION'}</p>
-        <p style="margin: 6px 0 0 0; font-size: 12px; color: #475569;">For security reasons, full transfer coordinates are issued directly by our admissions desk at <a href="mailto:info@beaconbridgeacademics.co.uk" style="color: #059669;">info@beaconbridgeacademics.co.uk</a>.</p>
+        <p style="margin: 6px 0 0 0; font-size: 12px; color: #475569;">If you need payment guidance or have not yet uploaded your transfer receipt, please email <a href="mailto:info@beaconbridgeacademics.co.uk" style="color: #059669;">info@beaconbridgeacademics.co.uk</a> or use the button below.</p>
       </div>
     `,
     callToAction: {
-      label: 'Submit Proof of Payment',
+      label: 'Submit or Update Payment Proof',
       url: `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/payment-proof`
     }
   });
@@ -423,6 +421,62 @@ export const sendRegistrationWelcome = async ({ student, parent, course, track, 
     subject: `Welcome to Beacon Bridge Academics — ${courseTitle} Registration Confirmation`,
     html,
     senderType: 'admin'
+  });
+};
+
+// 1b. IELTS Candidate Registration Confirmation Email
+export const sendIeltsRegistrationWelcome = async ({ student, track, targetBand, examDate, focusModules, amount, bankReference }) => {
+  if (!student?.email) return { success: false, error: 'Missing candidate email' };
+
+  const trackLabel = track || 'IELTS Academic';
+  const monthlyFee = Number(amount || 100).toFixed(2);
+  const modulesDisplay = Array.isArray(focusModules) && focusModules.length > 0
+    ? focusModules.join(', ')
+    : 'Speaking, Writing Task 1 & 2, Reading, and Listening';
+  const loginUrl = `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/login`;
+
+  const html = buildEmailTemplate({
+    headerTitle: 'IELTS Registration Received',
+    contentHtml: `
+      <p>Dear <strong>${student?.full_name || 'IELTS Candidate'}</strong>,</p>
+      <p>Thank you for registering for <strong>IELTS Academic &amp; UKVI Exam Preparation</strong> at <strong>Beacon Bridge Academics</strong>. We have received your candidate registration and monthly tuition proof.</p>
+      
+      <div class="card" style="border-left: 4px solid #050167;">
+        <h3 style="margin: 0 0 12px 0; color: #050167; font-size: 16px;">IELTS Enrollment Summary</h3>
+        <p style="margin: 4px 0;"><strong>Candidate Name:</strong> ${student?.full_name || 'Candidate'}</p>
+        <p style="margin: 4px 0;"><strong>IELTS Portal Login Email:</strong> <span style="font-family: monospace;">${student.email}</span></p>
+        <p style="margin: 4px 0;"><strong>Selected Track:</strong> ${trackLabel}</p>
+        <p style="margin: 4px 0;"><strong>Target Overall Band:</strong> Band ${targetBand || '7.5'}</p>
+        ${examDate ? `<p style="margin: 4px 0;"><strong>Target Exam Date:</strong> ${examDate}</p>` : ''}
+        <p style="margin: 4px 0;"><strong>Focus Modules:</strong> ${modulesDisplay}</p>
+        <p style="margin: 4px 0;"><strong>Monthly Tuition:</strong> <span class="badge badge-gold">£${monthlyFee} GBP / month</span></p>
+        ${bankReference ? `<p style="margin: 4px 0;"><strong>Payment Reference:</strong> <code>${bankReference}</code></p>` : ''}
+        <p style="margin: 4px 0;"><strong>Account Status:</strong> <span class="badge badge-gold">Pending Payment Verification</span></p>
+      </div>
+
+      <div class="card" style="background: #ecfdf5; border-color: #a7f3d0;">
+        <h4 style="margin: 0 0 8px 0; color: #065f46;">What Happens Next:</h4>
+        <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #334155;">
+          <li>Our admissions and bursar team is reviewing your payment receipt.</li>
+          <li>As soon as your payment is confirmed, you will receive an activation email with your official invoice.</li>
+          <li>Your dedicated <strong>IELTS Student Dashboard</strong>, live 1-on-1 tutor classroom, speaking mock sessions, and essay review tools will unlock automatically.</li>
+        </ul>
+      </div>
+
+      <p>If you have any questions or need assistance, simply reply to this email or contact <a href="mailto:info@beaconbridgeacademics.co.uk" style="color: #059669;">info@beaconbridgeacademics.co.uk</a>.</p>
+    `,
+    callToAction: {
+      label: 'Go to Student Portal Login',
+      url: loginUrl
+    }
+  });
+
+  return await sendEmail({
+    to: student.email,
+    subject: `IELTS Registration Confirmation (${trackLabel}) — Beacon Bridge Academics`,
+    html,
+    senderType: 'admissions',
+    replyTo: DEFAULT_INFO_EMAIL
   });
 };
 
@@ -908,10 +962,84 @@ export const sendConsultationBookingNotifications = async (consultation) => {
   return { staffNotice, parentNotice };
 };
 
+// 8. Public Contact Us Academic Enquiry -> Direct to info@beaconbridgeacademics.co.uk
+export const sendContactInquiryEmail = async ({ name, email, phone, curriculum, subject, message }) => {
+  const infoEmail = DEFAULT_INFO_EMAIL;
+  const safeName = (name || 'Website Visitor').trim();
+  const safeEmail = (email || '').trim();
+  const safePhone = (phone || 'Not provided').trim();
+  const safeCurriculum = (curriculum || 'General').trim();
+  const safeSubject = (subject || 'General Academic Enquiry').trim();
+  const safeMessage = (message || '').trim().replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
+
+  const staffHtml = buildEmailTemplate({
+    headerTitle: 'New Website Contact Enquiry',
+    contentHtml: `
+      <p>A new enquiry has been submitted through the <strong>Contact Us</strong> page on Beacon Bridge Academics:</p>
+      <div class="card" style="border-left: 4px solid #050167;">
+        <h3 style="margin: 0 0 10px 0; color: #050167; font-size: 16px;">Sender &amp; Academic Details</h3>
+        <p style="margin: 4px 0;"><strong>Full Name:</strong> ${safeName}</p>
+        <p style="margin: 4px 0;"><strong>Email Address:</strong> <a href="mailto:${safeEmail}" style="color: #0284c7;">${safeEmail}</a></p>
+        <p style="margin: 4px 0;"><strong>Phone / WhatsApp:</strong> ${safePhone}</p>
+        <p style="margin: 4px 0;"><strong>Target Level:</strong> <span class="badge badge-green">${safeCurriculum}</span></p>
+        <p style="margin: 4px 0;"><strong>Subject(s) Needed:</strong> ${safeSubject}</p>
+        <p style="margin: 4px 0;"><strong>Submitted At:</strong> ${new Date().toLocaleString('en-GB')}</p>
+      </div>
+      <div class="card" style="background: #ffffff; border-left: 4px solid #059669;">
+        <h4 style="margin: 0 0 8px 0; color: #065f46;">Enquiry Message</h4>
+        <p style="margin: 0; color: #1e293b; line-height: 1.65;">${safeMessage}</p>
+      </div>
+      <p style="font-size: 12px; color: #64748b;">Tip: Click <strong>Reply</strong> in your inbox to respond directly to <strong>${safeEmail}</strong>.</p>
+    `
+  });
+
+  const staffNotice = await sendEmail({
+    to: infoEmail,
+    subject: `[Contact Enquiry] ${safeName} — ${safeCurriculum} (${safeSubject})`,
+    html: staffHtml,
+    text: `New Contact Enquiry\nName: ${safeName}\nEmail: ${safeEmail}\nPhone: ${safePhone}\nLevel: ${safeCurriculum}\nSubject(s): ${safeSubject}\n\nMessage:\n${message || ''}`,
+    senderType: 'info',
+    replyTo: safeEmail || infoEmail
+  });
+
+  // Send acknowledgement to sender so they know info@ received it
+  let senderAck = { success: true };
+  if (safeEmail) {
+    const ackHtml = buildEmailTemplate({
+      headerTitle: 'We Have Received Your Enquiry',
+      contentHtml: `
+        <p>Dear <strong>${safeName}</strong>,</p>
+        <p>Thank you for contacting <strong>Beacon Bridge Academics</strong>. Your academic enquiry has been delivered directly to our team at <a href="mailto:${infoEmail}" style="color: #059669;">${infoEmail}</a>.</p>
+        <div class="card">
+          <p style="margin: 4px 0;"><strong>Target Level:</strong> ${safeCurriculum}</p>
+          <p style="margin: 4px 0;"><strong>Subject(s):</strong> ${safeSubject}</p>
+          <p style="margin: 8px 0 0 0; color: #475569;"><strong>Your Message:</strong><br/>${safeMessage}</p>
+        </div>
+        <p>An academic coordinator will review your enquiry and reply within one business day. For urgent enquiries, you can also reach us on WhatsApp at <strong>+44 7414 663735</strong>.</p>
+      `,
+      callToAction: {
+        label: 'Book a Free 20-Min Consultation',
+        url: `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/book-consultation`
+      }
+    });
+
+    senderAck = await sendEmail({
+      to: safeEmail,
+      subject: 'Thank You for Contacting Beacon Bridge Academics',
+      html: ackHtml,
+      senderType: 'info',
+      replyTo: infoEmail
+    });
+  }
+
+  return { staffNotice, senderAck };
+};
+
 export default {
   sendEmail,
   resolveSenderIdentity,
   sendRegistrationWelcome,
+  sendIeltsRegistrationWelcome,
   sendPaymentProofSubmitted,
   sendPaymentProofAdminAlert,
   sendPaymentVerifiedReceipt,
@@ -919,5 +1047,6 @@ export default {
   sendTutorApplicationAdminAlert,
   sendTutorApprovalEmail,
   sendTutorMessage,
-  sendConsultationBookingNotifications
+  sendConsultationBookingNotifications,
+  sendContactInquiryEmail
 };

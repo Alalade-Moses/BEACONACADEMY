@@ -29,12 +29,14 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pendingVerification, setPendingVerification] = useState(false);
+  const [pendingAccountType, setPendingAccountType] = useState('family');
   const [pendingMessage, setPendingMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setPendingVerification(false);
+    setPendingAccountType('family');
     setLoading(true);
 
     try {
@@ -46,10 +48,14 @@ export const LoginPage = () => {
       navigate(redirectPath, { replace: true });
     } catch (err) {
       if (err.response?.data?.pending_verification) {
+        const accountType = err.response?.data?.account_type || 'family';
         setPendingVerification(true);
+        setPendingAccountType(accountType);
         setPendingMessage(
-          err.response?.data?.message || 
-          'Your account is currently locked pending administrator payment verification. Both parent and student accounts will be unlocked once an administrator confirms your payment proof.'
+          err.response?.data?.message ||
+            (accountType === 'ielts'
+              ? 'Your IELTS Academic & UKVI registration (£100/month) is currently pending administrator payment verification. Your IELTS Student Dashboard and live tutor classroom will be unlocked once your payment proof is confirmed.'
+              : 'Your account is currently locked pending administrator payment verification. Both parent and student accounts will be unlocked once an administrator confirms your payment proof.')
         );
       } else {
         setError(err.response?.data?.message || err.message || 'Login failed. Please verify credentials.');
@@ -89,20 +95,51 @@ export const LoginPage = () => {
         
         {/* Pending Verification Alert Banner */}
         {pendingVerification && (
-          <div className="mb-6 p-5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950">
+          <div
+            className={`mb-6 p-5 rounded-2xl border ${
+              pendingAccountType === 'ielts'
+                ? 'bg-indigo-50 border-indigo-300 text-indigo-950'
+                : 'bg-amber-50 border-amber-300 text-amber-950'
+            }`}
+          >
             <div className="flex items-start space-x-3">
-              <Clock className="w-6 h-6 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+              <Clock
+                className={`w-6 h-6 shrink-0 mt-0.5 animate-pulse ${
+                  pendingAccountType === 'ielts' ? 'text-indigo-600' : 'text-amber-600'
+                }`}
+              />
               <div>
-                <h4 className="text-sm font-extrabold text-amber-900">
-                  Account Pending Payment Verification
-                </h4>
-                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4
+                    className={`text-sm font-extrabold ${
+                      pendingAccountType === 'ielts' ? 'text-indigo-950' : 'text-amber-900'
+                    }`}
+                  >
+                    {pendingAccountType === 'ielts'
+                      ? 'IELTS Candidate Account Pending Payment Verification'
+                      : 'Account Pending Payment Verification'}
+                  </h4>
+                  {pendingAccountType === 'ielts' && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#050167] text-[#40ffa7]">
+                      IELTS Portal
+                    </span>
+                  )}
+                </div>
+                <p
+                  className={`text-xs mt-1.5 leading-relaxed ${
+                    pendingAccountType === 'ielts' ? 'text-indigo-900/90' : 'text-amber-800'
+                  }`}
+                >
                   {pendingMessage}
                 </p>
                 <div className="mt-3 flex items-center gap-3">
                   <Link
                     to="/payment-proof"
-                    className="text-xs font-bold text-amber-900 underline hover:text-amber-700 flex items-center gap-1"
+                    className={`text-xs font-bold underline flex items-center gap-1 ${
+                      pendingAccountType === 'ielts'
+                        ? 'text-[#050167] hover:text-indigo-700'
+                        : 'text-amber-900 hover:text-amber-700'
+                    }`}
                   >
                     <FileText className="w-3.5 h-3.5" />
                     <span>Submit or Update Payment Proof</span>

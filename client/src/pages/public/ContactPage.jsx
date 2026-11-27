@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../../api/axios';
 import { SEO } from '../../components/common/SEO';
 import { showSuccess, showError } from '../../utils/swal';
 import { 
@@ -26,19 +27,20 @@ export const ContactPage = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) {
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
       showError('Required Fields Missing', 'Please provide your name, email, and a message.');
       return;
     }
 
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      const res = await api.post('/emails/contact-inquiry', form);
       showSuccess(
-        'Inquiry Received',
-        'Thank you for contacting Beacon Bridge Academics. An academic coordinator will review your inquiry and get back to you within 24 hours.'
+        'Enquiry Sent Successfully',
+        res.data?.message ||
+          'Thank you for contacting Beacon Bridge Academics. Your enquiry has been sent directly to info@beaconbridgeacademics.co.uk and our academic coordinator will reply within one business day.'
       );
       setForm({
         name: '',
@@ -48,7 +50,15 @@ export const ContactPage = () => {
         subject: 'Mathematics',
         message: ''
       });
-    }, 600);
+    } catch (err) {
+      showError(
+        'Could Not Send Enquiry',
+        err.response?.data?.message ||
+          'Unable to submit your enquiry right now. Please email info@beaconbridgeacademics.co.uk directly or reach us on WhatsApp (+44 7414 663735).'
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const contactSchema = {
@@ -63,9 +73,18 @@ export const ContactPage = () => {
       '@id': 'https://beaconbridgeacademics.co.uk/#organization',
       'name': 'Beacon Bridge Academics',
       'email': 'info@beaconbridgeacademics.co.uk',
+      'telephone': '+44 7414 663735',
+      'address': {
+        '@type': 'PostalAddress',
+        'streetAddress': '41 Great Oaks Avenue, Warren Wood',
+        'addressLocality': 'Gainsborough',
+        'postalCode': 'DN21 1AE',
+        'addressCountry': 'GB'
+      },
       'contactPoint': {
         '@type': 'ContactPoint',
         'contactType': 'admissions and parent support',
+        'telephone': '+44 7414 663735',
         'email': 'info@beaconbridgeacademics.co.uk',
         'areaServed': 'GB',
         'availableLanguage': 'English'
@@ -109,10 +128,12 @@ export const ContactPage = () => {
                   src="/pages/about-hero.jpg"
                   alt="Beacon Bridge Academics UK educators collaborating with students"
                   className="w-full h-full object-cover object-center"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-[#001f3f]/20 to-transparent" />
                 <div className="absolute bottom-3 left-5 right-5 flex items-center justify-between text-white">
-                  <span className="text-xs font-extrabold tracking-wide">London Academic Support Desk</span>
+                  <span className="text-xs font-extrabold tracking-wide">UK Academic Support Desk</span>
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#40ffa7]">
                     <span className="w-2 h-2 rounded-full bg-[#40ffa7] animate-pulse" />
                     Online
@@ -140,6 +161,23 @@ export const ContactPage = () => {
 
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-2xl bg-[#050167]/10 flex items-center justify-center shrink-0 text-[#050167]">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">WhatsApp &amp; Admissions Line</p>
+                    <a
+                      href="https://wa.me/447414663735"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-slate-900 font-semibold hover:text-[#050167] transition-colors"
+                    >
+                      +44 7414 663735
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-[#050167]/10 flex items-center justify-center shrink-0 text-[#050167]">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
@@ -155,8 +193,12 @@ export const ContactPage = () => {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Location</p>
-                    <p className="text-slate-800 font-semibold">London, United Kingdom</p>
-                    <p className="text-slate-500 text-xs">Delivering virtual classroom tuition across the UK, Canada, the US & globally.</p>
+                    <p className="text-slate-800 font-semibold leading-snug">
+                      41 Great Oaks Avenue<br />
+                      Warren Wood, Gainsborough<br />
+                      DN21 1AE, United Kingdom
+                    </p>
+                    <p className="text-slate-500 text-xs mt-1">Delivering virtual classroom tuition across the UK, Canada, the US &amp; globally.</p>
                   </div>
                 </div>
               </div>
@@ -172,6 +214,8 @@ export const ContactPage = () => {
                 <img
                   src="/advisor.jpg"
                   alt="Mr. Gideon Babs"
+                  loading="lazy"
+                  decoding="async"
                   className="w-12 h-12 rounded-xl object-cover object-top border-2 border-[#40ffa7] shadow-sm shrink-0"
                 />
                 <div>
@@ -257,6 +301,7 @@ export const ContactPage = () => {
                       <option value="GCSE">GCSE / IGCSE (Year 10-11)</option>
                       <option value="A-Level">A-Level / Further Maths (Year 12-13)</option>
                       <option value="North American">US / Canadian High School & AP</option>
+                      <option value="IELTS">IELTS Academic &amp; UKVI Preparation</option>
                       <option value="Professional">Coding (Software Development) &amp; Design</option>
                     </select>
                   </div>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { MessageCircle, X, Send, Sparkles, CheckCheck } from 'lucide-react';
 
-// Configurable WhatsApp URL (Update WHATSAPP_URL when custom link is finalized)
-const DEFAULT_WHATSAPP_NUMBER = '447438411831';
+// Configurable WhatsApp URL (Official Beacon Bridge Academics WhatsApp number: +447414663735)
+const DEFAULT_WHATSAPP_NUMBER = '447414663735';
 const CUSTOM_WHATSAPP_LINK = import.meta.env.VITE_WHATSAPP_URL || '';
 
 const QUICK_TOPICS = [

@@ -313,6 +313,9 @@ export const TeacherApplicationPage = () => {
           src="/pages/teach-hero.jpg"
           alt="UK subject specialist teaching live online at Beacon Bridge Academics"
           className="absolute inset-0 w-full h-full object-cover object-[70%_25%] z-0"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/90 via-[#050167]/75 to-[#001f3f]/30 z-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/75 via-transparent to-[#001f3f]/30 z-0" />

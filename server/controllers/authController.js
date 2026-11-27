@@ -1,7 +1,39 @@
 import bcrypt from 'bcryptjs';
 import { store } from '../database/store.js';
 import { generateToken } from '../middleware/authMiddleware.js';
-import { sendRegistrationWelcome, sendPaymentProofAdminAlert } from '../services/emailService.js';
+import { sendRegistrationWelcome, sendIeltsRegistrationWelcome, sendPaymentProofAdminAlert } from '../services/emailService.js';
+
+const IELTS_COURSE_ID = '20000000-0000-0000-0000-000000000008';
+
+const detectIeltsCandidate = async (user) => {
+  if (!user) return false;
+  if ((user.bio || '').toLowerCase().includes('ielts')) return true;
+
+  try {
+    const [payments, enrollments] = await Promise.all([
+      store.getPayments(),
+      store.getEnrollments()
+    ]);
+
+    const hasIeltsPayment = (payments || []).some((p) => {
+      if (p.student_id !== user.id) return false;
+      const courseIdMatch = p.course_id === IELTS_COURSE_ID;
+      const textMatch = `${p.course_name || ''} ${p.course_display_name || ''} ${p.course_track || ''} ${p.admin_notes || ''}`.toLowerCase().includes('ielts');
+      const selfRegistered = p.parent_id && p.parent_id === p.student_id;
+      return courseIdMatch || textMatch || selfRegistered;
+    });
+    if (hasIeltsPayment) return true;
+
+    const hasIeltsEnrollment = (enrollments || []).some(
+      (e) => e.student_id === user.id && e.course_id === IELTS_COURSE_ID
+    );
+    if (hasIeltsEnrollment) return true;
+  } catch (err) {
+    console.warn('[auth] detectIeltsCandidate lookup warning:', err.message);
+  }
+
+  return false;
+};
 
 export const login = async (req, res, next) => {
   try {
@@ -21,9 +53,20 @@ export const login = async (req, res, next) => {
     }
 
     if (user.status === 'pending_verification') {
+      const isIeltsCandidate = await detectIeltsCandidate(user);
+      if (isIeltsCandidate) {
+        return res.status(403).json({
+          success: false,
+          pending_verification: true,
+          account_type: 'ielts',
+          message: 'Your IELTS Academic & UKVI registration (£100/month) is currently pending administrator payment verification. Your IELTS Student Dashboard and live tutor classroom will be unlocked as soon as an administrator confirms your payment proof.'
+        });
+      }
+
       return res.status(403).json({
         success: false,
         pending_verification: true,
+        account_type: 'family',
         message: 'Your registration is currently pending admin payment verification. Both parent and student accounts will be unlocked once an administrator confirms your payment proof.'
       });
     }
@@ -213,6 +256,16 @@ export const registerIelts = async (req, res, next) => {
 
     (async () => {
       try {
+        await sendIeltsRegistrationWelcome({
+          student: result.student,
+          track: ielts_track,
+          targetBand: target_band,
+          examDate: exam_date,
+          focusModules: focus_modules,
+          amount: amount || 100.00,
+          bankReference: result.payment?.bank_reference || bank_reference
+        });
+
         if (payment_proof_url && result.payment) {
           await sendPaymentProofAdminAlert({
             payment: result.payment,

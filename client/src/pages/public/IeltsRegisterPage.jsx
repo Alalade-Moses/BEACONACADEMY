@@ -471,7 +471,7 @@ export const IeltsRegisterPage = () => {
             </div>
           </div>
 
-          {/* Section 3: Payment Proof Upload with Beneficiary & Auto Tuition Summary */}
+          {/* Section 3: Payment Proof Upload & IELTS Monthly Tuition Summary */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#050167]/20 shadow-lg">
             <div className="flex items-center space-x-3 pb-4 mb-6 border-b border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-[#050167] text-[#40ffa7] flex items-center justify-center font-bold">
@@ -479,27 +479,29 @@ export const IeltsRegisterPage = () => {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-[#001f3f]">Tuition Summary &amp; Payment Proof Upload</h2>
-                <p className="text-xs text-slate-500">Confirm the beneficiary and monthly fee below, then submit your transfer proof.</p>
+                <p className="text-xs text-slate-500">Confirm your monthly IELTS fee below, then submit your transfer proof.</p>
               </div>
             </div>
 
-            {/* Clean Beneficiary & Dynamic Tuition Due Summary Banner */}
-            <div className="bg-[#001f3f] text-white rounded-2xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#40ffa7]/30">
+            {/* Clean IELTS Tuition Summary Banner */}
+            <div className="bg-[#f0faff] rounded-2xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[#050167]/15">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs text-[#40ffa7] font-bold uppercase tracking-wider">
-                  <Building2 className="w-4 h-4" />
-                  <span>Beneficiary Bank Name</span>
+                <div className="flex items-center gap-2 text-xs text-[#050167] font-bold uppercase tracking-wider">
+                  <Award className="w-4 h-4" />
+                  <span>Selected IELTS Track</span>
                 </div>
-                <div className="font-bold text-base sm:text-lg text-white">
-                  Barclays Bank UK PLC &mdash; Beacon Bridge Academics Ltd.
+                <div className="font-bold text-base sm:text-lg text-[#001f3f]">
+                  {formData.ielts_track} &mdash; Band {formData.target_band} Target
                 </div>
-                <p className="text-xs text-slate-300">Selected Program: {formData.ielts_track} (Band {formData.target_band} Target)</p>
+                <p className="text-xs text-[#001f3f]/70">
+                  Need transfer instructions? Email <a href="mailto:info@beaconbridgeacademics.co.uk" className="font-semibold text-[#050167] underline">info@beaconbridgeacademics.co.uk</a> or WhatsApp +44 7414 663735.
+                </p>
               </div>
 
-              <div className="sm:text-right bg-white/10 rounded-xl px-5 py-3 border border-white/10 shrink-0">
-                <span className="text-[11px] uppercase tracking-wider text-slate-300 block font-bold">Monthly Tuition Due</span>
-                <div className="text-2xl font-black text-[#40ffa7]">
-                  £100.00 <span className="text-xs font-bold text-white">GBP / month</span>
+              <div className="sm:text-right bg-white rounded-xl px-5 py-3 border border-[#050167]/15 shrink-0">
+                <span className="text-[11px] uppercase tracking-wider text-[#001f3f]/65 block font-bold">Monthly Tuition Due</span>
+                <div className="text-2xl font-black text-[#050167]">
+                  £100.00 <span className="text-xs font-bold text-[#001f3f]">GBP / month</span>
                 </div>
                 <span className="text-[10px] line-through text-slate-400">Standard £150.00/mo</span>
               </div>

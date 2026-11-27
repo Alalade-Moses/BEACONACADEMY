@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, Mail, Phone, MapPin, Globe, ShieldCheck, Heart, ArrowRight, Instagram, Facebook, Linkedin } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, ShieldCheck, ArrowRight, Instagram, Facebook, Youtube } from 'lucide-react';
 
 export const PublicFooter = () => {
   return (
@@ -34,12 +34,29 @@ export const PublicFooter = () => {
               </span>
             </div>
 
-            <div className="pt-2 space-y-1.5 text-xs text-[#f0faff]/85">
+            <div className="pt-2 space-y-2 text-xs text-[#f0faff]/85">
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-[#40ffa7] shrink-0" />
                 <a href="mailto:info@beaconbridgeacademics.co.uk" className="hover:text-[#40ffa7] transition-colors">
                   info@beaconbridgeacademics.co.uk
                 </a>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-3.5 h-3.5 text-[#40ffa7] shrink-0" />
+                <a
+                  href="https://wa.me/447414663735"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[#40ffa7] transition-colors"
+                >
+                  +44 7414 663735 (WhatsApp)
+                </a>
+              </div>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-3.5 h-3.5 text-[#40ffa7] shrink-0 mt-0.5" />
+                <span className="leading-snug">
+                  41 Great Oaks Avenue, Warren Wood, Gainsborough, DN21 1AE, UK
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Globe className="w-3.5 h-3.5 text-[#40ffa7] shrink-0" />
@@ -50,42 +67,60 @@ export const PublicFooter = () => {
             {/* Official Social Media Icons */}
             <div className="pt-2">
               <span className="text-[11px] font-bold text-[#f0faff]/50 uppercase tracking-wider block mb-2">Connect With Us:</span>
-              <div className="flex items-center space-x-2.5">
+              <div className="flex items-center flex-wrap gap-2.5">
                 <a 
-                  href="#instagram" 
-                  aria-label="Beacon Bridge Instagram" 
-                  title="Instagram"
-                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
-                >
-                  <Instagram className="w-4 h-4" />
-                </a>
-                <a 
-                  href="#facebook" 
-                  aria-label="Beacon Bridge Facebook" 
+                  href="https://www.facebook.com/BeaconAcademics"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Beacon Bridge Academics on Facebook" 
                   title="Facebook"
                   className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
                 >
                   <Facebook className="w-4 h-4" />
                 </a>
                 <a 
-                  href="#x" 
-                  aria-label="Beacon Bridge on X" 
-                  title="X (formerly Twitter)"
+                  href="https://www.youtube.com/@BeaconBridgeAcademics"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Beacon Bridge Academics on YouTube" 
+                  title="YouTube"
                   className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
                 >
-                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  <Youtube className="w-4 h-4" />
+                </a>
+                <a 
+                  href="https://www.tiktok.com/@beacon.academics.uk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Beacon Bridge Academics on TikTok" 
+                  title="TikTok"
+                  className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
+                >
+                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
                   </svg>
                 </a>
                 <a 
-                  href="#linkedin" 
-                  aria-label="Beacon Bridge LinkedIn" 
-                  title="LinkedIn"
+                  href="https://x.com/BBacademicsuk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Beacon Bridge Academics on X" 
+                  title="X (formerly Twitter)"
                   className="w-8 h-8 rounded-xl bg-white/10 hover:bg-[#40ffa7] text-white hover:text-[#001f3f] flex items-center justify-center transition-all shadow-sm"
                 >
-                  <Linkedin className="w-4 h-4" />
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
                 </a>
+                <span
+                  aria-label="Beacon Bridge Instagram (Coming Soon)"
+                  title="Instagram — Coming Soon"
+                  className="w-8 h-8 rounded-xl bg-white/5 text-white/50 border border-white/10 flex items-center justify-center cursor-default"
+                >
+                  <Instagram className="w-4 h-4" />
+                </span>
               </div>
+              <p className="text-[10px] text-[#f0faff]/45 mt-1.5">Instagram page coming soon</p>
             </div>
           </div>
 
@@ -129,7 +164,7 @@ export const PublicFooter = () => {
               <li><Link to="/book-consultation" className="hover:text-[#40ffa7] transition-colors">Book a Free Consultation</Link></li>
               <li><Link to="/register" className="hover:text-[#40ffa7] transition-colors">Register with Us</Link></li>
               <li><Link to="/security" className="hover:text-[#40ffa7] transition-colors">Security Policy</Link></li>
-              <li><Link to="/payment-proof" className="hover:text-[#40ffa7] transition-colors">Tuition & Wire Account</Link></li>
+              <li><Link to="/payment-proof" className="hover:text-[#40ffa7] transition-colors">Submit Payment Proof</Link></li>
               <li><Link to="/about#cancellation" className="hover:text-[#40ffa7] transition-colors">Lesson Cancellation Policy</Link></li>
               <li><Link to="/about#safeguarding" className="hover:text-[#40ffa7] transition-colors">Safeguarding Policy</Link></li>
             </ul>

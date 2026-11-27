@@ -18,12 +18,6 @@ import {
 
 export const ParentPayments = () => {
   const [payments, setPayments] = useState([]);
-  const [bankDetails, setBankDetails] = useState({
-    bank_name: 'Barclays Bank UK PLC',
-    account_name: 'Beacon Bridge Academics Ltd.',
-    tuition_fee: '£299.00 GBP / month'
-  });
-
   const [loading, setLoading] = useState(true);
   const [newProofModal, setNewProofModal] = useState(false);
   const proofFileInputRef = useRef(null);
@@ -65,15 +59,9 @@ export const ParentPayments = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [payRes, bankRes] = await Promise.all([
-        api.get('/payments'),
-        api.get('/payments/bank-details')
-      ]);
+      const payRes = await api.get('/payments');
       if (payRes.data.success) {
         setPayments(payRes.data.payments);
-      }
-      if (bankRes.data.success && bankRes.data.bankDetails) {
-        setBankDetails(bankRes.data.bankDetails);
       }
     } catch (err) {
       console.error('Failed to load parent payment info:', err);
@@ -85,12 +73,6 @@ export const ParentPayments = () => {
   useEffect(() => {
     loadData();
   }, []);
-
-  const handleCopy = (text, field) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
 
   const handleUploadProof = async (e) => {
     e.preventDefault();
