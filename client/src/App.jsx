@@ -21,6 +21,7 @@ import { LoginPage } from './pages/public/LoginPage';
 import { RegisterPage } from './pages/public/RegisterPage';
 import { PaymentProofPage } from './pages/public/PaymentProofPage';
 import { TeacherApplicationPage } from './pages/public/TeacherApplicationPage';
+import { TutorWaitlistPage } from './pages/public/TutorWaitlistPage';
 import { BookConsultationPage } from './pages/public/BookConsultationPage';
 import { IeltsRegisterPage } from './pages/public/IeltsRegisterPage';
 import { FaqPage } from './pages/public/FaqPage';
@@ -30,6 +31,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminPayments } from './pages/admin/AdminPayments';
 import { AdminTutorApplications } from './pages/admin/AdminTutorApplications';
+import { AdminTutorWaitlist } from './pages/admin/AdminTutorWaitlist';
 import { AdminCourses } from './pages/admin/AdminCourses';
 import { AdminClasses } from './pages/admin/AdminClasses';
 import { AdminAnnouncements } from './pages/admin/AdminAnnouncements';
@@ -66,11 +68,32 @@ import { ParentProgress } from './pages/parent/ParentProgress';
 // Live Virtual Classroom
 import { ClassroomPage } from './pages/classroom/ClassroomPage';
 
+const isTutorWaitlistSubdomain = () => {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname.toLowerCase();
+  return host === 'tutors.beaconbridgeacademics.co.uk' || host === 'tutors.localhost';
+};
+
 export const App = () => {
+  // Standalone subdomain mode: tutors.beaconbridgeacademics.co.uk renders ONLY the Tutor Waiting List page
+  if (isTutorWaitlistSubdomain()) {
+    return (
+      <>
+        <ScrollToTop />
+        <Routes>
+          <Route path="*" element={<TutorWaitlistPage isSubdomain={true} />} />
+        </Routes>
+      </>
+    );
+  }
+
   return (
     <>
       <ScrollToTop />
       <Routes>
+      {/* Standalone Tutor Waiting List (previewable directly at /tutor-waitlist as well as tutors.beaconbridgeacademics.co.uk) */}
+      <Route path="/tutor-waitlist" element={<TutorWaitlistPage isSubdomain={false} />} />
+
       {/* Public Pages with Consistent Navbar & Footer */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
@@ -117,6 +140,7 @@ export const App = () => {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="payments" element={<AdminPayments />} />
         <Route path="tutor-applications" element={<AdminTutorApplications />} />
+        <Route path="tutor-waitlist" element={<AdminTutorWaitlist />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="courses" element={<AdminCourses />} />
         <Route path="classes" element={<AdminClasses />} />

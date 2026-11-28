@@ -12,7 +12,8 @@ import {
   ChevronUp
 } from 'lucide-react';
 
-export const SafeguardingPolicyDocument = ({ compact = false }) => {
+export const SafeguardingPolicyDocument = ({ compact = false, variant = 'application' }) => {
+  const isWaitlist = variant === 'waitlist';
   const [expandedSections, setExpandedSections] = useState({
     commitment: true,
     dbs: true,
@@ -99,6 +100,11 @@ export const SafeguardingPolicyDocument = ({ compact = false }) => {
               <li><strong>Identity & Right to Work</strong>: Verified photographic government identity documentation and right to work verification.</li>
               <li><strong>Academic & Teaching Qualifications</strong>: Direct verification of degrees, PGCE, QTS, and professional referee statements from previous educational employers.</li>
             </ul>
+            {isWaitlist && (
+              <p className="font-semibold text-slate-700 pt-1">
+                Full vetting is completed when you are invited to onboard, before any lessons or student contact.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -205,10 +211,18 @@ export const SafeguardingPolicyDocument = ({ compact = false }) => {
       <div className="p-3.5 bg-brand-50/70 border border-brand-200/80 rounded-xl text-xs text-brand-950 flex items-start gap-2.5">
         <CheckCircle2 className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
         <div>
-          <strong className="block text-brand-900 font-bold mb-0.5">Statutory Pre-Employment Requirement:</strong>
-          <span>
-            Every teacher and tutor must confirm their complete acceptance of this policy and provide a verified legal digital signature before their application can be approved or lessons scheduled.
-          </span>
+          {isWaitlist ? (
+            <span>
+              Before you can be onboarded or lessons scheduled, every tutor must complete full vetting and confirm acceptance of this policy. By joining the waiting list, you confirm your intent to comply.
+            </span>
+          ) : (
+            <>
+              <strong className="block text-brand-900 font-bold mb-0.5">Statutory Pre-Employment Requirement:</strong>
+              <span>
+                Every teacher and tutor must confirm their complete acceptance of this policy and provide a verified legal digital signature before their application can be approved or lessons scheduled.
+              </span>
+            </>
+          )}
         </div>
       </div>
 

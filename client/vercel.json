@@ -14,6 +14,20 @@
       "destination": "https://beaconbridge-server-production.up.railway.app/slides/:match*"
     },
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "tutors.beaconbridgeacademics.co.uk"
+        }
+      ],
+      "destination": "/tutor-waitlist/index.html"
+    },
+    {
+      "source": "/tutor-waitlist",
+      "destination": "/tutor-waitlist/index.html"
+    },
+    {
       "source": "/about",
       "destination": "/about/index.html"
     },

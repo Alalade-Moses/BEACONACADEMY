@@ -398,5 +398,22 @@ export const PAGE_SEO = {
         '@id': `${BASE_URL}/#organization`
       }
     }
+  },
+  '/tutor-waitlist': {
+    title: 'Tutor Waiting List | Teach A-Level Online | Beacon Bridge Academics',
+    description: 'Beacon Bridge Academics is launching soon. Join the tutor waiting list to teach motivated A-Level students across the UK, US, Canada and Australia.',
+    canonicalPath: '/tutor-waitlist',
+    robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      '@id': 'https://tutors.beaconbridgeacademics.co.uk/#waitlist',
+      'url': 'https://tutors.beaconbridgeacademics.co.uk',
+      'name': 'Beacon Bridge Academics Tutor Waiting List',
+      'description': 'Pre-launch A-Level tutor waiting list for Beacon Bridge Academics across the UK, US, Canada and Australia.',
+      'publisher': {
+        '@id': `${BASE_URL}/#organization`
+      }
+    }
   }
 };

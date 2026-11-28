@@ -33,7 +33,8 @@ import {
   User,
   Edit2,
   Trash2,
-  Newspaper
+  Newspaper,
+  ClipboardList
 } from 'lucide-react';
 
 export const DashboardLayout = () => {
@@ -114,6 +115,7 @@ export const DashboardLayout = () => {
           { name: 'Dashboard Overview', path: '/admin/dashboard', icon: LayoutDashboard },
           { name: 'Tuition & Verification', path: '/admin/payments', icon: CreditCard },
           { name: 'Tutor Applications', path: '/admin/tutor-applications', icon: GraduationCap },
+          { name: 'Tutor Waitlist', path: '/admin/tutor-waitlist', icon: ClipboardList },
           { name: 'User Management', path: '/admin/users', icon: Users },
           { name: 'Courses & Programs', path: '/admin/courses', icon: BookOpen },
           { name: 'Classes & Monitoring', path: '/admin/classes', icon: Video },

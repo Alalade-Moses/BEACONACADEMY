@@ -517,6 +517,41 @@ export const ensureDatabaseReady = () => {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS tutor_waitlist (
+        id VARCHAR(100) PRIMARY KEY,
+        full_name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(50),
+        location VARCHAR(255),
+        highest_qualification VARCHAR(255),
+        years_experience VARCHAR(50),
+        current_position VARCHAR(255),
+        selected_subjects JSONB,
+        teaching_approach TEXT,
+        video_url TEXT,
+        cv_url TEXT,
+        degree_certificate_url TEXT,
+        teaching_licence_url TEXT,
+        safeguarding_acknowledged BOOLEAN DEFAULT FALSE,
+        safeguarding_version VARCHAR(100),
+        safeguarding_signature VARCHAR(255),
+        safeguarding_signed_at TIMESTAMP WITH TIME ZONE,
+        dbs_consent BOOLEAN DEFAULT FALSE,
+        dbs_status VARCHAR(255),
+        dbs_certificate_number VARCHAR(100),
+        submitted_ip VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'waitlisted' CHECK (status IN ('waitlisted', 'shortlisted', 'invited', 'onboarded', 'declined')),
+        admin_notes TEXT,
+        reviewed_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+        reviewed_by_name VARCHAR(255),
+        reviewed_at TIMESTAMP WITH TIME ZONE,
+        invited_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_tutor_waitlist_email_lower ON tutor_waitlist (LOWER(email));
+
       CREATE TABLE IF NOT EXISTS consultations (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         parent_name VARCHAR(255) NOT NULL,
@@ -2695,6 +2730,165 @@ export const store = {
   deleteTutorApplication: async (id) => {
     const db = requireDb();
     const res = await db.query('DELETE FROM tutor_applications WHERE id = $1 RETURNING *', [id]);
+    return res.rows[0] || null;
+  },
+
+  // ----------------------------
+  // TUTOR WAITLIST (Standalone Subdomain: tutors.beaconbridgeacademics.co.uk)
+  // ----------------------------
+  getTutorWaitlist: async ({ status, subject } = {}) => {
+    const db = requireDb();
+    const params = [];
+    const clauses = [];
+    if (status && status !== 'all') {
+      params.push(status);
+      clauses.push(`status = $${params.length}`);
+    }
+    const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+    const res = await db.query(`SELECT * FROM tutor_waitlist ${where} ORDER BY created_at DESC`, params);
+    let entries = res.rows.map((e) => ({
+      ...e,
+      current_role: e.current_position || e.current_role || '',
+      selected_subjects: Array.isArray(e.selected_subjects) ? e.selected_subjects : []
+    }));
+    if (subject && subject !== 'all') {
+      entries = entries.filter((e) => e.selected_subjects.includes(subject));
+    }
+    return entries;
+  },
+
+  getTutorWaitlistById: async (id) => {
+    if (!id || typeof id !== 'string') return null;
+    const db = requireDb();
+    const res = await db.query('SELECT * FROM tutor_waitlist WHERE id = $1', [id]);
+    if (!res.rows[0]) return null;
+    const e = res.rows[0];
+    return {
+      ...e,
+      current_role: e.current_position || '',
+      selected_subjects: Array.isArray(e.selected_subjects) ? e.selected_subjects : []
+    };
+  },
+
+  getTutorWaitlistByEmail: async (email) => {
+    if (!email || typeof email !== 'string') return null;
+    const db = requireDb();
+    const res = await db.query('SELECT * FROM tutor_waitlist WHERE LOWER(email) = LOWER($1) LIMIT 1', [email.trim()]);
+    if (!res.rows[0]) return null;
+    const e = res.rows[0];
+    return {
+      ...e,
+      current_role: e.current_position || '',
+      selected_subjects: Array.isArray(e.selected_subjects) ? e.selected_subjects : []
+    };
+  },
+
+  createTutorWaitlistEntry: async (data) => {
+    const db = requireDb();
+    const id = `wl-${uuidv4()}`;
+    const now = new Date().toISOString();
+    const subjects = Array.isArray(data.selected_subjects) ? data.selected_subjects : [];
+
+    const res = await db.query(
+      `INSERT INTO tutor_waitlist (
+        id, full_name, email, phone, location, highest_qualification, years_experience,
+        current_position, selected_subjects, teaching_approach, video_url,
+        cv_url, degree_certificate_url, teaching_licence_url,
+        safeguarding_acknowledged, safeguarding_version, safeguarding_signature, safeguarding_signed_at,
+        dbs_consent, dbs_status, dbs_certificate_number, submitted_ip,
+        status, admin_notes, created_at, updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10, $11,
+        $12, $13, $14,
+        $15, $16, $17, $18,
+        $19, $20, $21, $22,
+        'waitlisted', '', $23, $24
+      ) RETURNING *`,
+      [
+        id,
+        data.full_name?.trim(),
+        data.email?.trim().toLowerCase(),
+        data.phone?.trim() || '',
+        data.location?.trim() || 'United Kingdom',
+        data.highest_qualification?.trim() || '',
+        data.years_experience || '3-5 years',
+        data.current_role?.trim() || data.current_position?.trim() || '',
+        JSON.stringify(subjects),
+        data.teaching_approach?.trim() || '',
+        data.video_url?.trim() || '',
+        data.cv_url || null,
+        data.degree_certificate_url || null,
+        data.teaching_licence_url || null,
+        Boolean(data.safeguarding_acknowledged),
+        'v2.4-2026-UK-DFE-WAITLIST',
+        data.safeguarding_signature?.trim() || data.full_name?.trim(),
+        now,
+        Boolean(data.dbs_consent),
+        data.dbs_status || 'Enhanced DBS on Update Service',
+        data.dbs_certificate_number || '',
+        data.submitted_ip || '',
+        now,
+        now
+      ]
+    );
+    const created = res.rows[0];
+
+    const adminsRes = await db.query("SELECT id FROM profiles WHERE role IN ('superadmin', 'admin')");
+    for (const admin of adminsRes.rows) {
+      await store.createNotification({
+        user_id: admin.id,
+        title: 'New Tutor Waitlist Registration',
+        message: `${created.full_name} joined the Tutor Waitlist (${subjects.slice(0, 2).join(', ')}).`,
+        type: 'system',
+        link: '/admin/tutor-waitlist'
+      });
+    }
+
+    return {
+      ...created,
+      current_role: created.current_position || '',
+      selected_subjects: Array.isArray(created.selected_subjects) ? created.selected_subjects : subjects
+    };
+  },
+
+  updateTutorWaitlistStatus: async (id, { status, admin_notes, reviewed_by, reviewed_by_id, invited = false }) => {
+    const db = requireDb();
+    const existing = await store.getTutorWaitlistById(id);
+    if (!existing) return null;
+
+    const res = await db.query(
+      `UPDATE tutor_waitlist
+       SET status = $1,
+           admin_notes = COALESCE($2, admin_notes),
+           reviewed_by = $3,
+           reviewed_by_name = $4,
+           reviewed_at = NOW(),
+           invited_at = CASE WHEN $5 = TRUE THEN NOW() ELSE invited_at END,
+           updated_at = NOW()
+       WHERE id = $6
+       RETURNING *`,
+      [
+        status,
+        admin_notes !== undefined ? admin_notes : null,
+        isUuid(reviewed_by_id) ? reviewed_by_id : null,
+        typeof reviewed_by === 'string' ? reviewed_by : 'Super Administrator',
+        Boolean(invited),
+        id
+      ]
+    );
+
+    const updated = res.rows[0];
+    return {
+      ...updated,
+      current_role: updated.current_position || '',
+      selected_subjects: Array.isArray(updated.selected_subjects) ? updated.selected_subjects : []
+    };
+  },
+
+  deleteTutorWaitlistEntry: async (id) => {
+    const db = requireDb();
+    const res = await db.query('DELETE FROM tutor_waitlist WHERE id = $1 RETURNING *', [id]);
     return res.rows[0] || null;
   },
 

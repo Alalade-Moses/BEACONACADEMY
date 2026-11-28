@@ -951,6 +951,154 @@ export const sendTutorApprovalEmail = async ({ applicant, tempPassword }) => {
   });
 };
 
+// 5c. Tutor Waiting List Confirmation Email (Applicant)
+export const sendTutorWaitlistReceived = async ({ entry }) => {
+  const safeName = escapeHtml(entry?.full_name || 'Educator');
+  const safeRef = escapeHtml(entry?.id || '');
+  const subjectsList = Array.isArray(entry?.selected_subjects) && entry.selected_subjects.length > 0
+    ? entry.selected_subjects.map((s) => escapeHtml(s)).join(', ')
+    : 'A-Level Subjects';
+
+  const html = buildEmailTemplate({
+    headerTitle: "You're on the Tutor Waiting List",
+    contentHtml: `
+      <p>Dear <strong>${safeName}</strong>,</p>
+      <p>Thank you for registering your interest in teaching with <strong>Beacon Bridge Academics</strong>. We've received your details and added you to our priority <strong>Tutor Waiting List</strong>.</p>
+
+      <div class="card" style="border-left: 4px solid #10b981;">
+        <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 15px;">Waitlist Registration Summary</h3>
+        <p style="margin: 4px 0;"><strong>Reference ID:</strong> <span style="font-family: monospace;">${safeRef}</span></p>
+        <p style="margin: 4px 0;"><strong>A-Level Subject Specialisms:</strong> ${subjectsList}</p>
+        <p style="margin: 4px 0;"><strong>3-Minute Video Intro:</strong> <span class="badge badge-green">Received for Panel Review</span></p>
+        <p style="margin: 4px 0;"><strong>Safeguarding Policy (v2.4):</strong> <span class="badge badge-green">Acknowledged & Signed</span></p>
+      </div>
+
+      <p><strong>What happens next?</strong></p>
+      <p>We are launching soon and will review your profile and 3-minute introductory video as onboarding opens. You will be among the first educators we contact when positions open up.</p>
+      <p style="font-size: 12px; color: #64748b;"><em>Please note: joining the tutor waiting list does not guarantee a position or constitute an offer of employment. Full Enhanced DBS vetting and verification are completed if you are invited to onboard.</em></p>
+      <p>We're excited to have you with us!</p>
+    `
+  });
+
+  return await sendEmail({
+    to: entry?.email,
+    subject: `You're on the Tutor Waiting List — Beacon Bridge Academics`,
+    html,
+    senderType: 'admissions'
+  });
+};
+
+// 5d. Admin Notification: New Tutor Joined the Waiting List
+export const sendTutorWaitlistAdminAlert = async ({ entry }) => {
+  const safeName = escapeHtml(entry?.full_name || 'N/A');
+  const safeEmail = escapeHtml(entry?.email || 'N/A');
+  const safePhone = escapeHtml(entry?.phone || 'N/A');
+  const safeLocation = escapeHtml(entry?.location || 'N/A');
+  const safeQual = escapeHtml(entry?.highest_qualification || 'N/A');
+  const safeRole = escapeHtml(entry?.current_role || entry?.current_position || 'N/A');
+  const safeExp = escapeHtml(entry?.years_experience || 'N/A');
+  const safeDbs = escapeHtml(entry?.dbs_status || 'Declared');
+  const safeDbsCert = entry?.dbs_certificate_number ? escapeHtml(entry.dbs_certificate_number) : '';
+  const safeSig = escapeHtml(entry?.safeguarding_signature || 'Signed');
+  const safeApproach = entry?.teaching_approach ? escapeHtml(entry.teaching_approach) : '';
+  const subjectsList = Array.isArray(entry?.selected_subjects) && entry.selected_subjects.length > 0
+    ? entry.selected_subjects.map((s) => escapeHtml(s)).join(', ')
+    : 'A-Level Subjects';
+
+  const baseApiUrl = process.env.SERVER_PUBLIC_URL || 'https://beaconbridge-server-production.up.railway.app';
+  const resolveDocUrl = (u) => (!u ? '' : u.startsWith('http') ? u : `${baseApiUrl}${u}`);
+  const reviewUrl = `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/admin/tutor-waitlist`;
+
+  const html = buildEmailTemplate({
+    headerTitle: 'New Tutor Waitlist Registration',
+    contentHtml: `
+      <p>A new A-Level educator has joined the <strong>Tutor Waiting List</strong> via <strong>tutors.beaconbridgeacademics.co.uk</strong>:</p>
+
+      <div class="card" style="border-left: 4px solid #050167;">
+        <h3 style="margin: 0 0 10px 0; color: #050167; font-size: 16px;">Waitlisted Educator Profile</h3>
+        <p style="margin: 4px 0;"><strong>Full Legal Name:</strong> ${safeName}</p>
+        <p style="margin: 4px 0;"><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
+        <p style="margin: 4px 0;"><strong>Phone / WhatsApp:</strong> ${safePhone}</p>
+        <p style="margin: 4px 0;"><strong>Location:</strong> ${safeLocation}</p>
+        <p style="margin: 4px 0;"><strong>Qualification:</strong> ${safeQual}</p>
+        <p style="margin: 4px 0;"><strong>Current Role & Experience:</strong> ${safeRole} (${safeExp})</p>
+        <p style="margin: 4px 0;"><strong>A-Level Subjects:</strong> <span class="badge badge-green">${subjectsList}</span></p>
+        <p style="margin: 4px 0;"><strong>DBS Status:</strong> ${safeDbs}${safeDbsCert ? ` (Cert: ${safeDbsCert})` : ''}</p>
+        <p style="margin: 4px 0;"><strong>Safeguarding v2.4 Signed:</strong> ${safeSig}</p>
+        ${entry?.video_url ? `<p style="margin: 8px 0 0 0;"><strong>3-Min Intro Video:</strong> <a href="${escapeHtml(entry.video_url)}" style="color: #0284c7;">Watch Video Submission</a></p>` : ''}
+        ${entry?.cv_url ? `<p style="margin: 4px 0 0 0;"><strong>CV / Resume:</strong> <a href="${escapeHtml(resolveDocUrl(entry.cv_url))}" style="color: #0284c7;">Open Uploaded CV</a></p>` : ''}
+        ${entry?.degree_certificate_url ? `<p style="margin: 4px 0 0 0;"><strong>Degree Certificate:</strong> <a href="${escapeHtml(resolveDocUrl(entry.degree_certificate_url))}" style="color: #0284c7;">Open Degree Certificate</a></p>` : ''}
+        ${entry?.teaching_licence_url ? `<p style="margin: 4px 0 0 0;"><strong>Teaching Licence / QTS:</strong> <a href="${escapeHtml(resolveDocUrl(entry.teaching_licence_url))}" style="color: #0284c7;">Open Licence</a></p>` : ''}
+      </div>
+
+      ${safeApproach ? `<div class="card"><h4 style="margin: 0 0 6px 0; color: #001f3f;">Pedagogical Statement</h4><p style="margin: 0; font-size: 13px; color: #475569;">${safeApproach}</p></div>` : ''}
+
+      <p>Open the <strong>Tutor Waitlist</strong> section in the Superadmin Portal to review their 3-minute video, shortlist, or invite them when onboarding opens.</p>
+    `,
+    callToAction: {
+      label: 'View in Tutor Waitlist Portal',
+      url: reviewUrl
+    }
+  });
+
+  const recipients = [...new Set([DEFAULT_ADMIN_EMAIL, DEFAULT_INFO_EMAIL].filter(Boolean))];
+  const results = [];
+  for (const recipient of recipients) {
+    const res = await sendEmail({
+      to: recipient,
+      subject: `[TUTOR WAITLIST] ${entry?.full_name || 'New Tutor'} — ${Array.isArray(entry?.selected_subjects) ? entry.selected_subjects.slice(0, 3).join(', ') : 'A-Level'}`,
+      html,
+      senderType: 'admissions',
+      replyTo: entry?.email || undefined
+    });
+    results.push(res);
+  }
+  return results[0] || { success: true };
+};
+
+// 5e. Tutor Waitlist Onboarding Invitation Email (Sent when Admin invites a waitlisted tutor)
+export const sendTutorWaitlistInviteEmail = async ({ entry, customMessage = '' }) => {
+  const safeName = escapeHtml(entry?.full_name || 'Educator');
+  const safeCustom = customMessage ? escapeHtml(customMessage) : '';
+  const subjectsList = Array.isArray(entry?.selected_subjects) && entry.selected_subjects.length > 0
+    ? entry.selected_subjects.map((s) => escapeHtml(s)).join(', ')
+    : 'A-Level Subjects';
+  const applyUrl = `${process.env.CLIENT_URL || 'https://beaconbridgeacademics.co.uk'}/apply-to-teach`;
+
+  const html = buildEmailTemplate({
+    headerTitle: 'You Are Invited to Onboard — Beacon Bridge Academics',
+    contentHtml: `
+      <p>Dear <strong>${safeName}</strong>,</p>
+      <p>Great news! Tutor onboarding is now open at <strong>Beacon Bridge Academics</strong>, and following our review of your waiting list profile and 3-minute video introduction, we would love to invite you to the next stage of onboarding for <strong>${subjectsList}</strong>.</p>
+
+      ${safeCustom ? `<div class="card" style="border-left: 4px solid #050167;"><h4 style="margin: 0 0 6px 0; color: #050167;">Message from Our Admissions Team</h4><p style="margin: 0; font-size: 13px; color: #334155;">${safeCustom}</p></div>` : ''}
+
+      <div class="card" style="border-left: 4px solid #10b981; background: #ecfdf5;">
+        <h3 style="margin: 0 0 8px 0; color: #065f46; font-size: 15px;">Next Onboarding Steps</h3>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.6; color: #334155;">
+          <li>Reply directly to this email with your availability for a short onboarding & vetting check.</li>
+          <li>Have your Enhanced DBS details (or Update Service number) and proof of ID ready for statutory verification.</li>
+          <li>Once vetting is complete, your official Beacon Bridge Tutor Portal credentials will be issued.</li>
+        </ul>
+      </div>
+
+      <p>If you have any questions, reply to this email or contact us at <a href="mailto:${DEFAULT_INFO_EMAIL}" style="color: #059669;">${DEFAULT_INFO_EMAIL}</a>.</p>
+    `,
+    callToAction: {
+      label: 'Visit Beacon Bridge Academics',
+      url: applyUrl
+    }
+  });
+
+  return await sendEmail({
+    to: entry?.email,
+    subject: `Onboarding Invitation — Beacon Bridge Academics Tutor Faculty`,
+    html,
+    senderType: 'admissions',
+    replyTo: DEFAULT_INFO_EMAIL
+  });
+};
+
 // 6. Direct Tutor Message to Student / Parent (Dynamic tutor.{name}@beaconbridgeacademics.co.uk)
 export const sendTutorMessage = async ({ tutor, student, parent, subject, messageBody, classInfo }) => {
   const recipientEmail = student?.email || parent?.email;

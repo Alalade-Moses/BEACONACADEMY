@@ -10,6 +10,7 @@ export const SEO = ({
   title,
   description,
   canonicalPath,
+  canonicalUrlOverride = null,
   robots,
   ogType = 'website',
   ogImage = 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&h=630&fit=crop',
@@ -24,7 +25,7 @@ export const SEO = ({
   const resolvedRobots = robots || config.robots || 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
   const resolvedSchema = schemaJson || config.schema || null;
 
-  const canonicalUrl = `${BASE_URL}${currentPath === '/' ? '' : currentPath}`;
+  const canonicalUrl = canonicalUrlOverride || `${BASE_URL}${currentPath === '/' ? '' : currentPath}`;
 
   useEffect(() => {
     // 1. Update Document Title

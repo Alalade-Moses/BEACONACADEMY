@@ -92,6 +92,7 @@ export const isAllowedOrigin = (origin) => {
   const staticAllowlist = new Set([
     'https://beaconbridgeacademics.co.uk',
     'https://www.beaconbridgeacademics.co.uk',
+    'https://tutors.beaconbridgeacademics.co.uk',
     'https://beaconbridge-server-production.up.railway.app',
     ...envOrigins
   ]);
