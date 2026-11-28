@@ -13,7 +13,8 @@ export const SEO = ({
   canonicalUrlOverride = null,
   robots,
   ogType = 'website',
-  ogImage = 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1200&h=630&fit=crop',
+  ogImage = null,
+  ogImageAlt = null,
   schemaJson = null
 }) => {
   const location = useLocation();
@@ -23,9 +24,11 @@ export const SEO = ({
   const resolvedTitle = title || config.title || 'Online Tutoring UK | GCSE & A-Level Tutors | Beacon Bridge Academics';
   const resolvedDesc = description || config.description || 'Premier online tutoring for UK GCSEs, A-Levels, and international curricula. Learn with expert tutors through interactive virtual classrooms at Beacon Bridge Academics.';
   const resolvedRobots = robots || config.robots || 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+  const resolvedImage = ogImage || config.ogImage || `${BASE_URL}/hero/slide-live-lessons.jpg`;
+  const resolvedImageAlt = ogImageAlt || config.ogImageAlt || resolvedTitle;
   const resolvedSchema = schemaJson || config.schema || null;
 
-  const canonicalUrl = canonicalUrlOverride || `${BASE_URL}${currentPath === '/' ? '' : currentPath}`;
+  const canonicalUrl = canonicalUrlOverride || config.canonicalUrl || `${BASE_URL}${currentPath === '/' ? '' : currentPath}`;
 
   useEffect(() => {
     // 1. Update Document Title
@@ -58,10 +61,11 @@ export const SEO = ({
     setMetaTag('property', 'og:url', canonicalUrl);
     setMetaTag('name', 'twitter:url', canonicalUrl);
     setMetaTag('property', 'og:type', ogType);
-    setMetaTag('property', 'og:image', ogImage);
-    setMetaTag('name', 'twitter:image', ogImage);
+    setMetaTag('property', 'og:image', resolvedImage);
+    setMetaTag('property', 'og:image:alt', resolvedImageAlt);
+    setMetaTag('name', 'twitter:image', resolvedImage);
 
-    // 4. Canonical Link Tag (Always self-referencing to the active route)
+    // 4. Canonical & Hreflang Link Tags (Always self-referencing to the active route)
     let canonicalEl = document.querySelector('link[rel="canonical"]');
     if (!canonicalEl) {
       canonicalEl = document.createElement('link');
@@ -69,6 +73,10 @@ export const SEO = ({
       document.head.appendChild(canonicalEl);
     }
     canonicalEl.setAttribute('href', canonicalUrl);
+
+    document.querySelectorAll('link[rel="alternate"][hreflang]').forEach((el) => {
+      el.setAttribute('href', canonicalUrl);
+    });
 
     // 5. JSON-LD Structured Data Schema Tag
     const SCHEMA_ID = 'bb-page-schema';
@@ -93,7 +101,7 @@ export const SEO = ({
     } else if (schemaEl) {
       schemaEl.remove();
     }
-  }, [resolvedTitle, resolvedDesc, canonicalUrl, resolvedRobots, ogType, ogImage, resolvedSchema]);
+  }, [resolvedTitle, resolvedDesc, canonicalUrl, resolvedRobots, ogType, resolvedImage, resolvedImageAlt, resolvedSchema]);
 
   return null;
 };

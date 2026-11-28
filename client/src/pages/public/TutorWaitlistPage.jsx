@@ -271,16 +271,17 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="w-full min-h-screen shrink-0 bg-[#e9f0f7] text-slate-900">
       <SEO
-        title="Tutor Waiting List | Beacon Bridge Academics"
+        title="Tutor Waiting List | Teach A-Level Online | Beacon Bridge Academics"
         description="Beacon Bridge Academics is launching soon. Join our A-Level tutor waiting list to be contacted first when onboarding opens across the UK, US, Canada, and Australia."
         canonicalPath="/tutor-waitlist"
         canonicalUrlOverride={isSubdomain ? 'https://tutors.beaconbridgeacademics.co.uk' : null}
+        ogImage="https://beaconbridgeacademics.co.uk/pages/teach-hero.jpg"
       />
 
       {/* Slim Standalone Header (Zero Main-Site Distractions) */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center space-x-3 min-w-0">
             <img
@@ -309,44 +310,44 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative w-full py-14 sm:py-20 bg-[#001f3f] text-white overflow-hidden">
+      {/* Hero Section (Full unclipped height, crisp readability & balanced tutor imagery) */}
+      <section className="relative w-full py-14 sm:py-20 lg:py-24 pb-20 sm:pb-24 bg-[#001f3f] text-white overflow-hidden">
         <img
           src="/pages/teach-hero.jpg"
           alt="A-Level tutor teaching live online with Beacon Bridge Academics"
-          className="absolute inset-0 w-full h-full object-cover object-[70%_25%] z-0"
+          className="absolute inset-0 w-full h-full object-cover object-[72%_22%] z-0"
           loading="eager"
           decoding="async"
           fetchPriority="high"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/95 via-[#050167]/85 to-[#001f3f]/45 z-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/80 via-transparent to-[#001f3f]/30 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#001f3f]/95 via-[#001f3f]/80 to-[#001f3f]/35 z-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#001f3f]/85 via-transparent to-[#001f3f]/30 z-0" />
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-left">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] text-xs font-bold border border-[#40ffa7]/35 mb-4 backdrop-blur-sm">
+            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#40ffa7]/20 text-[#40ffa7] text-xs font-bold border border-[#40ffa7]/40 mb-5 backdrop-blur-sm">
               <GraduationCap className="w-4 h-4 text-[#40ffa7]" />
               <span>Beacon Bridge Academics &bull; Tutor Waiting List</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.12]">
               Teach with us from day one. Join the tutor waiting list.
             </h1>
-            <p className="mt-4 text-sm sm:text-base text-slate-200 max-w-2xl leading-relaxed">
+            <p className="mt-5 text-sm sm:text-base text-slate-100 max-w-2xl leading-relaxed">
               Beacon Bridge Academics is launching soon, and we&apos;ll need expert A-Level tutors for motivated students across the UK, US, Canada and Australia. We&apos;re not hiring just yet. Complete the form below to join our waiting list and we&apos;ll contact you first when onboarding opens. Joining the list does not guarantee a position.
             </p>
             {!submittedEntry && (
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="mt-7 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={scrollToForm}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#40ffa7] hover:bg-emerald-300 text-[#001f3f] text-xs sm:text-sm font-black shadow-lg shadow-[#40ffa7]/20 transition-all active:scale-95"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#40ffa7] hover:bg-emerald-300 text-[#001f3f] text-xs sm:text-sm font-black shadow-lg shadow-black/25 transition-all active:scale-95"
                 >
                   <span>Join the Tutor Waiting List</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
-                <span className="inline-flex items-center gap-1.5 text-xs text-slate-200/90 font-medium px-3 py-2 rounded-xl bg-white/10 border border-white/15 backdrop-blur-xs">
+                <span className="inline-flex items-center gap-1.5 text-xs text-white/95 font-semibold px-3.5 py-2.5 rounded-xl bg-[#001f3f]/70 border border-white/20 backdrop-blur-xs">
                   <Clock className="w-3.5 h-3.5 text-[#40ffa7]" />
-                  Takes ~5 minutes &bull; Priority contact at launch
+                  Priority contact when onboarding opens
                 </span>
               </div>
             )}
@@ -354,40 +355,40 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
         </div>
       </section>
 
-      {/* 3 Pillars Banner */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-8 w-full">
+      {/* 3 Pillars Banner (Elevated over hero edge for strong visual separation) */}
+      <div className="relative z-20 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 mb-10 w-full">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto text-left">
-          <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-start space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 border-t-4 border-t-emerald-500 shadow-lg shadow-slate-900/5 flex items-start space-x-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200/70">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">Safeguarding First</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">Safeguarding First</h4>
+              <p className="text-[11px] sm:text-xs text-slate-600 mt-1 leading-snug">
                 Rigorous UK DfE KCSIE standards and Enhanced DBS vetting.
               </p>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-start space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 border-t-4 border-t-blue-500 shadow-lg shadow-slate-900/5 flex items-start space-x-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-200/70">
               <Video className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">3-Min Video Intro</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">3-Min Video Intro</h4>
+              <p className="text-[11px] sm:text-xs text-slate-600 mt-1 leading-snug">
                 Showcase your teaching approach and subject passion to Superadmin.
               </p>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-start space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100">
+          <div className="p-5 rounded-2xl bg-white border border-slate-200 border-t-4 border-t-purple-500 shadow-lg shadow-slate-900/5 flex items-start space-x-3.5">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-200/70">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">12 A-Level Subjects</h4>
-              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">12 A-Level Subjects</h4>
+              <p className="text-[11px] sm:text-xs text-slate-600 mt-1 leading-snug">
                 Specialised tutoring across Sciences, Math, Humanities &amp; Economics.
               </p>
             </div>
@@ -396,7 +397,7 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
       </div>
 
       {/* Main Waitlist Form / Confirmation Area */}
-      <main id="waitlist-form" className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 pb-20 w-full scroll-mt-20">
+      <main id="waitlist-form" className="max-w-4xl mx-auto px-4 sm:px-6 pb-20 w-full scroll-mt-20">
         {submittedEntry ? (
           /* Confirmation Screen (Exact Client Copy) */
           <div className="bg-white rounded-3xl border border-emerald-200 p-8 sm:p-12 shadow-xl text-center space-y-6 animate-in fade-in zoom-in-95 duration-300">
@@ -447,7 +448,7 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Compact 6-Section Progress Strip */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-md shadow-slate-900/5">
               <div className="flex items-center justify-between text-xs mb-2.5">
                 <span className="font-bold text-slate-800">Waiting List Registration Progress</span>
                 <span className="font-extrabold text-emerald-700">
@@ -485,7 +486,7 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
             )}
 
             {/* 1. Personal & Contact Information */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-md shadow-slate-900/5 space-y-6">
               <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
                 <div className="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm shrink-0">
                   1
@@ -577,7 +578,7 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
             </div>
 
             {/* 2. Academic Qualifications & Background */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-md shadow-slate-900/5 space-y-6">
               <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
                 <div className="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm shrink-0">
                   2
@@ -731,7 +732,7 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
             </div>
 
             {/* 3. A-Level Subject Specialisms (12 Cards) */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-md shadow-slate-900/5 space-y-6">
               <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
                 <div className="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm shrink-0">
                   3
@@ -802,7 +803,7 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
             </div>
 
             {/* 4. Teaching Philosophy & Approach */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-md shadow-slate-900/5 space-y-6">
               <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
                 <div className="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm shrink-0">
                   4
@@ -832,7 +833,7 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
             </div>
 
             {/* 5. Mandatory Evaluation Requirement — 3-Minute Introductory Video */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-md shadow-slate-900/5 space-y-6">
               <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
                 <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm shrink-0">
                   5
@@ -930,7 +931,7 @@ export const TutorWaitlistPage = ({ isSubdomain = false }) => {
             </div>
 
             {/* 6. UK DfE Statutory Compliance — Safeguarding & Child Protection Policy */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-md shadow-slate-900/5 space-y-6">
               <div className="flex items-center space-x-3 pb-4 border-b border-slate-100">
                 <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">
                   6

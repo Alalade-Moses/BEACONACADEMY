@@ -42,6 +42,8 @@ export const PAGE_SEO = {
     title: 'Online Tutoring UK | GCSE & A-Level Tutors | Beacon Bridge Academics',
     description: 'Premier online tutoring for UK GCSEs, A-Levels, and international curricula. Learn with specialist educators through interactive live virtual classrooms at Beacon Bridge Academics.',
     canonicalPath: '/',
+    ogImage: `${BASE_URL}/hero/slide-live-lessons.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics Live Interactive Virtual Classroom & UK Online Tutoring',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -64,6 +66,8 @@ export const PAGE_SEO = {
     title: 'About Us | UK Curriculum Specialists & Mission | Beacon Bridge Academics',
     description: 'Learn about Beacon Bridge Academics: our UK curriculum specialists, DBS-checked educators, transparent parent oversight, and mission to help every child thrive.',
     canonicalPath: '/about',
+    ogImage: `${BASE_URL}/pages/about-hero.jpg`,
+    ogImageAlt: 'About Beacon Bridge Academics — UK Curriculum Specialists & Safeguarding First',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -97,6 +101,8 @@ export const PAGE_SEO = {
     title: 'Contact Us | Academic Consultations & Enquiries | Beacon Bridge Academics',
     description: 'Contact Beacon Bridge Academics. Speak directly with our UK Academic Advisor, request information on tuition plans, or book a free diagnostic assessment.',
     canonicalPath: '/contact',
+    ogImage: `${BASE_URL}/pages/contact-hero.jpg`,
+    ogImageAlt: 'Contact Beacon Bridge Academics Admissions & Academic Advisors',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -119,6 +125,8 @@ export const PAGE_SEO = {
     title: 'Curriculum & Courses | UK GCSE, A-Level & Global Tutoring | Beacon Bridge Academics',
     description: 'Explore our curriculum offerings across Key Stage 3, GCSE, A-Level, IB, AP, and Canadian High School. Rigorous syllabus mastery aligned with AQA, Edexcel, and OCR.',
     canonicalPath: '/curriculum',
+    ogImage: `${BASE_URL}/pages/curriculum-hero.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics UK GCSE, A-Level & International Curriculum Courses',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -186,6 +194,8 @@ export const PAGE_SEO = {
     title: 'How It Works | 4-Stage Online Tutoring Methodology | Beacon Bridge Academics',
     description: 'Discover the Beacon Bridge 4-stage tutoring framework: diagnostic assessment, bespoke study plan, live interactive virtual classrooms, and real-time parent progress tracking.',
     canonicalPath: '/how-it-works',
+    ogImage: `${BASE_URL}/hero/slide-parent-progress.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics 4-Stage Online Tutoring & Parent Progress Tracking',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -209,6 +219,8 @@ export const PAGE_SEO = {
     title: 'Book a Consultation | Free Academic Diagnostic | Beacon Bridge Academics',
     description: 'Schedule a 1-on-1 consultation with Academic Advisor Mr. Gideon Babs. Review mock results, identify syllabus gaps, and design a bespoke learning roadmap.',
     canonicalPath: '/book-consultation',
+    ogImage: `${BASE_URL}/advisor.jpg`,
+    ogImageAlt: 'Book a Free Academic Consultation with Mr. Gideon Babs at Beacon Bridge Academics',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -237,6 +249,8 @@ export const PAGE_SEO = {
     title: 'Academic Insights & News | Study Guides & Events | Beacon Bridge Academics',
     description: 'Read educational insights, GCSE & A-Level revision strategies, exam techniques, and official event announcements from the Beacon Bridge Academics faculty.',
     canonicalPath: '/blog',
+    ogImage: `${BASE_URL}/pages/blog-hero.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics Blog, Study Guides & Exam Revision Insights',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -259,6 +273,8 @@ export const PAGE_SEO = {
     title: 'Apply to Teach | Join Our Expert Educator Faculty | Beacon Bridge Academics',
     description: 'Apply to join the Beacon Bridge teaching faculty. We invite qualified UK and international educators with subject mastery and a dedication to student excellence.',
     canonicalPath: '/apply-to-teach',
+    ogImage: `${BASE_URL}/pages/teach-hero.jpg`,
+    ogImageAlt: 'Teach With Beacon Bridge Academics — Qualified A-Level & GCSE Tutors',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -281,57 +297,80 @@ export const PAGE_SEO = {
     title: 'Privacy Policy | UK GDPR & Data Protection | Beacon Bridge Academics',
     description: 'Read the Beacon Bridge Academics Privacy Policy. Learn how we safeguard your personal data, ensure student confidentiality, and comply with UK GDPR and DPA 2018.',
     canonicalPath: '/privacy',
+    ogImage: `${BASE_URL}/classrooms/class-6.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics Privacy Policy & UK GDPR Data Protection',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
-      '@type': 'WebPage',
-      '@id': `${BASE_URL}/privacy#webpage`,
-      'url': `${BASE_URL}/privacy`,
-      'name': 'Privacy Policy | Beacon Bridge Academics',
-      'description': 'Statutory UK GDPR, DPA 2018, and KCSIE child protection privacy policy for Beacon Bridge Academics.',
-      'publisher': {
-        '@id': `${BASE_URL}/#organization`
-      }
+      '@graph': [
+        {
+          '@type': 'WebPage',
+          '@id': `${BASE_URL}/privacy#webpage`,
+          'url': `${BASE_URL}/privacy`,
+          'name': 'Privacy Policy | Beacon Bridge Academics',
+          'description': 'Statutory UK GDPR, DPA 2018, and KCSIE child protection privacy policy for Beacon Bridge Academics.',
+          'publisher': {
+            '@id': `${BASE_URL}/#organization`
+          }
+        },
+        ORGANIZATION_SCHEMA
+      ]
     }
   },
   '/terms': {
     title: 'Terms of Service | Tutoring Agreement & Policies | Beacon Bridge Academics',
     description: 'Terms of Service for Beacon Bridge Academics. Details our tuition agreements, payment terms, lesson attendance, cancellation policies, and user conduct.',
     canonicalPath: '/terms',
+    ogImage: `${BASE_URL}/classrooms/class-4.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics Terms of Service & Tutoring Agreement',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
-      '@type': 'WebPage',
-      '@id': `${BASE_URL}/terms#webpage`,
-      'url': `${BASE_URL}/terms`,
-      'name': 'Terms of Service | Beacon Bridge Academics',
-      'description': 'Official terms and conditions of service for Beacon Bridge Academics.',
-      'publisher': {
-        '@id': `${BASE_URL}/#organization`
-      }
+      '@graph': [
+        {
+          '@type': 'WebPage',
+          '@id': `${BASE_URL}/terms#webpage`,
+          'url': `${BASE_URL}/terms`,
+          'name': 'Terms of Service | Beacon Bridge Academics',
+          'description': 'Official terms and conditions of service for Beacon Bridge Academics.',
+          'publisher': {
+            '@id': `${BASE_URL}/#organization`
+          }
+        },
+        ORGANIZATION_SCHEMA
+      ]
     }
   },
   '/security': {
     title: 'Security & Safeguarding Policy | KCSIE Compliance | Beacon Bridge Academics',
     description: 'Beacon Bridge Academics safeguarding and platform security framework. Enhanced DBS verification, recorded lessons, end-to-end encryption, and KCSIE compliance.',
     canonicalPath: '/security',
+    ogImage: `${BASE_URL}/classrooms/class-3.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics Safeguarding & Platform Security Standards',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
-      '@type': 'WebPage',
-      '@id': `${BASE_URL}/security#webpage`,
-      'url': `${BASE_URL}/security`,
-      'name': 'Security & Safeguarding Policy | Beacon Bridge Academics',
-      'description': 'Comprehensive platform security standards, safeguarding guidelines, and KCSIE compliance at Beacon Bridge Academics.',
-      'publisher': {
-        '@id': `${BASE_URL}/#organization`
-      }
+      '@graph': [
+        {
+          '@type': 'WebPage',
+          '@id': `${BASE_URL}/security#webpage`,
+          'url': `${BASE_URL}/security`,
+          'name': 'Security & Safeguarding Policy | Beacon Bridge Academics',
+          'description': 'Comprehensive platform security standards, safeguarding guidelines, and KCSIE compliance at Beacon Bridge Academics.',
+          'publisher': {
+            '@id': `${BASE_URL}/#organization`
+          }
+        },
+        ORGANIZATION_SCHEMA
+      ]
     }
   },
   '/ielts-registration': {
     title: 'IELTS Registration | Academic & UKVI Exam Preparation | Beacon Bridge Academics',
     description: 'Register for IELTS Academic & UKVI exam preparation at Beacon Bridge Academics. Expert coaching, £100/month, structured study plan, payment proof upload.',
     canonicalPath: '/ielts-registration',
+    ogImage: `${BASE_URL}/hero/slide-exam-results.jpg`,
+    ogImageAlt: 'IELTS Academic & UKVI Exam Preparation at Beacon Bridge Academics',
     robots: 'index, follow',
     schema: {
       '@context': 'https://schema.org',
@@ -355,6 +394,8 @@ export const PAGE_SEO = {
     title: 'Register with Us | Student & Parent Portal | Beacon Bridge Academics',
     description: 'Joint parent-student registration for KS2, KS3, GCSE, UK A-Level, Canada Grade 11–12, Coding (Software Development), and Graphics Design.',
     canonicalPath: '/register',
+    ogImage: `${BASE_URL}/hero/slide-beyond-school.jpg`,
+    ogImageAlt: 'Register with Beacon Bridge Academics — Student & Parent Enrolment',
     robots: 'index, follow',
     schema: {
       '@context': 'https://schema.org',
@@ -371,6 +412,8 @@ export const PAGE_SEO = {
     title: 'Frequently Asked Questions (FAQ) | Beacon Bridge Academics',
     description: 'Answers to common parent and student questions about UK GCSE, A-Level, KS2, KS3, IELTS online tutoring, safeguarding, virtual classrooms, and tuition plans.',
     canonicalPath: '/faq',
+    ogImage: `${BASE_URL}/hero/side-student.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics Frequently Asked Questions for Parents & Students',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',
@@ -387,6 +430,8 @@ export const PAGE_SEO = {
     title: 'Payment Proof Submission | Beacon Bridge Academics',
     description: 'Submit or update your monthly tuition bank transfer reference and receipt slip for Beacon Bridge Academics verification.',
     canonicalPath: '/payment-proof',
+    ogImage: `${BASE_URL}/classrooms/class-2.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics Tuition Payment Proof Verification',
     robots: 'noindex, follow',
     schema: {
       '@context': 'https://schema.org',
@@ -403,6 +448,9 @@ export const PAGE_SEO = {
     title: 'Tutor Waiting List | Teach A-Level Online | Beacon Bridge Academics',
     description: 'Beacon Bridge Academics is launching soon. Join the tutor waiting list to teach motivated A-Level students across the UK, US, Canada and Australia.',
     canonicalPath: '/tutor-waitlist',
+    canonicalUrl: 'https://tutors.beaconbridgeacademics.co.uk',
+    ogImage: `${BASE_URL}/pages/teach-hero.jpg`,
+    ogImageAlt: 'Beacon Bridge Academics Tutor Waiting List — Teach A-Level Online',
     robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     schema: {
       '@context': 'https://schema.org',

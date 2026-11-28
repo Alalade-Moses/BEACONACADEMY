@@ -26,9 +26,11 @@ function prerenderSeoPages() {
   };
 
   for (const [route, config] of Object.entries(allRoutes)) {
-    const canonicalUrl = `${BASE_URL}${route === '/' ? '' : route}`;
+    const canonicalUrl = config.canonicalUrl || `${BASE_URL}${route === '/' ? '' : route}`;
     const pageTitle = config.title;
     const pageDesc = config.description;
+    const pageImage = config.ogImage || `${BASE_URL}/hero/slide-live-lessons.jpg`;
+    const pageImageAlt = config.ogImageAlt || pageTitle;
     const robots = config.robots || 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
     const schemaString = JSON.stringify(config.schema, null, 2);
 
@@ -43,10 +45,18 @@ function prerenderSeoPages() {
       `<meta name="description" content="${pageDesc}" />`
     );
 
-    // 3. Replace <link rel="canonical" ...>
+    // 3. Replace <link rel="canonical" ...> and hreflang alternates
     pageHtml = pageHtml.replace(
       /<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*\/?>/i,
       `<link rel="canonical" href="${canonicalUrl}" />`
+    );
+    pageHtml = pageHtml.replace(
+      /<link\s+rel=["']alternate["']\s+hreflang=["']en-GB["']\s+href=["'][^"']*["']\s*\/?>/i,
+      `<link rel="alternate" hreflang="en-GB" href="${canonicalUrl}" />`
+    );
+    pageHtml = pageHtml.replace(
+      /<link\s+rel=["']alternate["']\s+hreflang=["']x-default["']\s+href=["'][^"']*["']\s*\/?>/i,
+      `<link rel="alternate" hreflang="x-default" href="${canonicalUrl}" />`
     );
 
     // 4. Replace <meta name="robots" ...>
@@ -55,7 +65,7 @@ function prerenderSeoPages() {
       `<meta name="robots" content="${robots}" />`
     );
 
-    // 5. Replace Open Graph
+    // 5. Replace Open Graph (unique title, description, URL, and branded image per page)
     pageHtml = pageHtml.replace(
       /<meta\s+property=["']og:title["']\s+content=["'][^"']*["']\s*\/?>/i,
       `<meta property="og:title" content="${pageTitle}" />`
@@ -67,6 +77,14 @@ function prerenderSeoPages() {
     pageHtml = pageHtml.replace(
       /<meta\s+property=["']og:url["']\s+content=["'][^"']*["']\s*\/?>/i,
       `<meta property="og:url" content="${canonicalUrl}" />`
+    );
+    pageHtml = pageHtml.replace(
+      /<meta\s+property=["']og:image["']\s+content=["'][^"']*["']\s*\/?>/i,
+      `<meta property="og:image" content="${pageImage}" />`
+    );
+    pageHtml = pageHtml.replace(
+      /<meta\s+property=["']og:image:alt["']\s+content=["'][^"']*["']\s*\/?>/i,
+      `<meta property="og:image:alt" content="${pageImageAlt}" />`
     );
 
     // 6. Replace Twitter Cards
@@ -81,6 +99,10 @@ function prerenderSeoPages() {
     pageHtml = pageHtml.replace(
       /<meta\s+name=["']twitter:url["']\s+content=["'][^"']*["']\s*\/?>/i,
       `<meta name="twitter:url" content="${canonicalUrl}" />`
+    );
+    pageHtml = pageHtml.replace(
+      /<meta\s+name=["']twitter:image["']\s+content=["'][^"']*["']\s*\/?>/i,
+      `<meta name="twitter:image" content="${pageImage}" />`
     );
 
     // 7. Replace Schema.org JSON-LD Script
